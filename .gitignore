@@ -160,3 +160,16 @@ test-admin-token.mjs
 create-admin.sh
 quick-test.sh
 get-token.sh
+
+# Claude Code session reports
+.claude-session-report.txt
+
+# Claude Code local settings (personal permissions, not shared)
+.claude/settings.local.json
+
+# macOS metadata
+.DS_Store
+
+# Postman environment files (may contain auth tokens)
+postman/*.postman_environment.json
+!postman/OSA-Platform-Local.postman_environment.json
