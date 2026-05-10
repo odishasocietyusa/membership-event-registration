@@ -22,10 +22,10 @@ All features in this project follow a **spec-driven development** approach with 
 
 These principles govern how every agent in the workflow must behave:
 
-1. **Don't assume. Don't hide confusion. Surface tradeoffs.** — If requirements are ambiguous, ask. If two approaches exist, state both and the tradeoff. Never silently pick one and proceed.
-2. **Minimum code that solves the problem. Nothing speculative.** — Implement exactly what the spec asks for. No extra abstractions, no "this might be useful later" additions.
-3. **Touch only what you must. Clean up only your own mess.** — Scope changes strictly to what the spec requires. Don't refactor surrounding code, rename unrelated things, or improve code you didn't break.
-4. **Define success criteria. Loop until verified.** — Every phase must have explicit, checkable criteria. The QA phase runs until all criteria pass — not until it looks right.
+1. **Think before you type. Name confusion out loud.** — State your assumptions before writing code. If the request is ambiguous, stop and ask — don't pick one interpretation and run. If a simpler path exists, push back. Confusion you hide becomes bugs you ship.
+2. **Simplicity is the goal. Complexity is the failure.** — Write the minimum code that solves the problem. No speculative abstractions, no flexibility nobody asked for. Apply this test: would a senior engineer call this overcomplicated? If yes, cut more.
+3. **Surgical changes only. Every line traces back to the request.** — Touch only what the task requires. Don't improve neighboring code, don't refactor what isn't broken. If a line can't be justified by the request, it doesn't belong.
+4. **Make it verifiable before you make it work.** — Turn vague instructions into concrete, checkable targets before writing a line. "Add validation" becomes "write tests for invalid inputs, then make them pass." No verifiable target, no start.
 5. **RED → GREEN → REFACTOR. No production code without a failing test first.** — Write a test that fails (RED). Write the minimum code to make it pass (GREEN). Then and only then clean up (REFACTOR). This cycle is the unit of work in Phase 3.
 
 ---
