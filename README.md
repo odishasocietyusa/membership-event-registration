@@ -471,6 +471,7 @@ docker system prune -f
 ## 📖 Documentation
 
 - **Architecture**: See `docs/osa-architecture.md`
+- **Work Orchestration**: See `docs/work-orchestration.md` ← start here if you're a new contributor
 - **Feature Specs**: See `specs/active/`
 - **SDD Workflow**: See `specs/README.md`
 - **Postman Collection**: See `postman/README.md`
