@@ -20,13 +20,13 @@ A comprehensive platform for managing memberships, event registrations, and comm
 osa-community-platform/
 ├── apps/
 │   ├── web/          # Next.js frontend (port 3000)
-│   └── api/          # NestJS backend (port 3001)
+│   └── api/          # NestJS reference implementation (port 3001)
 ├── packages/
 │   ├── shared-types/ # Shared TypeScript types
 │   ├── validation/   # Zod validation schemas
 │   └── config/       # Shared configuration
-├── docs/             # Session logs & progress tracking
-└── prompts/          # Architecture & specification docs
+├── docs/             # Architecture reference
+└── specs/            # Feature specs and SDD workflow
 ```
 
 ## 💻 Local Developer Setup
@@ -470,11 +470,10 @@ docker system prune -f
 
 ## 📖 Documentation
 
-- **Architecture**: See `prompts/01_ARCHITECTURE.md`
-- **Database Schema**: See `prompts/02_DATABASE_SCHEMA.md`
-- **API Specification**: See `prompts/03_API_SPECIFICATION.md`
-- **Progress Tracking**: See `docs/progress.md`
-- **Session Logs**: See `docs/sessions/`
+- **Architecture**: See `docs/osa-architecture.md`
+- **Feature Specs**: See `specs/active/`
+- **SDD Workflow**: See `specs/README.md`
+- **Postman Collection**: See `postman/README.md`
 
 ## 🎯 Implementation Status
 
@@ -503,8 +502,8 @@ docker system prune -f
 
 This project was built with Claude Code. For development:
 
-1. Review architecture docs in `prompts/`
-2. Check current progress in `docs/progress.md`
+1. Read `docs/osa-architecture.md` for system design
+2. Review active specs in `specs/active/`
 3. Follow coding standards (TypeScript, ESLint, Prettier)
 4. Write tests for new features
 5. Update documentation

@@ -91,8 +91,7 @@ membership-event-registration/
 │   ├── session-report.sh           # Quick wrapper for session report
 │   ├── get-auth-token.sh           # Generate Supabase auth tokens
 │   └── get-auth-token.ts           # TypeScript version (requires deps)
-├── docs/                       # Session logs & progress tracking
-├── prompts/                    # Architecture & specification docs
+├── docs/                       # Architecture reference
 └── turbo.json                  # Turborepo task configuration
 ```
 
@@ -705,7 +704,7 @@ supabase status
 - Utility scripts for session tracking and auth token generation
 - Ready for frontend integration
 
-See `docs/progress.md` for detailed progress tracking and `prompts/` directory for architecture specifications.
+See `docs/osa-architecture.md` for system architecture and `specs/active/` for active feature specs.
 
 ---
 
