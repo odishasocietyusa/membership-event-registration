@@ -29,6 +29,148 @@ osa-community-platform/
 └── prompts/          # Architecture & specification docs
 ```
 
+## 💻 Local Developer Setup
+
+Complete these steps **once** before running the project for the first time. All tools listed are required.
+
+---
+
+### 1. Node.js (v20 or higher)
+
+The JavaScript runtime. Required for Next.js, NestJS, and all tooling.
+
+```bash
+# Check if already installed
+node --version   # must be >= 20.0.0
+
+# Install via nvm (recommended — lets you switch versions per project)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+source ~/.zshrc          # or ~/.bashrc if using bash
+nvm install 22
+nvm use 22
+
+# Or install directly from https://nodejs.org (LTS release)
+```
+
+---
+
+### 2. pnpm (v11 or higher)
+
+The package manager used across the entire monorepo. Do **not** use npm or yarn — the workspace setup requires pnpm.
+
+```bash
+# Check if already installed
+pnpm --version   # must be >= 11.0.0
+
+# Install via npm (one-time bootstrap)
+npm install -g pnpm@latest
+
+# Or via Homebrew
+brew install pnpm
+```
+
+---
+
+### 3. Docker Desktop
+
+Required to run Supabase locally. The Supabase CLI spins up PostgreSQL, Auth, Storage, and Studio as Docker containers.
+
+```bash
+# Check if already installed
+docker --version   # any recent version is fine
+
+# Install Docker Desktop
+# → https://www.docker.com/products/docker-desktop/
+# Download the installer for your OS and follow the setup wizard.
+
+# After install, open Docker Desktop and wait for it to show "Engine running"
+# before proceeding to the Supabase step.
+```
+
+---
+
+### 4. Supabase CLI
+
+Manages the local Supabase stack (database, auth, storage, email).
+
+```bash
+# Check if already installed
+supabase --version   # must be >= 2.0.0
+
+# Install via Homebrew (macOS/Linux)
+brew install supabase/tap/supabase
+
+# Or via npm
+npm install -g supabase
+
+# Log in to your Supabase account (needed for remote operations only)
+supabase login
+```
+
+> Docker Desktop must be running before you use any `supabase` commands.
+
+---
+
+### 5. Stripe CLI
+
+Required for testing payment webhooks locally. Stripe events are forwarded to your local server.
+
+```bash
+# Check if already installed
+stripe --version
+
+# Install via Homebrew (macOS)
+brew install stripe/stripe-cli/stripe
+
+# Or download from https://stripe.com/docs/stripe-cli#install
+
+# Log in (links CLI to your Stripe account)
+stripe login
+```
+
+---
+
+### 6. Git
+
+Required to clone the repository and manage branches.
+
+```bash
+# Check if already installed
+git --version
+
+# Install via Homebrew
+brew install git
+
+# Or download from https://git-scm.com/downloads
+```
+
+---
+
+### Verify All Tools
+
+Run this block to confirm everything is installed before proceeding:
+
+```bash
+echo "Node:     $(node --version)"
+echo "pnpm:     $(pnpm --version)"
+echo "Docker:   $(docker --version)"
+echo "Supabase: $(supabase --version)"
+echo "Stripe:   $(stripe --version)"
+echo "Git:      $(git --version)"
+```
+
+Expected output (versions may be higher):
+```
+Node:     v22.x.x
+pnpm:     11.x.x
+Docker:   Docker version 29.x.x
+Supabase: 2.x.x
+Stripe:   stripe version 1.x.x
+Git:      git version 2.x.x
+```
+
+---
+
 ## 🚀 How to Run
 
 ### Prerequisites
