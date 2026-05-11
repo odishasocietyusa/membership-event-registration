@@ -18,8 +18,9 @@ Wave 2 ────────────────────────�
   (SPEC-4, 5, 6 are blocked until this merges)
 
 Wave 3 ──────────────────────────────────────────────────────────
-  SPEC-4: Payments    SPEC-5: Awards    SPEC-6: Messaging    SPEC-7: CMS
-  (all four run in parallel on separate branches)
+  SPEC-4: Payments    SPEC-5: Awards    SPEC-6: Messaging    SPEC-7: CMS    SPEC-8: Obituary
+  (all run in parallel on separate branches)
+  Note: SPEC-8 additionally requires SPEC-7 merged before starting
 
 Wave 4 ──────────────────────────────────────────────────────────
   Integration merge + smoke test
@@ -40,6 +41,7 @@ SPEC-7 (CMS / Sanity) has no database dependency and can technically start after
 | SPEC-5 | Backend developer | `spec/5-awards-module` | SPEC-3 merged |
 | SPEC-6 | Messaging developer | `spec/6-member-messaging` | SPEC-3 merged |
 | SPEC-7 | UX / frontend developer | `spec/7-static-content-cms` | SPEC-2 merged |
+| SPEC-8 | Full-stack developer | `spec/8-obituary-page` | SPEC-3 + SPEC-7 merged |
 
 ---
 
@@ -170,6 +172,34 @@ middleware.ts               ← page-level auth redirect
 lib/db/prisma.ts            ← CMS has no database writes
 prisma/schema.prisma        ← no new DB models
 app/api/                    ← no API routes needed
+```
+
+---
+
+### SPEC-8 — Obituary Page
+**Owns (write access):**
+```
+sanity/schemas/obituary.ts          ← Sanity obituary schema
+app/obituaries/                     ← listing and detail pages (ISR)
+lib/obituaries/                     ← comment-service.ts
+app/api/obituaries/                 ← /api/obituaries/[slug]/comments routes
+lib/validation/obituary-comment.schema.ts
+prisma/schema.prisma                ← adds ObituaryComment model
+```
+
+**Read-only (from SPEC-2, SPEC-3, SPEC-7):**
+```
+lib/auth/with-auth.ts               ← for authenticated comment POST
+lib/db/prisma.ts
+lib/members/member-service.ts       ← to resolve commenter's full name
+sanity/lib/client.ts                ← import only, do not modify
+sanity/lib/queries.ts               ← extend with obituary GROQ queries
+```
+
+**Does not touch:**
+```
+app/events/, app/news/, app/about/  ← owned by SPEC-7
+lib/payments/, lib/messaging/       ← owned by SPEC-4 and SPEC-6
 ```
 
 ---
