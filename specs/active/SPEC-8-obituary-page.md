@@ -45,12 +45,13 @@ An obituary section that allows OSA admins and volunteer authors to memorialize 
 | FR-10 | Comment body is required and max 500 characters; empty or over-limit comments are rejected | Must Have | |
 | FR-11 | Obituary pages update within 60 seconds of Sanity publish | Must Have | ISR `revalidate: 60` |
 | FR-12 | Deceased person can optionally be linked to an OSA member record | Should Have | Nullable reference field in Sanity |
+| FR-13 | Admin can delete any comment they find inappropriate | Must Have | Hard delete — comment is removed permanently |
 
 ### 2.2 Non-Functional Requirements
 
 | ID | Requirement | Target | Notes |
 |----|-------------|--------|-------|
-| NFR-01 | Comments immutable after posting | No edit or delete endpoint | Consistent with messaging module pattern |
+| NFR-01 | Comments immutable for members after posting | No member-facing edit or delete endpoint | Admins retain delete capability via FR-13 |
 | NFR-02 | No Sanity API key exposed to browser | Server-only GROQ queries | All fetches in Server Components |
 | NFR-03 | Member status validated server-side | Not just client-side check | `withAuth()` + active status check in API route |
 | NFR-04 | Comment spam protection | Member must have `member_status = active` | Suspended/expired members blocked |
@@ -69,6 +70,8 @@ An obituary section that allows OSA admins and volunteer authors to memorialize 
 - [ ] `POST /api/obituaries/[slug]/comments` returns 403 for members with non-active status
 - [ ] `POST /api/obituaries/[slug]/comments` returns 400 for empty body
 - [ ] `GET /api/obituaries/[slug]/comments` returns all comments for a page
+- [ ] `DELETE /api/obituaries/[slug]/comments/[id]` (admin) removes the comment permanently
+- [ ] `DELETE /api/obituaries/[slug]/comments/[id]` returns 403 for non-admin members
 - [ ] Publishing a new obituary in Sanity Studio appears on the site within 60 seconds
 - [ ] All tests passing
 
@@ -88,6 +91,8 @@ An obituary section that allows OSA admins and volunteer authors to memorialize 
 | Post empty comment | Authenticated active member | `POST /api/obituaries/[slug]/comments` with empty body | Returns 400 |
 | Post comment — invalid slug | Authenticated active member | `POST /api/obituaries/nonexistent/comments` | Returns 404 |
 | Get comments | No auth | `GET /api/obituaries/[slug]/comments` | Returns comments array in chronological order |
+| Admin deletes comment | Admin user | `DELETE /api/obituaries/[slug]/comments/[id]` | Comment removed, returns 204, no longer appears on page |
+| Member attempts delete | Member-role user | `DELETE /api/obituaries/[slug]/comments/[id]` | Returns 403 |
 | ISR update | New obituary published in Sanity | Wait up to 60s, then `GET /obituaries` | New obituary appears without redeploy |
 
 ---
@@ -141,7 +146,7 @@ model ObituaryComment {
 | SELECT | Public — any visitor can read |
 | INSERT | Authenticated active members only — enforced in API route via `withAuth()` + status check |
 | UPDATE | Not permitted |
-| DELETE | Not permitted |
+| DELETE | Admin only — enforced in API route via `withAuth(handler, 'admin')` |
 
 ### 4.6 Files/Modules to Create
 - `sanity/schemas/obituary.ts` — Sanity schema definition
@@ -151,6 +156,7 @@ model ObituaryComment {
 - `app/obituaries/[slug]/CommentForm.tsx` — client component for comment submission
 - `lib/obituaries/comment-service.ts` — create and list comments
 - `app/api/obituaries/[slug]/comments/route.ts` — GET (public) and POST (authenticated active member)
+- `app/api/obituaries/[slug]/comments/[id]/route.ts` — DELETE (admin only)
 - `lib/validation/obituary-comment.schema.ts` — Zod schema for comment body
 - `prisma/schema.prisma` — add `ObituaryComment` model
 
