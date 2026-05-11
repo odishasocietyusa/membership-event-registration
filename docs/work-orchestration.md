@@ -42,6 +42,7 @@ SPEC-7 (CMS / Sanity) has no database dependency and can technically start after
 | SPEC-6 | Messaging developer | `spec/6-member-messaging` | SPEC-3 merged |
 | SPEC-7 | UX / frontend developer | `spec/7-static-content-cms` | SPEC-2 merged |
 | SPEC-8 | Full-stack developer | `spec/8-obituary-page` | SPEC-3 + SPEC-7 merged |
+| SPEC-9 | Frontend developer | `spec/9-about-us-page` | SPEC-7 merged |
 
 ---
 
