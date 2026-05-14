@@ -30,6 +30,18 @@ const awardNames = [
   { id: 'cultural-ambassador',  displayName: 'Cultural Ambassador Award' },
 ]
 
+const membershipFees = [
+  { id: 'annual-student-no-vote', membershipType: 'annualStudentNoVote' as const, amountDollars: 20,   isUpgradePath: true,  isAdminOnly: false },
+  { id: 'annual-single',          membershipType: 'annualSingle'        as const, amountDollars: 25,   isUpgradePath: true,  isAdminOnly: false },
+  { id: 'annual-family',          membershipType: 'annualFamily'        as const, amountDollars: 40,   isUpgradePath: true,  isAdminOnly: false },
+  { id: 'five-year-family',       membershipType: 'fiveYearFamily'      as const, amountDollars: 100,  isUpgradePath: true,  isAdminOnly: false },
+  { id: 'life',                   membershipType: 'life'                as const, amountDollars: 200,  isUpgradePath: true,  isAdminOnly: false },
+  { id: 'life-ward',              membershipType: 'lifeWard'            as const, amountDollars: 100,  isUpgradePath: true,  isAdminOnly: false },
+  { id: 'patron',                 membershipType: 'patron'              as const, amountDollars: 500,  isUpgradePath: false, isAdminOnly: false },
+  { id: 'benefactor',             membershipType: 'benefactor'          as const, amountDollars: 1000, isUpgradePath: false, isAdminOnly: false },
+  { id: 'honorary-no-vote',       membershipType: 'honoraryNoVote'      as const, amountDollars: 0,    isUpgradePath: false, isAdminOnly: true  },
+]
+
 async function main() {
   console.log('Seeding chapters...')
 
@@ -61,6 +73,28 @@ async function main() {
   }
 
   console.log(`Seeded ${awardNames.length} award names.`)
+
+  console.log('Seeding membership fees...')
+
+  for (const fee of membershipFees) {
+    await prisma.membershipFee.upsert({
+      where: { id: fee.id },
+      update: {
+        amountDollars: fee.amountDollars,
+        isUpgradePath: fee.isUpgradePath,
+        isAdminOnly:   fee.isAdminOnly,
+      },
+      create: {
+        id:             fee.id,
+        membershipType: fee.membershipType,
+        amountDollars:  fee.amountDollars,
+        isUpgradePath:  fee.isUpgradePath,
+        isAdminOnly:    fee.isAdminOnly,
+      },
+    })
+  }
+
+  console.log(`Seeded ${membershipFees.length} membership fees.`)
 }
 
 main()

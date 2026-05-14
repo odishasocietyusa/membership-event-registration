@@ -147,7 +147,7 @@ describe('withAuth()', () => {
     expect(res.status).toBe(200)
     expect(mockFindUnique).toHaveBeenCalledWith({ where: { email: 'new@test.com' } })
     expect(mockCreate).toHaveBeenCalledWith({
-      data: { email: 'new@test.com', userId: 'uid-1', role: 'member' },
+      data: { email: 'new@test.com', userId: 'uid-1', role: 'member', fullName: null },
     })
     expect(handler).toHaveBeenCalledWith(req, { user: newMember })
   })

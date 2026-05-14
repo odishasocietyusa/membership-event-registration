@@ -3,7 +3,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -66,6 +65,23 @@ enum AwardCategory {
   competition
 
   @@map("award_category")
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  refunded
+
+  @@map("payment_status")
+}
+
+enum PaymentType {
+  membership
+  upgrade
+  donation
+
+  @@map("payment_type")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -148,17 +164,42 @@ model FamilyMember {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model PaymentRecord {
-  id            String    @id @default(uuid()) @db.Uuid
-  memberId      String    @map("member_id") @db.Uuid
-  transactionId String?   @map("transaction_id")
-  paymentDate   DateTime? @map("payment_date") @db.Timestamptz
-  amount        Decimal?  @db.Decimal(10, 2)
-  notes         String?
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  id                   String         @id @default(uuid()) @db.Uuid
+  memberId             String?        @map("member_id") @db.Uuid
+  stripeSessionId      String?        @map("stripe_session_id")
+  stripeEventId        String?        @unique @map("stripe_event_id")
+  stripePaymentIntentId String?       @map("stripe_payment_intent_id")
+  status               PaymentStatus  @default(pending)
+  paymentType          PaymentType    @map("payment_type")
+  membershipType       MembershipType? @map("membership_type")
+  amountCents          Int            @map("amount_cents")
+  refundAmountCents    Int?           @map("refund_amount_cents")
+  refundReason         String?        @map("refund_reason")
+  approvedBy           String?        @map("approved_by")
+  isAdminInitiated     Boolean        @default(false) @map("is_admin_initiated")
+  isAnonymous          Boolean        @default(false) @map("is_anonymous")
+  receiptRequestedAt   DateTime?      @map("receipt_requested_at") @db.Timestamptz
+  currency             String         @default("usd")
+  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz
 
-  member Member @relation(fields: [memberId], references: [id])
+  member Member? @relation(fields: [memberId], references: [id])
 
   @@map("payment_records")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MEMBERSHIP FEES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MembershipFee {
+  id             String         @id
+  membershipType MembershipType @unique @map("membership_type")
+  amountDollars  Int            @map("amount_dollars")
+  isUpgradePath  Boolean        @default(false) @map("is_upgrade_path")
+  isAdminOnly    Boolean        @default(false) @map("is_admin_only")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("membership_fees")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -95,20 +95,24 @@ Use Resend as the SMTP provider so emails come from `noreply@odishasociety.org`:
 
 ## Step 3 — Run Database Migrations
 
-From the `apps/web` directory, with `DIRECT_URL` pointing to the cloud project:
+`prisma generate` runs **automatically** on every Vercel deploy (via the `postinstall` and `build` scripts). You do not need to run it manually.
+
+Schema push and seed are **one-time operations** per environment. Run the setup script from the repository root with `DIRECT_URL` pointing to the target Supabase project:
 
 ```bash
-# Link to your Supabase project (run once per environment)
-supabase link --project-ref <your-project-ref>
+# First-time setup: push schema + generate client + seed reference data
+./scripts/db-setup.sh
 
-# Push schema to cloud database
-npx prisma db push
+# Schema changed but data already seeded:
+./scripts/db-setup.sh --schema
 
-# Seed reference data (membership types, award names, chapters)
-npx prisma db seed
+# Re-seed reference data only (e.g. membership fee price update):
+./scripts/db-setup.sh --seed
 ```
 
-> Get `<your-project-ref>` from your Supabase project URL: `supabase.com/dashboard/project/<ref>`
+> Ensure `DATABASE_URL` and `DIRECT_URL` in `apps/web/.env.local` (or your shell env) point to the correct cloud project before running.
+
+See [On-Demand Database Operations](#on-demand-database-operations) for when to re-run seed after initial deployment.
 
 ---
 
@@ -188,7 +192,11 @@ In Vercel → Project → Settings → Environment Variables, add all variables 
 | `STRIPE_WEBHOOK_SECRET` | Stripe dashboard → Developers → Webhooks → signing secret | ❌ Server only |
 | `RESEND_API_KEY` | Resend dashboard → API keys | ❌ Server only |
 | `RESEND_FROM_EMAIL` | Your verified sender domain, e.g. `noreply@odishasociety.org` | ❌ Server only |
-| `CRON_SECRET` | Generate a random 32-character string — store in password manager | ❌ Server only |
+| `RESEND_ORG_NAME` | Full legal org name, e.g. `The Odisha Society of the Americas` | ❌ Server only |
+| `RESEND_ORG_EIN` | IRS EIN number, e.g. `12-3456789` (used on charity receipts) | ❌ Server only |
+| `ADMIN_NOTIFICATION_EMAIL` | Email address that receives membership expiry alerts | ❌ Server only |
+| `NEXT_PUBLIC_SITE_URL` | Full site URL, e.g. `https://odishasociety.org` (no trailing slash) | ✅ Yes |
+| `CRON_SECRET` | Generate with `openssl rand -base64 32` — store in password manager | ❌ Server only |
 
 > **Never** set `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, or `SANITY_API_TOKEN` as `NEXT_PUBLIC_` variables.
 
@@ -237,6 +245,39 @@ Before promoting staging to production, confirm:
 - [ ] Resend SMTP configured with production sending domain
 - [ ] `CRON_SECRET` is a unique value (different from staging)
 - [ ] RLS policies verified — member cannot read another member's data
+
+---
+
+## On-Demand Database Operations
+
+Use the `db-setup.sh` script any time you need to push schema changes or re-seed reference data outside of the normal deploy flow. Always run from the repository root with env vars pointing to the target environment.
+
+### When to re-seed
+
+| Trigger | Command |
+|---------|---------|
+| First-time environment setup | `./scripts/db-setup.sh` |
+| Schema changed (new fields, models, enums) | `./scripts/db-setup.sh --schema` |
+| Membership fee price updated in `seed.ts` | `./scripts/db-setup.sh --seed` |
+| New chapter or award name added to `seed.ts` | `./scripts/db-setup.sh --seed` |
+| Full reset (⚠️ wipes data) | `npx prisma migrate reset` then `./scripts/db-setup.sh` |
+
+### Targeting a specific environment
+
+Set `DATABASE_URL` and `DIRECT_URL` before running:
+
+```bash
+# Example: seed production
+DATABASE_URL="postgresql://..." DIRECT_URL="postgresql://..." ./scripts/db-setup.sh --seed
+
+# Or export from a .env file
+export $(grep -v '^#' apps/web/.env.production | xargs)
+./scripts/db-setup.sh --seed
+```
+
+### Safe to re-run
+
+All seed operations use `upsert` — running seed multiple times on the same database is safe and idempotent. It will not create duplicate rows or overwrite manually-edited data in other tables.
 
 ---
 

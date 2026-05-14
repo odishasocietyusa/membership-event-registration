@@ -1,11 +1,9 @@
-import type { Config } from 'jest'
-
-const config: Config = {
+/** @type {import('jest').Config} */
+const config = {
   testEnvironment: 'jest-environment-node',
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: {
-        // Use CommonJS for jest compatibility
         module: 'CommonJS',
         moduleResolution: 'node',
         esModuleInterop: true,
@@ -15,10 +13,9 @@ const config: Config = {
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
-    '^@prisma/client$': '<rootDir>/node_modules/.prisma/client',
   },
   testMatch: ['**/*.test.ts', '**/*.test.tsx'],
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],
 }
 
-export default config
+module.exports = config

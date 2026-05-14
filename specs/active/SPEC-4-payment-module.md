@@ -239,13 +239,13 @@ Implement Stripe-based payment processing covering: new membership acquisition a
 - **Artifact:** `specs/artifacts/SPEC-4-payment-module/01-analysis.md`
 
 ### Phase 2: Design
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-4-payment-module/02-design.md`
 
 ### Phase 3: Implementation
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-4-payment-module/03-implementation.md`
 
 ### Phase 4: QA & Testing
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-4-payment-module/04-qa-report.md`
