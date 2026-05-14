@@ -471,6 +471,7 @@ docker system prune -f
 ## 📖 Documentation
 
 - **Architecture**: See `docs/osa-architecture.md`
+- **Deployment**: See `docs/deployment-manual.md` ← staging and production setup runbook
 - **Work Orchestration**: See `docs/work-orchestration.md` ← start here if you're a new contributor
 - **Feature Specs**: See `specs/active/`
 - **SDD Workflow**: See `specs/README.md`
