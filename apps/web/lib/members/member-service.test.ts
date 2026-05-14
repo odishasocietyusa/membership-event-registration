@@ -21,6 +21,9 @@ jest.mock('@/lib/db/prisma', () => ({
     paymentRecord: {
       findMany: jest.fn(),
     },
+    message: {
+      findMany: jest.fn(),
+    },
     chapter: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -204,20 +207,23 @@ describe('member-service', () => {
     })
   })
 
-  // SVC-06: exportMemberData — response includes _note field about SPEC-6 messages
+  // SVC-06: exportMemberData — full GDPR bundle including messages
   describe('exportMemberData', () => {
-    it('SVC-06: export bundle includes _note field referencing SPEC-6', async () => {
+    it('SVC-06: export bundle includes member, family, payments, sentMessages, receivedMessages', async () => {
       mockMember.findUnique.mockResolvedValueOnce(baseMember)
       mockFamilyMember.findMany.mockResolvedValueOnce([baseFamilyMember])
       mockPaymentRecord.findMany.mockResolvedValueOnce([])
+      ;(prisma.message.findMany as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
 
       const result = await exportMemberData('mem-1')
 
-      expect(result).toHaveProperty('_note')
-      expect(result._note).toMatch(/SPEC-6/i)
       expect(result).toHaveProperty('member', baseMember)
       expect(result).toHaveProperty('familyMembers')
       expect(result).toHaveProperty('paymentRecords')
+      expect(result).toHaveProperty('sentMessages')
+      expect(result).toHaveProperty('receivedMessages')
       expect(result).toHaveProperty('exportDate')
     })
 

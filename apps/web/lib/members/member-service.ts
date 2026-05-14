@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma'
-import type { Member, FamilyMember, Chapter, PaymentRecord } from '@prisma/client'
+import type { Member, FamilyMember, Chapter, PaymentRecord, Message } from '@prisma/client'
 
 // ── Shared result types ───────────────────────────────────────────────────────
 
@@ -15,7 +15,8 @@ export interface MemberExport {
   member: Member
   familyMembers: FamilyMember[]
   paymentRecords: PaymentRecord[]
-  _note: string
+  sentMessages: Message[]
+  receivedMessages: Message[]
 }
 
 // ── Input types (mirrors Zod schemas in member.schema.ts) ────────────────────
@@ -119,12 +120,18 @@ export async function exportMemberData(id: string): Promise<MemberExport> {
     where: { memberId: id },
   })
 
+  const [sentMessages, receivedMessages] = await Promise.all([
+    prisma.message.findMany({ where: { senderMemberId: id } }),
+    prisma.message.findMany({ where: { recipientMemberId: id } }),
+  ])
+
   return {
     exportDate: new Date().toISOString(),
     member,
     familyMembers,
     paymentRecords,
-    _note: 'messages will be included after SPEC-6 is implemented',
+    sentMessages,
+    receivedMessages,
   }
 }
 

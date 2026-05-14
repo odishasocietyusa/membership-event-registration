@@ -142,9 +142,9 @@ Implement private member-to-member messaging via a server-side email relay. Memb
 - **Artifact:** `specs/artifacts/SPEC-6-member-messaging/02-design.md`
 
 ### Phase 3: Implementation
-- **Status:** In Progress
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-6-member-messaging/03-implementation.md`
 
 ### Phase 4: QA & Testing
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-6-member-messaging/04-qa-report.md`
