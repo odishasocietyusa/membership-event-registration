@@ -119,7 +119,7 @@ export const ANNOUNCEMENTS_LATEST_QUERY = groq`
 // ---------------------------------------------------------------------------
 
 export const ABOUT_PAGE_QUERY = groq`
-  *[_type == "static_page" && slug.current == "about"][0] {
+  *[_type == "static_page" && slug.current == "about-us"][0] {
     _id,
     title,
     "slug": slug.current,

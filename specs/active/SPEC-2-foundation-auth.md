@@ -168,9 +168,11 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 - **Artifact:** `specs/artifacts/SPEC-2-foundation-auth/02-design.md`
 
 ### Phase 3: Implementation
-- **Status:** Complete (original) — Amendment pending for FR-08 through FR-13
+- **Status:** Complete (original + amendment)
 - **Artifact:** `specs/artifacts/SPEC-2-foundation-auth/03-implementation.md`
+- **Amendment artifact:** `specs/artifacts/SPEC-2-foundation-auth/03-implementation-amendment.md`
 
 ### Phase 4: QA & Testing
-- **Status:** Complete (original) — Re-run required after amendment implementation
+- **Status:** Pending — manual Supabase config required before QA can run
 - **Artifact:** `specs/artifacts/SPEC-2-foundation-auth/04-qa-report.md`
+- **Blocker:** Enable Email provider in Supabase dashboard + add redirect URLs (see implementation-amendment.md §Manual Configuration)

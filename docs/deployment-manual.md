@@ -157,7 +157,20 @@ Copy the **Webhook signing secret** (starts with `whsec_`) — used as `STRIPE_W
 1. Go to `sanity.io/manage` → create a project (or use existing)
 2. Note the **Project ID** and **Dataset** name
 3. Create an **API token** with Editor permissions: Settings → API → Tokens → Add API token
-4. Add your deployment domain to CORS origins: Settings → API → CORS Origins
+
+### 6a. Add CORS Origins (required for Sanity Studio to load)
+
+Sanity Studio runs inside your Next.js app at `/studio`. For it to communicate with the Sanity API, your app's URL must be whitelisted as a CORS origin.
+
+Go to **`sanity.io/manage` → your project → API → CORS Origins → Add CORS origin** and add each URL below. **Enable "Allow credentials"** for each entry.
+
+| Environment | URL to add | Allow credentials |
+|-------------|-----------|-------------------|
+| Local development | `http://localhost:3000` | ✅ Yes |
+| Staging | `https://<your-staging-domain>` | ✅ Yes |
+| Production | `https://odishasociety.org` | ✅ Yes |
+
+> **Symptom if missing:** Sanity Studio loads but shows the message _"To access your content you need to add the following URL as a CORS origin to your Sanity project"_. Add the URL shown in that message and reload.
 
 | Variable | Where to find |
 |----------|--------------|
@@ -226,6 +239,7 @@ Run through these checks after each environment deployment:
 - [ ] Test webhook: `stripe trigger checkout.session.completed --override checkout_session:metadata.memberId=<test-id>` (staging only, requires Stripe CLI)
 
 ### CMS
+- [ ] `/studio` loads without a CORS error (if it does, add the domain to Sanity CORS origins per Step 6a)
 - [ ] `/events` page loads and shows Sanity content
 - [ ] Publishing a test event in Sanity Studio reflects on the site within 60 seconds
 

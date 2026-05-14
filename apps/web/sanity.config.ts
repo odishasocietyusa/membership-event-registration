@@ -1,5 +1,5 @@
 import { defineConfig } from 'sanity'
-import { structuredContent } from 'sanity/structure'
+import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
 import { schemaTypes } from './sanity/schemas'
 
@@ -13,7 +13,7 @@ export default defineConfig({
   basePath: '/studio',
 
   plugins: [
-    structuredContent(),
+    structureTool(),
     visionTool(), // GROQ playground — dev use only (included in all envs is fine)
   ],
 

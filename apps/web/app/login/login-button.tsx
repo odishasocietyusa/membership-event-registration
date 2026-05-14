@@ -1,13 +1,10 @@
 'use client'
 
-import { createBrowserClient } from '@supabase/ssr'
+import { createSupabaseBrowser } from '@/lib/auth/supabase-browser'
 
-export default function LoginButton() {
+export default function GoogleLoginButton() {
   const handleSignIn = async () => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createSupabaseBrowser()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
