@@ -1,7 +1,5 @@
 // OSA Website — Prisma Schema
 // apps/web/prisma/schema.prisma
-// Only the members table is defined here.
-// All other tables are added in later specs (SPEC-3 through SPEC-7).
 
 generator client {
   provider = "prisma-client-js"
@@ -54,12 +52,31 @@ enum SouvenirPreference {
   @@map("souvenir_preference")
 }
 
-enum FamilyRole {
-  primary
-  partner
-  minor
+// Replaces the old FamilyRole enum; used by FamilyMember.relation
+enum FamilyRelation {
+  spouse
+  child
+  other
 
-  @@map("family_role")
+  @@map("family_relation")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CHAPTERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Chapter {
+  id                String   @id  // text slug e.g. "seattle", "florida"
+  displayName       String   @map("display_name")
+  states            String[] // geographic coverage array
+  presidentMemberId String?  @map("president_member_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  president Member?  @relation("ChapterPresident", fields: [presidentMemberId], references: [id])
+  members   Member[] @relation("MemberChapter")
+
+  @@map("chapters")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,7 +91,8 @@ model Member {
   fullName           String?             @map("full_name")
   phone              String?
   address            Json?
-  chapterId          String?             @map("chapter_id") @db.Uuid
+  // chapterId is now a text slug FK (not UUID) — see OQ-2
+  chapterId          String?             @map("chapter_id")
   membershipType     MembershipType?     @map("membership_type")
   memberStatus       MemberStatus?       @map("member_status")
   joinDate           DateTime?           @map("join_date") @db.Date
@@ -82,17 +100,37 @@ model Member {
   profileVisibility  Json?               @map("profile_visibility")
   role               Role                @default(member)
   souvenirPreference SouvenirPreference? @map("souvenir_preference")
-  // Family linkage — all household members share the same familyId UUID
-  familyId           String?             @map("family_id") @db.Uuid
-  familyRole         FamilyRole?         @map("family_role")
-  // Primary members only: links to the familyId of a related family unit
-  parentFamilyId     String?             @map("parent_family_id") @db.Uuid
   createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz
   deletedAt          DateTime?           @map("deleted_at") @db.Timestamptz
 
-  paymentRecords     PaymentRecord[]
+  // Relations
+  chapter        Chapter?       @relation("MemberChapter", fields: [chapterId], references: [id])
+  presidentOf    Chapter[]      @relation("ChapterPresident")
+  familyMembers  FamilyMember[] @relation("PrimaryMember")
+  paymentRecords PaymentRecord[]
 
   @@map("members")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FAMILY MEMBERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model FamilyMember {
+  id                      String         @id @default(uuid()) @db.Uuid
+  primaryMemberId         String         @map("primary_member_id") @db.Uuid
+  fullName                String         @map("full_name")
+  relation                FamilyRelation
+  dateOfBirth             DateTime?      @map("date_of_birth") @db.Date
+  highSchoolGraduationYear Int?          @map("high_school_graduation_year")
+  createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  // Soft-delete — required by FR-09
+  deletedAt               DateTime?      @map("deleted_at") @db.Timestamptz
+
+  // Relations
+  primaryMember Member @relation("PrimaryMember", fields: [primaryMemberId], references: [id])
+
+  @@map("family_members")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -15,8 +15,9 @@ jest.mock('@/lib/auth/supabase-admin', () => ({
 jest.mock('@/lib/db/prisma', () => ({
   prisma: {
     member: {
-      upsert: jest.fn(),
       findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
       count: jest.fn(),
     },
   },
@@ -27,7 +28,8 @@ import { supabaseAdmin } from '@/lib/auth/supabase-admin'
 import { prisma } from '@/lib/db/prisma'
 
 const mockGetUser = supabaseAdmin.auth.getUser as jest.Mock
-const mockUpsert = prisma.member.upsert as jest.Mock
+const mockFindUnique = prisma.member.findUnique as jest.Mock
+const mockCreate = prisma.member.create as jest.Mock
 const mockCount = prisma.member.count as jest.Mock
 
 const baseMember = {
@@ -46,9 +48,6 @@ const baseMember = {
   profileVisibility: null,
   role: 'member' as const,
   souvenirPreference: null,
-  familyId: null,
-  familyRole: null,
-  parentFamilyId: null,
   createdAt: new Date('2025-01-01T00:00:00Z'),
   deletedAt: null,
 }
@@ -64,7 +63,7 @@ describe('GET /api/auth/me', () => {
       data: { user: { id: 'uid-1', email: 'test@test.com' } },
       error: null,
     })
-    mockUpsert.mockResolvedValueOnce(baseMember)
+    mockFindUnique.mockResolvedValueOnce(baseMember)
 
     const req = new Request('http://localhost:3000/api/auth/me', {
       headers: { Authorization: 'Bearer valid.token' },
@@ -105,7 +104,7 @@ describe('GET /api/auth/me', () => {
       data: { user: { id: 'uid-1', email: 'test@test.com' } },
       error: null,
     })
-    mockUpsert.mockResolvedValueOnce({
+    mockFindUnique.mockResolvedValueOnce({
       ...baseMember,
       deletedAt: new Date('2025-01-01T00:00:00Z'),
     })
@@ -119,14 +118,14 @@ describe('GET /api/auth/me', () => {
   })
 
   // JIT-01: First API call creates exactly one members row with role 'member'
-  it('JIT-01: First API call upserts exactly one members row with role member', async () => {
+  it('JIT-01: First API call creates a members row with role member', async () => {
     mockGetUser.mockResolvedValueOnce({
       data: { user: { id: 'new-uid', email: 'newuser@test.com' } },
       error: null,
     })
     const newMember = { ...baseMember, id: 'new-mem', userId: 'new-uid', email: 'newuser@test.com' }
-    mockUpsert.mockResolvedValueOnce(newMember)
-    mockCount.mockResolvedValueOnce(1)
+    mockFindUnique.mockResolvedValueOnce(null)
+    mockCreate.mockResolvedValueOnce(newMember)
 
     const req = new Request('http://localhost:3000/api/auth/me', {
       headers: { Authorization: 'Bearer fresh.token' },
@@ -134,22 +133,21 @@ describe('GET /api/auth/me', () => {
     const res = await GET(req)
 
     expect(res.status).toBe(200)
-    // Verify upsert was called with create args setting role to 'member'
-    expect(mockUpsert).toHaveBeenCalledWith(
+    expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({ role: 'member' }),
+        data: expect.objectContaining({ role: 'member' }),
       })
     )
   })
 
-  // JIT-02: Repeated API calls do not create duplicate members rows (upsert is always used)
-  it('JIT-02: Repeated API calls use upsert (no duplicate rows)', async () => {
+  // JIT-02: Repeated API calls do not create duplicate members rows
+  it('JIT-02: Repeated API calls use findUnique (no duplicate rows created)', async () => {
     const authUser = { id: 'uid-1', email: 'test@test.com' }
     mockGetUser.mockResolvedValue({
       data: { user: authUser },
       error: null,
     })
-    mockUpsert.mockResolvedValue(baseMember)
+    mockFindUnique.mockResolvedValue(baseMember)
 
     const req1 = new Request('http://localhost:3000/api/auth/me', {
       headers: { Authorization: 'Bearer same.token' },
@@ -163,7 +161,7 @@ describe('GET /api/auth/me', () => {
 
     expect(res1.status).toBe(200)
     expect(res2.status).toBe(200)
-    // Both calls used upsert — guarantees no duplicate rows possible
-    expect(mockUpsert).toHaveBeenCalledTimes(2)
+    expect(mockFindUnique).toHaveBeenCalledTimes(2)
+    expect(mockCreate).not.toHaveBeenCalled()
   })
 })

@@ -166,7 +166,7 @@ max_frequency = "5s"
 enabled = true
 client_id = "543962752001-eem32bpe6hpm7jr490undvj0hcv6g9jk.apps.googleusercontent.com"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
-redirect_uri = ""
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
 
 [auth.external.apple]
 enabled = false

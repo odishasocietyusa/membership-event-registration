@@ -9,6 +9,7 @@ const config: Config = {
         module: 'CommonJS',
         moduleResolution: 'node',
         esModuleInterop: true,
+        jsx: 'react-jsx',
       },
     }],
   },

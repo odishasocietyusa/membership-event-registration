@@ -13,7 +13,9 @@ jest.mock('@/lib/auth/supabase-admin', () => ({
 jest.mock('@/lib/db/prisma', () => ({
   prisma: {
     member: {
-      upsert: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     },
   },
 }))
@@ -23,7 +25,9 @@ import { supabaseAdmin } from '@/lib/auth/supabase-admin'
 import { prisma } from '@/lib/db/prisma'
 
 const mockGetUser = supabaseAdmin.auth.getUser as jest.Mock
-const mockUpsert = prisma.member.upsert as jest.Mock
+const mockFindUnique = prisma.member.findUnique as jest.Mock
+const mockCreate = prisma.member.create as jest.Mock
+const mockUpdate = prisma.member.update as jest.Mock
 
 // Helper to create a Request with optional Authorization header
 function makeRequest(token?: string): Request {
@@ -60,9 +64,6 @@ const baseMember = {
   profileVisibility: null,
   role: 'member' as const,
   souvenirPreference: null,
-  familyId: null,
-  familyRole: null,
-  parentFamilyId: null,
   createdAt: new Date('2025-01-01T00:00:00Z'),
   deletedAt: null,
 }
@@ -87,7 +88,7 @@ describe('withAuth()', () => {
     )
     expect(handler).not.toHaveBeenCalled()
     expect(mockGetUser).not.toHaveBeenCalled()
-    expect(mockUpsert).not.toHaveBeenCalled()
+    expect(mockFindUnique).not.toHaveBeenCalled()
   })
 
   // WITHAUTH-02: returns 401 when Authorization scheme is not Bearer
@@ -120,19 +121,20 @@ describe('withAuth()', () => {
     expect(handler).not.toHaveBeenCalled()
   })
 
-  // WITHAUTH-04: calls prisma.member.upsert with correct create args on first login
-  it('calls prisma.member.upsert with correct create args on first login', async () => {
+  // WITHAUTH-04: creates members row on first login (findUnique returns null → create)
+  it('creates members row on first login', async () => {
     mockGetUser.mockResolvedValueOnce({
       data: { user: { id: 'uid-1', email: 'new@test.com' } },
       error: null,
     })
-    const upsertedMember = {
+    const newMember = {
       ...baseMember,
       id: 'mem-1',
       email: 'new@test.com',
       userId: 'uid-1',
     }
-    mockUpsert.mockResolvedValueOnce(upsertedMember)
+    mockFindUnique.mockResolvedValueOnce(null)
+    mockCreate.mockResolvedValueOnce(newMember)
     const handler = jest
       .fn()
       .mockResolvedValueOnce(new Response('ok', { status: 200 }))
@@ -143,42 +145,72 @@ describe('withAuth()', () => {
     const res = await routeHandler(req)
 
     expect(res.status).toBe(200)
-    expect(mockUpsert).toHaveBeenCalledTimes(1)
-    expect(mockUpsert).toHaveBeenCalledWith({
-      where: { email: 'new@test.com' },
-      create: {
-        email: 'new@test.com',
-        userId: 'uid-1',
-        role: 'member',
-      },
-      update: {
-        userId: 'uid-1',
-      },
+    expect(mockFindUnique).toHaveBeenCalledWith({ where: { email: 'new@test.com' } })
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: { email: 'new@test.com', userId: 'uid-1', role: 'member' },
     })
-    expect(handler).toHaveBeenCalledWith(req, { user: upsertedMember })
+    expect(handler).toHaveBeenCalledWith(req, { user: newMember })
   })
 
-  // WITHAUTH-05: prisma upsert called exactly once per request invocation (idempotency check)
-  it('prisma upsert called exactly once even on repeated invocations', async () => {
+  // WITHAUTH-05: existing member — findUnique returns row, create is never called
+  it('uses existing member row without calling create on repeated requests', async () => {
     const authUser = { id: 'uid-1', email: 'user@test.com' }
     mockGetUser.mockResolvedValue({
       data: { user: authUser },
       error: null,
     })
-    mockUpsert.mockResolvedValue(baseMember)
+    mockFindUnique.mockResolvedValue(baseMember)
     const handler = jest
       .fn()
       .mockResolvedValue(new Response('ok', { status: 200 }))
 
     const routeHandler = withAuth(handler)
-    const req1 = makeRequest('valid.token')
-    const req2 = makeRequest('valid.token')
+    await routeHandler(makeRequest('valid.token'))
+    await routeHandler(makeRequest('valid.token'))
 
-    await routeHandler(req1)
-    await routeHandler(req2)
+    expect(mockFindUnique).toHaveBeenCalledTimes(2)
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
 
-    // Upsert called twice total — once per request (confirms upsert is always used)
-    expect(mockUpsert).toHaveBeenCalledTimes(2)
+  // WITHAUTH-05b: admin pre-created row (userId=null) gets userId populated on first login
+  it('updates userId when admin-pre-created member has no userId', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: 'uid-new', email: 'user@test.com' } },
+      error: null,
+    })
+    const preCreated = { ...baseMember, userId: null }
+    const updated = { ...baseMember, userId: 'uid-new' }
+    mockFindUnique.mockResolvedValueOnce(preCreated)
+    mockUpdate.mockResolvedValueOnce(updated)
+    const handler = jest.fn().mockResolvedValueOnce(new Response('ok', { status: 200 }))
+
+    const res = await withAuth(handler)(makeRequest('valid.token'))
+
+    expect(res.status).toBe(200)
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: baseMember.id },
+      data: { userId: 'uid-new' },
+    })
+    expect(handler).toHaveBeenCalledWith(expect.anything(), { user: updated })
+  })
+
+  // WITHAUTH-05c: race condition — create throws unique violation, falls back to findUnique
+  it('handles concurrent first-login race by retrying findUnique after create failure', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: 'uid-1', email: 'race@test.com' } },
+      error: null,
+    })
+    mockFindUnique
+      .mockResolvedValueOnce(null)          // first check: row doesn't exist yet
+      .mockResolvedValueOnce(baseMember)    // retry after create fails
+    mockCreate.mockRejectedValueOnce(new Error('Unique constraint failed'))
+    const handler = jest.fn().mockResolvedValueOnce(new Response('ok', { status: 200 }))
+
+    const res = await withAuth(handler)(makeRequest('valid.token'))
+
+    expect(res.status).toBe(200)
+    expect(mockFindUnique).toHaveBeenCalledTimes(2)
+    expect(handler).toHaveBeenCalledWith(expect.anything(), { user: baseMember })
   })
 
   // WITHAUTH-06: returns 401 for soft-deleted user
@@ -187,7 +219,7 @@ describe('withAuth()', () => {
       data: { user: { id: 'uid-1', email: 'user@test.com' } },
       error: null,
     })
-    mockUpsert.mockResolvedValueOnce({
+    mockFindUnique.mockResolvedValueOnce({
       ...baseMember,
       deletedAt: new Date('2025-01-01T00:00:00Z'),
     })
@@ -210,7 +242,7 @@ describe('withAuth()', () => {
       data: { user: { id: 'uid-1', email: 'user@test.com' } },
       error: null,
     })
-    mockUpsert.mockResolvedValueOnce({
+    mockFindUnique.mockResolvedValueOnce({
       ...baseMember,
       role: 'member',
       deletedAt: null,
@@ -233,7 +265,7 @@ describe('withAuth()', () => {
       error: null,
     })
     const adminMember = { ...baseMember, role: 'admin' as const, deletedAt: null }
-    mockUpsert.mockResolvedValueOnce(adminMember)
+    mockFindUnique.mockResolvedValueOnce(adminMember)
     const handler = jest
       .fn()
       .mockResolvedValueOnce(new Response('admin ok', { status: 200 }))
@@ -251,7 +283,7 @@ describe('withAuth()', () => {
       data: { user: { id: 'uid-1', email: 'user@test.com' } },
       error: null,
     })
-    mockUpsert.mockResolvedValueOnce({ ...baseMember, role: 'member', deletedAt: null })
+    mockFindUnique.mockResolvedValueOnce({ ...baseMember, role: 'member', deletedAt: null })
     const handler = jest
       .fn()
       .mockResolvedValueOnce(new Response('member ok', { status: 200 }))
@@ -269,7 +301,7 @@ describe('withAuth()', () => {
       data: { user: { id: 'uid-1', email: 'user@test.com' } },
       error: null,
     })
-    mockUpsert.mockResolvedValueOnce({ ...baseMember, role: 'member', deletedAt: null })
+    mockFindUnique.mockResolvedValueOnce({ ...baseMember, role: 'member', deletedAt: null })
     const handler = jest
       .fn()
       .mockResolvedValueOnce(new Response('ok', { status: 200 }))

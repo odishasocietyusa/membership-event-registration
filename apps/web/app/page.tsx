@@ -1,11 +1,38 @@
-export default function Home() {
+import { sanityFetch } from '@/sanity/lib/client'
+import { ANNOUNCEMENTS_LATEST_QUERY } from '@/sanity/lib/queries'
+import type { SanityAnnouncement } from '@/types/sanity'
+
+const HOMEPAGE_ANNOUNCEMENT_LIMIT = 5
+
+export const revalidate = 60
+
+export default async function Home() {
+  const announcements =
+    (await sanityFetch<SanityAnnouncement[]>(ANNOUNCEMENTS_LATEST_QUERY, {
+      limit: HOMEPAGE_ANNOUNCEMENT_LIMIT,
+    })) ?? []
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between text-center">
-        <h1 className="text-4xl font-bold mb-4">OSA Community Platform</h1>
-        <p className="text-xl mb-8">The Odisha Society of the Americas</p>
-        <p className="text-gray-600">Platform is under development</p>
-      </div>
+    <main>
+      <h1>OSA Community Platform</h1>
+      <p>The Odisha Society of the Americas</p>
+      <p>Platform is under development</p>
+
+      {announcements.length > 0 && (
+        <section>
+          <h2>Announcements</h2>
+          <ul>
+            {announcements.map((a) => (
+              <li key={a._id}>
+                <h3>{a.title}</h3>
+                <p>{a.body}</p>
+                {a.cta_link && <a href={a.cta_link}>{a.cta_label ?? 'Learn more'}</a>}
+              </li>
+            ))}
+          </ul>
+          <a href="/announcements">View all announcements</a>
+        </section>
+      )}
     </main>
-  );
+  )
 }
