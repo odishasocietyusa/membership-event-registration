@@ -54,7 +54,7 @@ Implement the awards data layer and API for OSA's annual recognition programme. 
 - [ ] `GET /api/awards?year=2024` returns filtered results
 - [ ] `GET /api/awards/:id` returns a single award
 - [ ] `POST /api/awards` (admin) creates an award record
-- [ ] `PUT /api/awards/:id` (admin) updates an award record
+- [ ] `PATCH /api/awards/:id` (admin) updates an award record
 - [ ] `DELETE /api/awards/:id` (admin) deletes an award record
 - [ ] `POST /api/awards/:id/photo` (admin) uploads photo to Supabase Storage and saves URL
 - [ ] Non-admin `POST /api/awards` returns 403
@@ -67,7 +67,7 @@ Implement the awards data layer and API for OSA's annual recognition programme. 
 | Public list | No auth | `GET /api/awards` | Returns awards array |
 | Filter by year | No auth | `GET /api/awards?year=2023` | Returns only 2023 awards |
 | Admin create | Admin user | `POST /api/awards` with valid body | Award created, returned with id |
-| Admin update | Admin user | `PUT /api/awards/:id` | Award updated |
+| Admin update | Admin user | `PATCH /api/awards/:id` | Award updated |
 | Admin delete | Admin user | `DELETE /api/awards/:id` | Award removed, returns 204 |
 | Member attempts create | Member-role user | `POST /api/awards` | Returns 403 |
 | Award with member recipient | Admin user | `POST /api/awards` with valid `recipient_member_id` | FK stored, resolves on read |
@@ -90,7 +90,7 @@ Implement the awards data layer and API for OSA's annual recognition programme. 
 - `prisma/schema.prisma` — add `awards` and `award_names` (reference table) models
 - `lib/awards/award-service.ts` — CRUD logic
 - `app/api/awards/route.ts` — GET (public), POST (admin)
-- `app/api/awards/[id]/route.ts` — GET (public), PUT/DELETE (admin)
+- `app/api/awards/[id]/route.ts` — GET (public), PATCH/DELETE (admin)
 - `app/api/awards/[id]/photo/route.ts` — POST (admin)
 - `lib/validation/award.schema.ts` — Zod schemas
 

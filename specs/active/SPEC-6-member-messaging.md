@@ -35,6 +35,7 @@ Implement private member-to-member messaging via a server-side email relay. Memb
 | FR-01 | Authenticated member can send a message to another member | Must Have | By `recipient_member_id` |
 | FR-02 | Recipient email is resolved server-side from `members` table | Must Have | Never returned to client |
 | FR-03 | Message is relayed via Resend to recipient's email | Must Have | |
+| FR-10 | Relay email identifies sender by full name and location (first name, last name, city, state) — not by member ID | Must Have | Member ID is an internal identifier meaningless to the recipient |
 | FR-04 | Message is logged in `messages` table after successful send | Must Have | |
 | FR-05 | Member can view messages they sent | Must Have | `GET /api/messages?type=sent` |
 | FR-06 | Member can view messages they received | Must Have | `GET /api/messages?type=received` |
@@ -119,7 +120,7 @@ Implement private member-to-member messaging via a server-side email relay. Memb
 
 | Question | Status | Answer |
 |----------|--------|--------|
-| Should the sender's name appear in the relay email, or should it be sent from a generic OSA address? | Resolved | Sent from OSA address (noreply@odishasociety.org). Sender's name and member ID appear in the email body. Recipient replies to OSA, not directly to sender. |
+| Should the sender's name appear in the relay email, or should it be sent from a generic OSA address? | Resolved | Sent from OSA address (noreply@odishasociety.org). Sender identified in email body by full name and city/state (e.g. "Utkal Nayak from Seattle, WA sent you this message via OSA"). Member ID is never shown — it is meaningless to the recipient. |
 | Is there a rate limit on how many messages a member can send per day? | Resolved | No rate limit at launch. Revisit if abuse becomes an issue. |
 
 ---
@@ -133,15 +134,15 @@ Implement private member-to-member messaging via a server-side email relay. Memb
 ## Agent Workflow Tracking
 
 ### Phase 1: Analysis
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-6-member-messaging/01-analysis.md`
 
 ### Phase 2: Design
-- **Status:** Not Started
+- **Status:** Approved
 - **Artifact:** `specs/artifacts/SPEC-6-member-messaging/02-design.md`
 
 ### Phase 3: Implementation
-- **Status:** Not Started
+- **Status:** In Progress
 - **Artifact:** `specs/artifacts/SPEC-6-member-messaging/03-implementation.md`
 
 ### Phase 4: QA & Testing

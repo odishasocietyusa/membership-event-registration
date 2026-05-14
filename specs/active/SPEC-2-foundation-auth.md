@@ -1,7 +1,7 @@
 # Feature Specification: Foundation & Authentication
 
 > **Spec ID:** SPEC-2-foundation-auth
-> **Status:** Draft
+> **Status:** Amended — re-opened for email/password auth addition
 > **Author:** Utkal Nayak
 
 ---
@@ -12,15 +12,17 @@
 Establish the foundational infrastructure for the OSA website: Next.js project setup, Supabase Auth with Google OAuth, JIT user sync, and the `withAuth()` middleware pattern that all other modules depend on. Nothing else can be built until this spec is complete.
 
 ### 1.2 Goals
-- [ ] Next.js 15 App Router project configured and running on Vercel
-- [ ] Google OAuth login via Supabase Auth
-- [ ] Authenticated session available in both server components and API routes
-- [ ] JIT sync: DB user record created automatically on first login
-- [ ] `withAuth()` wrapper enforcing authentication and role checks on API routes
-- [ ] Prisma connected to Supabase PostgreSQL with singleton pattern
+- [x] Next.js 15 App Router project configured and running on Vercel
+- [x] Google OAuth login via Supabase Auth
+- [x] Authenticated session available in both server components and API routes
+- [x] JIT sync: DB user record created automatically on first login
+- [x] `withAuth()` wrapper enforcing authentication and role checks on API routes
+- [x] Prisma connected to Supabase PostgreSQL with singleton pattern
+- [ ] **[AMENDMENT]** Email/password registration and login as an alternative to Google OAuth
+- [ ] **[AMENDMENT]** Email verification flow for new registrations
+- [ ] **[AMENDMENT]** Password reset flow via email
 
 ### 1.3 Non-Goals (Out of Scope)
-- Any application-level UI beyond a login page and a placeholder dashboard
 - Member profile data (covered in SPEC-3)
 - Role promotion logic (MEMBER, ADMIN assignment — covered in SPEC-3 and SPEC-4)
 
@@ -39,6 +41,12 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 | FR-05 | Unauthenticated requests to protected API routes return 401 | Must Have | |
 | FR-06 | Requests with insufficient role return 403 | Must Have | Role hierarchy: public < member < admin |
 | FR-07 | Soft-deleted users are rejected with 401 | Must Have | `deleted_at` check in `withAuth()` |
+| FR-08 | User can register with email + password | Must Have | Supabase `signUp()` — sends verification email automatically |
+| FR-09 | User can log in with email + password | Must Have | Supabase `signInWithPassword()` |
+| FR-10 | New email registrations require email verification before login is permitted | Must Have | Supabase enforces this — unverified users cannot get a valid JWT |
+| FR-11 | User can request a password reset email | Must Have | Supabase `resetPasswordForEmail()` |
+| FR-12 | User can set a new password via the reset link | Must Have | `supabase.auth.updateUser({ password })` on the reset page |
+| FR-13 | Login page offers both Google OAuth and email/password options | Must Have | Single page, two auth paths |
 
 ### 2.2 Non-Functional Requirements
 
@@ -53,12 +61,17 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 ## 3. Acceptance Criteria
 
 ### 3.1 Definition of Done
-- [ ] Google OAuth login completes and redirects to dashboard
-- [ ] First login creates a row in `members` table with `role = 'member'`
-- [ ] Subsequent logins do not create duplicate rows
-- [ ] `GET /api/auth/me` returns the current user when authenticated
-- [ ] `GET /api/auth/me` returns 401 when no token is provided
-- [ ] `GET /api/auth/me` returns 401 for a deleted user
+- [x] Google OAuth login completes and redirects to dashboard
+- [x] First login creates a row in `members` table with `role = 'member'`
+- [x] Subsequent logins do not create duplicate rows
+- [x] `GET /api/auth/me` returns the current user when authenticated
+- [x] `GET /api/auth/me` returns 401 when no token is provided
+- [x] `GET /api/auth/me` returns 401 for a deleted user
+- [ ] Email/password registration form creates account and triggers verification email
+- [ ] Unverified user cannot log in (Supabase enforced)
+- [ ] Verified user can log in with email + password and reach dashboard
+- [ ] "Forgot password" flow sends reset email and allows setting new password
+- [ ] Login page shows both Google and email/password options
 - [ ] All tests passing
 
 ### 3.2 Test Scenarios
@@ -72,6 +85,12 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 | Invalid token | Expired or tampered token | `GET /api/auth/me` | Returns 401 |
 | Deleted user | `deleted_at` is set on member row | Valid token presented | Returns 401 |
 | Insufficient role | Member-role user | Calls admin-only endpoint | Returns 403 |
+| Email registration | New user, no account | Submits email + password on register form | Account created, verification email sent, "check your email" shown |
+| Login before verify | Registered but unverified user | Attempts login with email + password | Supabase rejects — login fails with clear message |
+| Login after verify | Verified email/password user | Submits login form | Session created, redirected to dashboard |
+| Forgot password | Registered user | Clicks "Forgot password", enters email | Reset email sent, confirmation message shown |
+| Password reset | User follows reset link | Sets new password on reset page | Password updated, redirected to login |
+| Invalid password | Any user | Login with wrong password | Error message shown, no session created |
 
 ---
 
@@ -87,14 +106,23 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 - `DATABASE_URL` points to PgBouncer (port 6543, `?pgbouncer=true`); `DIRECT_URL` to port 5432
 
 ### 4.3 Files/Modules to Create
-- `lib/db/prisma.ts` — Prisma singleton
-- `lib/auth/supabase-admin.ts` — Supabase admin client singleton
-- `lib/auth/with-auth.ts` — `withAuth()` wrapper (auth + JIT sync + role check)
-- `lib/auth/roles.ts` — `ROLE_HIERARCHY` constant
-- `app/api/auth/me/route.ts` — `GET /api/auth/me` health-check endpoint
-- `app/login/page.tsx` — Login page triggering Google OAuth
-- `middleware.ts` — Page-level auth redirect for protected routes
-- `prisma/schema.prisma` — Initial schema with `members` table only
+- `lib/db/prisma.ts` — Prisma singleton ✅
+- `lib/auth/supabase-admin.ts` — Supabase admin client singleton ✅
+- `lib/auth/with-auth.ts` — `withAuth()` wrapper (auth + JIT sync + role check) ✅ (no changes needed for amendment)
+- `lib/auth/roles.ts` — `ROLE_HIERARCHY` constant ✅
+- `app/api/auth/me/route.ts` — `GET /api/auth/me` health-check endpoint ✅
+- `middleware.ts` — Page-level auth redirect for protected routes ✅
+- `prisma/schema.prisma` — Initial schema with `members` table only ✅
+- `app/login/page.tsx` — **[AMEND]** Update to include both Google OAuth button and email/password form
+- `app/register/page.tsx` — **[NEW]** Email/password registration form
+- `app/auth/confirm/route.ts` — **[NEW]** Email verification callback handler (Supabase redirects here)
+- `app/auth/reset-password/page.tsx` — **[NEW]** Password reset form (user sets new password after clicking email link)
+- `lib/auth/supabase-browser.ts` — **[NEW]** Browser-side Supabase client singleton for client components
+
+### 4.5 Supabase Configuration (manual — not code changes)
+- Enable **Email** provider in Supabase Auth dashboard (currently only Google is enabled)
+- Configure email templates for: verification email, password reset email
+- Set redirect URLs: `{domain}/auth/confirm` for verification, `{domain}/auth/reset-password` for password reset
 
 ### 4.4 Files NOT to Modify
 - None — this is the foundation spec
@@ -116,7 +144,7 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 
 | Question | Status | Answer |
 |----------|--------|--------|
-| Should we support email/password login in addition to Google OAuth? | Resolved | Google OAuth only. No email/password login at launch. |
+| Should we support email/password login in addition to Google OAuth? | Revised | **Both supported.** Original decision was Google-only; revised because not all members have a Google account. Email/password added as an alternative — both options appear on the login page. |
 | Should session cookies use server-side refresh or rely on Supabase client auto-refresh? | Resolved | Supabase client auto-refresh via `@supabase/ssr` — standard Next.js pattern, no custom refresh logic needed. |
 
 ---
@@ -140,9 +168,9 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 - **Artifact:** `specs/artifacts/SPEC-2-foundation-auth/02-design.md`
 
 ### Phase 3: Implementation
-- **Status:** Not Started
+- **Status:** Complete (original) — Amendment pending for FR-08 through FR-13
 - **Artifact:** `specs/artifacts/SPEC-2-foundation-auth/03-implementation.md`
 
 ### Phase 4: QA & Testing
-- **Status:** Not Started
+- **Status:** Complete (original) — Re-run required after amendment implementation
 - **Artifact:** `specs/artifacts/SPEC-2-foundation-auth/04-qa-report.md`

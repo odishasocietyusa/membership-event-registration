@@ -44,9 +44,16 @@ export function withAuth(
     // try/catch on create handles the rare race where two concurrent first-logins both see null.
     let member = await prisma.member.findUnique({ where: { email: authUser.email } })
     if (!member) {
+      // Capture whatever Google provides at signup — name is available from OAuth metadata.
+      // City, state, phone, preferences are filled in manually on the registration page.
+      const meta = authUser.user_metadata ?? {}
+      const fullName: string | null =
+        meta.full_name ??
+        (meta.given_name && meta.family_name ? `${meta.given_name} ${meta.family_name}` : null) ??
+        null
       try {
         member = await prisma.member.create({
-          data: { email: authUser.email, userId: authUser.id, role: 'member' },
+          data: { email: authUser.email, userId: authUser.id, role: 'member', fullName },
         })
       } catch {
         member = await prisma.member.findUnique({ where: { email: authUser.email } })

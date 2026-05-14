@@ -23,6 +23,13 @@ const chapters = [
   { id: 'washington-dc',  displayName: 'Washington DC Chapter',  states: ['MD', 'DC', 'VA', 'WV', 'DE'] },
 ]
 
+const awardNames = [
+  { id: 'community-service',    displayName: 'Community Service Award' },
+  { id: 'lifetime-achievement', displayName: 'Lifetime Achievement Award' },
+  { id: 'youth-excellence',     displayName: 'Youth Excellence Award' },
+  { id: 'cultural-ambassador',  displayName: 'Cultural Ambassador Award' },
+]
+
 async function main() {
   console.log('Seeding chapters...')
 
@@ -42,6 +49,18 @@ async function main() {
   }
 
   console.log(`Seeded ${chapters.length} chapters.`)
+
+  console.log('Seeding award names...')
+
+  for (const awardName of awardNames) {
+    await prisma.awardName.upsert({
+      where: { id: awardName.id },
+      update: { displayName: awardName.displayName },
+      create: { id: awardName.id, displayName: awardName.displayName },
+    })
+  }
+
+  console.log(`Seeded ${awardNames.length} award names.`)
 }
 
 main()

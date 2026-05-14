@@ -61,6 +61,13 @@ enum FamilyRelation {
   @@map("family_relation")
 }
 
+enum AwardCategory {
+  nomination
+  competition
+
+  @@map("award_category")
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CHAPTERS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -105,9 +112,12 @@ model Member {
 
   // Relations
   chapter        Chapter?       @relation("MemberChapter", fields: [chapterId], references: [id])
-  presidentOf    Chapter[]      @relation("ChapterPresident")
-  familyMembers  FamilyMember[] @relation("PrimaryMember")
-  paymentRecords PaymentRecord[]
+  presidentOf      Chapter[]       @relation("ChapterPresident")
+  familyMembers    FamilyMember[]  @relation("PrimaryMember")
+  paymentRecords   PaymentRecord[]
+  awards           Award[]         @relation("AwardRecipient")
+  sentMessages     Message[]       @relation("SentMessages")
+  receivedMessages Message[]       @relation("ReceivedMessages")
 
   @@map("members")
 }
@@ -149,4 +159,57 @@ model PaymentRecord {
   member Member @relation(fields: [memberId], references: [id])
 
   @@map("payment_records")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AWARDS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AwardName {
+  id          String   @id                                       // slug e.g. "community-service"
+  displayName String   @map("display_name")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  awards Award[]
+
+  @@map("award_names")
+}
+
+model Award {
+  id                String        @id @default(uuid()) @db.Uuid
+  awardName         String        @map("award_name")
+  year              Int
+  category          AwardCategory
+  recipientName     String?       @map("recipient_name")
+  recipientMemberId String?       @map("recipient_member_id") @db.Uuid
+  citation          String?
+  photoUrl          String?       @map("photo_url")
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  awardNameRef    AwardName @relation(fields: [awardName], references: [id])
+  recipientMember Member?   @relation("AwardRecipient", fields: [recipientMemberId], references: [id])
+
+  @@index([year])
+  @@index([category])
+  @@map("awards")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MESSAGES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Message {
+  id                String   @id @default(uuid()) @db.Uuid
+  senderMemberId    String   @map("sender_member_id") @db.Uuid
+  recipientMemberId String   @map("recipient_member_id") @db.Uuid
+  subject           String
+  body              String
+  sentAt            DateTime @default(now()) @map("sent_at") @db.Timestamptz
+
+  sender    Member @relation("SentMessages",     fields: [senderMemberId],    references: [id])
+  recipient Member @relation("ReceivedMessages", fields: [recipientMemberId], references: [id])
+
+  @@index([senderMemberId,    sentAt(sort: Desc)])
+  @@index([recipientMemberId, sentAt(sort: Desc)])
+  @@map("messages")
 }
