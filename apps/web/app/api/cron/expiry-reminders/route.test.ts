@@ -2,7 +2,10 @@
 
 jest.mock('@/lib/db/prisma', () => ({
   prisma: {
-    member: { findMany: jest.fn() },
+    member: {
+      findMany: jest.fn(),
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+    },
   },
 }))
 

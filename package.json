@@ -29,7 +29,6 @@
       "@prisma/client",
       "@prisma/engines",
       "prisma",
-      "@nestjs/core",
       "core-js-pure",
       "sharp",
       "unrs-resolver"

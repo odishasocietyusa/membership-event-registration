@@ -60,6 +60,7 @@ const baseMember = {
   joinDate: null,
   expiryDate: null,
   profileVisibility: null,
+  profileData: null,
   role: 'member' as const,
   souvenirPreference: null,
   createdAt: new Date('2025-01-01T00:00:00Z'),

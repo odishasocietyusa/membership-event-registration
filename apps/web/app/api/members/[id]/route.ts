@@ -1,5 +1,5 @@
 import { withAuth } from '@/lib/auth/with-auth'
-import { getMemberById, updateMember, listFamilyMembers } from '@/lib/members/member-service'
+import { getMemberById, updateMember, softDeleteMember, listFamilyMembers } from '@/lib/members/member-service'
 import { AdminUpdateMemberSchema } from '@/lib/validation/member.schema'
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -55,6 +55,21 @@ export async function PUT(
     try {
       const updated = await updateMember(id, parsed.data)
       return jsonResponse(200, { member: updated })
+    } catch (err) {
+      return serviceErrorToResponse(err)
+    }
+  }, { role: 'admin' })(req)
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<Response> {
+  const { id } = await params
+  return withAuth(async () => {
+    try {
+      await softDeleteMember(id)
+      return jsonResponse(200, { success: true })
     } catch (err) {
       return serviceErrorToResponse(err)
     }

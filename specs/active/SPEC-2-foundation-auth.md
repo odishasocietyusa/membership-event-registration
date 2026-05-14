@@ -18,9 +18,9 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 - [x] JIT sync: DB user record created automatically on first login
 - [x] `withAuth()` wrapper enforcing authentication and role checks on API routes
 - [x] Prisma connected to Supabase PostgreSQL with singleton pattern
-- [ ] **[AMENDMENT]** Email/password registration and login as an alternative to Google OAuth
-- [ ] **[AMENDMENT]** Email verification flow for new registrations
-- [ ] **[AMENDMENT]** Password reset flow via email
+- [x] **[AMENDMENT]** Email/password registration and login as an alternative to Google OAuth
+- [x] **[AMENDMENT]** Email verification flow for new registrations
+- [x] **[AMENDMENT]** Password reset flow via email
 
 ### 1.3 Non-Goals (Out of Scope)
 - Member profile data (covered in SPEC-3)
@@ -67,12 +67,12 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 - [x] `GET /api/auth/me` returns the current user when authenticated
 - [x] `GET /api/auth/me` returns 401 when no token is provided
 - [x] `GET /api/auth/me` returns 401 for a deleted user
-- [ ] Email/password registration form creates account and triggers verification email
-- [ ] Unverified user cannot log in (Supabase enforced)
-- [ ] Verified user can log in with email + password and reach dashboard
-- [ ] "Forgot password" flow sends reset email and allows setting new password
-- [ ] Login page shows both Google and email/password options
-- [ ] All tests passing
+- [x] Email/password registration form creates account and triggers verification email
+- [x] Unverified user cannot log in (Supabase enforced)
+- [x] Verified user can log in with email + password and reach dashboard
+- [x] "Forgot password" flow sends reset email and allows setting new password
+- [x] Login page shows both Google and email/password options
+- [x] All tests passing
 
 ### 3.2 Test Scenarios
 
@@ -173,6 +173,6 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 - **Amendment artifact:** `specs/artifacts/SPEC-2-foundation-auth/03-implementation-amendment.md`
 
 ### Phase 4: QA & Testing
-- **Status:** Pending — manual Supabase config required before QA can run
-- **Artifact:** `specs/artifacts/SPEC-2-foundation-auth/04-qa-report.md`
-- **Blocker:** Enable Email provider in Supabase dashboard + add redirect URLs (see implementation-amendment.md §Manual Configuration)
+- **Status:** Complete
+- **Artifact:** `specs/artifacts/SPEC-2-foundation-auth/04-qa-report.md` (original) + `04-qa-report-amendment.md` (amendment)
+- **Tests:** 216/216 passing (5 new CONFIRM-0x tests added for `/auth/confirm` route)

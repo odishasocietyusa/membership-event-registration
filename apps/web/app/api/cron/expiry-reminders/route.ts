@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db/prisma'
+import { expireOverdueMemberships } from '@/lib/memberships/membership-service'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -10,6 +11,8 @@ export async function GET(req: Request): Promise<Response> {
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 })
   }
+
+  await expireOverdueMemberships()
 
   const now = new Date()
   const in30Days = new Date(now)

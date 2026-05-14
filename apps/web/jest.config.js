@@ -13,6 +13,7 @@ const config = {
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    '^@osa/validation$': '<rootDir>/node_modules/@osa/validation/src/index.ts',
   },
   testMatch: ['**/*.test.ts', '**/*.test.tsx'],
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],

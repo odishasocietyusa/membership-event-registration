@@ -2,7 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
-  '@nestjs/core': true
+  '@nestjs/core': false
   '@prisma/client': true
   '@prisma/engines': true
   core-js-pure: true

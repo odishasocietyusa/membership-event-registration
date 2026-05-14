@@ -3,3 +3,4 @@
 export * from './user.schema';
 export * from './event.schema';
 export * from './membership.schema';
+export * from './registration.schema';

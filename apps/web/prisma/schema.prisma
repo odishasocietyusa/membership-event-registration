@@ -121,6 +121,7 @@ model Member {
   joinDate           DateTime?           @map("join_date") @db.Date
   expiryDate         DateTime?           @map("expiry_date") @db.Date
   profileVisibility  Json?               @map("profile_visibility")
+  profileData        Json?               @map("profile_data")
   role               Role                @default(member)
   souvenirPreference SouvenirPreference? @map("souvenir_preference")
   createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz

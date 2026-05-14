@@ -66,14 +66,14 @@ Implement the `/register` page as a multi-step member onboarding form. New users
 
 ### 3.1 Definition of Done
 
-- [ ] All 4 steps render with correct fields
-- [ ] Zod validation prevents step advance when required fields are empty or invalid
-- [ ] Inline error messages shown per field
-- [ ] Children add/remove works correctly (minimum 0, maximum 10)
-- [ ] Successful submission calls `PATCH /api/users/me` with correct payload shape
-- [ ] Redirect to `/membership` on success
-- [ ] No CSS/styling added (plain HTML elements only)
-- [ ] TypeScript builds without errors
+- [x] All 4 steps render with correct fields
+- [x] Zod validation prevents step advance when required fields are empty or invalid
+- [x] Inline error messages shown per field
+- [x] Children add/remove works correctly (minimum 0, maximum 10)
+- [x] Successful submission calls `POST /api/users/me/profile` with correct payload shape
+- [x] Redirect to `/membership` on success
+- [x] No CSS/styling added (plain HTML elements only)
+- [x] TypeScript builds without errors
 
 ### 3.2 Test Scenarios
 
@@ -223,17 +223,19 @@ export const FamilyInfoSchema = z.object({
 > This section is updated by Claude Code agents during implementation
 
 ### Phase 1: Analysis
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-10-registration-page/01-analysis.md`
 
 ### Phase 2: Design
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-10-registration-page/02-design.md`
 
 ### Phase 3: Implementation
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-10-registration-page/03-implementation.md`
+- **Note:** Endpoint corrected from `PATCH /api/users/me` → `POST /api/users/me/profile`
 
 ### Phase 4: QA & Testing
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-10-registration-page/04-qa-report.md`
+- **Tests:** 245/245 passing (29 new REG-xx schema tests added)

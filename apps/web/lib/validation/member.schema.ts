@@ -82,3 +82,28 @@ export const ListMembersQuerySchema = z.object({
   includeDeleted: z.coerce.boolean().default(false),
 })
 export type ListMembersQuery = z.infer<typeof ListMembersQuerySchema>
+
+// ── Registration profile upsert (POST /api/users/me/profile) ──────────────────
+
+export const ChildInputSchema = z.object({
+  name:   z.string().min(1).max(200),
+  age:    z.number().int().min(0).max(30),
+  gender: z.enum(['M', 'F', 'Other']),
+})
+
+export const CreateProfileSchema = z.object({
+  firstName:  z.string().min(1, 'First name is required').max(100),
+  lastName:   z.string().min(1, 'Last name is required').max(100),
+  phone:      z.string().max(30).optional(),
+  bio:        z.string().max(1000).optional(),
+  spouseName: z.string().max(200).optional(),
+  children:   z.array(ChildInputSchema).max(10).default([]),
+  address: z.object({
+    street:  z.string().optional(),
+    city:    z.string().optional(),
+    state:   z.string().optional(),
+    zip:     z.string().optional(),
+    country: z.string().optional(),
+  }).optional(),
+})
+export type CreateProfileInput = z.infer<typeof CreateProfileSchema>
