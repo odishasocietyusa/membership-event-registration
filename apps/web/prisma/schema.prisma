@@ -1,0 +1,114 @@
+// OSA Website — Prisma Schema
+// apps/web/prisma/schema.prisma
+// Only the members table is defined here.
+// All other tables are added in later specs (SPEC-3 through SPEC-7).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Role {
+  member
+  admin
+
+  @@map("role")
+}
+
+enum MembershipType {
+  annualStudentNoVote @map("annual-student-no-vote")
+  annualSingle        @map("annual-single")
+  annualFamily        @map("annual-family")
+  fiveYearFamily      @map("five-year-family")
+  life
+  lifeWard            @map("life-ward")
+  patron
+  benefactor
+  honoraryNoVote      @map("honorary-no-vote")
+
+  @@map("membership_type")
+}
+
+enum MemberStatus {
+  active
+  expired
+  suspended
+
+  @@map("member_status")
+}
+
+enum SouvenirPreference {
+  electronic
+  print
+
+  @@map("souvenir_preference")
+}
+
+enum FamilyRole {
+  primary
+  partner
+  minor
+
+  @@map("family_role")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MEMBERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Member {
+  id                 String              @id @default(uuid()) @db.Uuid
+  userId             String?             @unique @map("user_id") @db.Uuid
+  stripeCustomerId   String?             @map("stripe_customer_id")
+  email              String              @unique
+  fullName           String?             @map("full_name")
+  phone              String?
+  address            Json?
+  chapterId          String?             @map("chapter_id") @db.Uuid
+  membershipType     MembershipType?     @map("membership_type")
+  memberStatus       MemberStatus?       @map("member_status")
+  joinDate           DateTime?           @map("join_date") @db.Date
+  expiryDate         DateTime?           @map("expiry_date") @db.Date
+  profileVisibility  Json?               @map("profile_visibility")
+  role               Role                @default(member)
+  souvenirPreference SouvenirPreference? @map("souvenir_preference")
+  // Family linkage — all household members share the same familyId UUID
+  familyId           String?             @map("family_id") @db.Uuid
+  familyRole         FamilyRole?         @map("family_role")
+  // Primary members only: links to the familyId of a related family unit
+  parentFamilyId     String?             @map("parent_family_id") @db.Uuid
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  deletedAt          DateTime?           @map("deleted_at") @db.Timestamptz
+
+  paymentRecords     PaymentRecord[]
+
+  @@map("members")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAYMENT RECORDS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PaymentRecord {
+  id            String    @id @default(uuid()) @db.Uuid
+  memberId      String    @map("member_id") @db.Uuid
+  transactionId String?   @map("transaction_id")
+  paymentDate   DateTime? @map("payment_date") @db.Timestamptz
+  amount        Decimal?  @db.Decimal(10, 2)
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@map("payment_records")
+}

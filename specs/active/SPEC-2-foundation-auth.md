@@ -132,11 +132,11 @@ Establish the foundational infrastructure for the OSA website: Next.js project s
 ## Agent Workflow Tracking
 
 ### Phase 1: Analysis
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-2-foundation-auth/01-analysis.md`
 
 ### Phase 2: Design
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-2-foundation-auth/02-design.md`
 
 ### Phase 3: Implementation
