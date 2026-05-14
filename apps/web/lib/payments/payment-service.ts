@@ -125,8 +125,7 @@ export interface RecordPaymentInput {
 export async function recordPayment(input: RecordPaymentInput): Promise<void> {
   const membershipType = input.membershipType
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx) => {
     await tx.paymentRecord.create({
       data: {
         memberId:              input.memberId,

@@ -24,7 +24,6 @@ import { prisma } from '@/lib/db/prisma'
 const mockPaymentRecord = prisma.paymentRecord as jest.Mocked<typeof prisma.paymentRecord>
 const mockMembershipFee = prisma.membershipFee as jest.Mocked<typeof prisma.membershipFee>
 const mockMember        = prisma.member        as jest.Mocked<typeof prisma.member>
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockTransaction   = prisma.$transaction  as jest.Mock
 
 beforeEach(() => jest.clearAllMocks())
