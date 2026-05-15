@@ -1,0 +1,15 @@
+# Specs and design docs
+specs/
+docs/
+
+# API testing
+postman/
+
+# Utility scripts
+scripts/
+
+# NestJS app (decommissioned)
+apps/api/
+
+# Monorepo tooling
+.turbo/

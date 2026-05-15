@@ -15,7 +15,7 @@ import { createSupabaseBrowser } from '@/lib/auth/supabase-browser'
 // Types
 // ---------------------------------------------------------------------------
 
-type Child = { name: string; age: string; gender: string }
+type Child = { name: string; highSchoolGraduationYear: string; gender: string }
 
 type FormData = {
   account: { email: string; password: string; confirmPassword: string }
@@ -167,7 +167,7 @@ export default function RegisterPage() {
       spouseName: formData.family.spouseName || undefined,
       children: formData.family.children.map((c) => ({
         name: c.name,
-        age: parseInt(c.age, 10),
+        highSchoolGraduationYear: c.highSchoolGraduationYear ? parseInt(c.highSchoolGraduationYear, 10) : undefined,
         gender: c.gender,
       })),
       address: {
@@ -208,7 +208,7 @@ export default function RegisterPage() {
       ...prev,
       family: {
         ...prev.family,
-        children: [...prev.family.children, { name: '', age: '', gender: '' }],
+        children: [...prev.family.children, { name: '', highSchoolGraduationYear: '', gender: '' }],
       },
     }))
   }
@@ -509,14 +509,15 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                      <label htmlFor={`child_age_${idx}`}>Age</label>
+                      <label htmlFor={`child_graduation_${idx}`}>High school graduation year (optional)</label>
                       <input
-                        id={`child_age_${idx}`}
+                        id={`child_graduation_${idx}`}
                         type="number"
-                        min={0}
-                        max={25}
-                        value={child.age}
-                        onChange={(e) => updateChild(idx, 'age', e.target.value)}
+                        min={new Date().getFullYear() - 6}
+                        max={new Date().getFullYear() + 18}
+                        placeholder={String(new Date().getFullYear() + 4)}
+                        value={child.highSchoolGraduationYear}
+                        onChange={(e) => updateChild(idx, 'highSchoolGraduationYear', e.target.value)}
                       />
                     </div>
 

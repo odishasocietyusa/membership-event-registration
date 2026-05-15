@@ -24,10 +24,16 @@ export const PersonalInfoSchema = z.object({
 
 export const ChildSchema = z.object({
   name: z.string().min(1, 'Child name is required'),
-  age: z
+  highSchoolGraduationYear: z
     .string()
-    .regex(/^\d+$/, 'Age must be a number')
-    .refine((v) => parseInt(v, 10) <= 25, 'Age must be 25 or under'),
+    .regex(/^\d{4}$/, 'Enter a 4-digit year')
+    .refine((v) => {
+      const year = parseInt(v, 10)
+      const current = new Date().getFullYear()
+      return year >= current - 6 && year <= current + 18
+    }, 'Enter a valid graduation year')
+    .or(z.literal(''))
+    .optional(),
   gender: z.enum(['M', 'F', 'Other'], { errorMap: () => ({ message: 'Select a gender' }) }),
 });
 
@@ -47,5 +53,6 @@ export const AddressSchema = z.object({
 export type AccountInput = z.infer<typeof AccountSchema>;
 export type PersonalInfoInput = z.infer<typeof PersonalInfoSchema>;
 export type ChildInput = z.infer<typeof ChildSchema>;
+
 export type FamilyInfoInput = z.infer<typeof FamilyInfoSchema>;
 export type AddressInput = z.infer<typeof AddressSchema>;

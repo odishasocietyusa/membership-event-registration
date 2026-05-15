@@ -86,9 +86,9 @@ export type ListMembersQuery = z.infer<typeof ListMembersQuerySchema>
 // ── Registration profile upsert (POST /api/users/me/profile) ──────────────────
 
 export const ChildInputSchema = z.object({
-  name:   z.string().min(1).max(200),
-  age:    z.number().int().min(0).max(30),
-  gender: z.enum(['M', 'F', 'Other']),
+  name:                     z.string().min(1).max(200),
+  highSchoolGraduationYear: z.number().int().min(new Date().getFullYear() - 6).max(new Date().getFullYear() + 18).optional(),
+  gender:                   z.enum(['M', 'F', 'Other']),
 })
 
 export const CreateProfileSchema = z.object({

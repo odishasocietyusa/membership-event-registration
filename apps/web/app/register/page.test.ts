@@ -149,39 +149,49 @@ describe('PersonalInfoSchema', () => {
 // ---------------------------------------------------------------------------
 
 describe('ChildSchema', () => {
-  // REG-CHILD-01: valid child passes
-  it('REG-CHILD-01: valid child with name, age, gender passes', () => {
-    const result = ChildSchema.safeParse({ name: 'Ria', age: '8', gender: 'F' })
+  const currentYear = new Date().getFullYear()
+  const validYear = String(currentYear + 4)
+
+  // REG-CHILD-01: valid child passes (graduation year is optional)
+  it('REG-CHILD-01: valid child with name and gender passes', () => {
+    const result = ChildSchema.safeParse({ name: 'Ria', gender: 'F' })
+    expect(result.success).toBe(true)
+  })
+
+  // REG-CHILD-01b: valid child with graduation year passes
+  it('REG-CHILD-01b: valid child with graduation year passes', () => {
+    const result = ChildSchema.safeParse({ name: 'Ria', highSchoolGraduationYear: validYear, gender: 'F' })
     expect(result.success).toBe(true)
   })
 
   // REG-CHILD-02: empty name rejected
   it('REG-CHILD-02: empty child name is rejected', () => {
-    const result = ChildSchema.safeParse({ name: '', age: '8', gender: 'F' })
+    const result = ChildSchema.safeParse({ name: '', gender: 'F' })
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.name).toBeDefined()
     }
   })
 
-  // REG-CHILD-03: age over 25 rejected
-  it('REG-CHILD-03: age over 25 is rejected', () => {
-    const result = ChildSchema.safeParse({ name: 'Ria', age: '26', gender: 'F' })
+  // REG-CHILD-03: graduation year out of range rejected
+  it('REG-CHILD-03: graduation year too far in the future is rejected', () => {
+    const futureYear = String(currentYear + 25)
+    const result = ChildSchema.safeParse({ name: 'Ria', highSchoolGraduationYear: futureYear, gender: 'F' })
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.flatten().fieldErrors.age).toBeDefined()
+      expect(result.error.flatten().fieldErrors.highSchoolGraduationYear).toBeDefined()
     }
   })
 
-  // REG-CHILD-04: non-numeric age rejected
-  it('REG-CHILD-04: non-numeric age is rejected', () => {
-    const result = ChildSchema.safeParse({ name: 'Ria', age: 'eight', gender: 'F' })
+  // REG-CHILD-04: non-numeric graduation year rejected
+  it('REG-CHILD-04: non-numeric graduation year is rejected', () => {
+    const result = ChildSchema.safeParse({ name: 'Ria', highSchoolGraduationYear: 'twenty-twenty', gender: 'F' })
     expect(result.success).toBe(false)
   })
 
   // REG-CHILD-05: invalid gender rejected
   it('REG-CHILD-05: gender outside M/F/Other is rejected', () => {
-    const result = ChildSchema.safeParse({ name: 'Ria', age: '8', gender: 'X' })
+    const result = ChildSchema.safeParse({ name: 'Ria', highSchoolGraduationYear: validYear, gender: 'X' })
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.gender).toBeDefined()
@@ -191,7 +201,7 @@ describe('ChildSchema', () => {
   // REG-CHILD-06: all three gender values accepted
   it('REG-CHILD-06: M, F, Other are all valid genders', () => {
     for (const gender of ['M', 'F', 'Other']) {
-      const result = ChildSchema.safeParse({ name: 'Ria', age: '8', gender })
+      const result = ChildSchema.safeParse({ name: 'Ria', gender })
       expect(result.success).toBe(true)
     }
   })
@@ -212,7 +222,7 @@ describe('FamilyInfoSchema', () => {
   it('REG-FAM-02: valid children array passes', () => {
     const result = FamilyInfoSchema.safeParse({
       spouseName: 'Priya',
-      children: [{ name: 'Ria', age: '8', gender: 'F' }],
+      children: [{ name: 'Ria', gender: 'F' }],
     })
     expect(result.success).toBe(true)
   })
@@ -221,7 +231,6 @@ describe('FamilyInfoSchema', () => {
   it('REG-FAM-03: more than 10 children is rejected', () => {
     const children = Array.from({ length: 11 }, (_, i) => ({
       name: `Child${i}`,
-      age: '5',
       gender: 'M',
     }))
     const result = FamilyInfoSchema.safeParse({ spouseName: '', children })
@@ -232,7 +241,6 @@ describe('FamilyInfoSchema', () => {
   it('REG-FAM-04: exactly 10 children passes', () => {
     const children = Array.from({ length: 10 }, (_, i) => ({
       name: `Child${i}`,
-      age: '5',
       gender: 'M',
     }))
     const result = FamilyInfoSchema.safeParse({ spouseName: '', children })

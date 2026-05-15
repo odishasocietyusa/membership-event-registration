@@ -31,8 +31,6 @@ export const POST = withAuth(async (req, { user }) => {
   if (spouseName !== undefined) profileData.spouseName = spouseName
   if (children.length > 0) profileData.children = children
 
-  const currentYear = new Date().getFullYear()
-
   const updated = await prisma.$transaction(async (tx) => {
     const member = await tx.member.update({
       where: { id: user.id },
@@ -68,7 +66,7 @@ export const POST = withAuth(async (req, { user }) => {
           primaryMemberId: user.id,
           fullName: child.name,
           relation: 'child',
-          dateOfBirth: new Date(currentYear - child.age, 0, 1),
+          highSchoolGraduationYear: child.highSchoolGraduationYear ?? null,
         },
       })
     }

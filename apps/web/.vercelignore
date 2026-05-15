@@ -1,0 +1,17 @@
+# Playwright E2E tests
+e2e/
+playwright.config.ts
+playwright-report/
+test-results/
+.auth/
+
+# Jest unit tests
+**/*.test.ts
+**/*.test.tsx
+jest.config.js
+
+# Prisma dev tooling
+prisma/seed.ts
+
+# Dev tooling
+*.tsbuildinfo
