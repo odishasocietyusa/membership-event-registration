@@ -2,11 +2,11 @@ import { prisma } from '@/lib/db/prisma'
 import { expireOverdueMemberships } from '@/lib/memberships/membership-service'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.RESEND_FROM_EMAIL ?? 'noreply@osa-americas.org'
-const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? ''
-
 export async function GET(req: Request): Promise<Response> {
+  const resend = new Resend(process.env.RESEND_API_KEY)
+  const FROM = process.env.RESEND_FROM_EMAIL ?? 'noreply@osa-americas.org'
+  const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? ''
+
   const authHeader = req.headers.get('Authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 })
