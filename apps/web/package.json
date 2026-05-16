@@ -29,7 +29,7 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.10",
     "next": "^15.1.4",
-    "next-mdx-remote": "^5.0.0",
+    "next-mdx-remote": "^6.0.0",
     "next-sanity": "^9.8.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
