@@ -25,9 +25,6 @@
     "pnpm": ">=9.0.0"
   },
   "pnpm": {
-    "overrides": {
-      "next-mdx-remote": "^6.0.0"
-    },
     "onlyBuiltDependencies": [
       "@prisma/client",
       "@prisma/engines",
