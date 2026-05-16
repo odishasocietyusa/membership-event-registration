@@ -21,7 +21,9 @@ export const GET = withAuth(async (req) => {
   const result = await listMembers(
     parsed.data.page,
     parsed.data.limit,
-    parsed.data.includeDeleted
+    parsed.data.includeDeleted,
+    parsed.data.search,
+    parsed.data.status,
   )
   return jsonResponse(200, result)
 }, { role: 'admin' })

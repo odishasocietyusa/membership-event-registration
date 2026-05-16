@@ -138,19 +138,26 @@ export async function exportMemberData(id: string): Promise<MemberExport> {
 export async function listMembers(
   page: number,
   limit: number,
-  includeDeleted?: boolean
+  includeDeleted?: boolean,
+  search?: string,
+  status?: 'active' | 'expired' | 'suspended',
 ): Promise<PaginatedResult<Member>> {
   const effectiveLimit = Math.min(limit, 100)
   const skip = (page - 1) * effectiveLimit
 
-  const where = includeDeleted ? {} : { deletedAt: null }
+  const where = {
+    ...(includeDeleted ? {} : { deletedAt: null }),
+    ...(status ? { memberStatus: status } : {}),
+    ...(search ? {
+      OR: [
+        { fullName: { contains: search, mode: 'insensitive' as const } },
+        { email:    { contains: search, mode: 'insensitive' as const } },
+      ],
+    } : {}),
+  }
 
   const [data, total] = await Promise.all([
-    prisma.member.findMany({
-      where,
-      skip,
-      take: effectiveLimit,
-    }),
+    prisma.member.findMany({ where, skip, take: effectiveLimit, orderBy: { createdAt: 'desc' } }),
     prisma.member.count({ where }),
   ])
 

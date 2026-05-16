@@ -80,6 +80,8 @@ export const ListMembersQuerySchema = z.object({
   page:           z.coerce.number().int().min(1).default(1),
   limit:          z.coerce.number().int().min(1).max(100).default(20),
   includeDeleted: z.coerce.boolean().default(false),
+  search:         z.string().max(200).optional(),
+  status:         z.enum(['active', 'expired', 'suspended']).optional(),
 })
 export type ListMembersQuery = z.infer<typeof ListMembersQuerySchema>
 

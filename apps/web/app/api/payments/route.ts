@@ -31,13 +31,14 @@ export const GET = withAuth(async (req) => {
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
+      include: { member: { select: { fullName: true, email: true } } },
     }),
     prisma.paymentRecord.count({ where }),
   ])
 
   // Mask anonymous donor identity
-  const data = (records as Array<{ isAnonymous: boolean; memberId: string | null } & Record<string, unknown>>).map((r) =>
-    r.isAnonymous ? { ...r, memberId: null } : r
+  const data = (records as Array<{ isAnonymous: boolean; memberId: string | null; member?: unknown } & Record<string, unknown>>).map((r) =>
+    r.isAnonymous ? { ...r, memberId: null, member: null } : r
   )
 
   return jsonResponse(200, { data, total, page, limit })
