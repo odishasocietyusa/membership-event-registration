@@ -102,7 +102,7 @@ export async function activateMembership(
     data: {
       memberStatus:   'active',
       membershipType,
-      joinDate:       expiryDate ? undefined : new Date(),
+      joinDate:       new Date(),
       expiryDate:     expiryDate,
     },
   })
