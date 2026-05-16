@@ -1,43 +1,29 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
+export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isProtected =
     pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
 
-  if (!user && isProtected) {
+  if (!isProtected) {
+    return NextResponse.next({ request })
+  }
+
+  // Supabase stores the session in a cookie named sb-<project-ref>-auth-token.
+  // This lightweight check avoids importing @supabase/realtime-js which is
+  // incompatible with the Edge Runtime. Real JWT validation happens server-side
+  // in each route handler via withAuth.
+  const hasSession = request.cookies.getAll().some(
+    ({ name }) => name.startsWith('sb-') && name.endsWith('-auth-token')
+  )
+
+  if (!hasSession) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
     return NextResponse.redirect(loginUrl)
   }
 
-  return supabaseResponse
+  return NextResponse.next({ request })
 }
 
 export const config = {
