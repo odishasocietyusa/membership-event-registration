@@ -2,6 +2,8 @@ import { withAuth } from '@/lib/auth/with-auth'
 import { listChapters, createChapter } from '@/lib/members/member-service'
 import { CreateChapterSchema } from '@/lib/validation/member.schema'
 
+export const dynamic = 'force-dynamic'
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

@@ -3,6 +3,8 @@ import { getSupabaseAdmin } from '@/lib/auth/supabase-admin'
 import { createDonationSession } from '@/lib/payments/stripe'
 import { DonateSchema } from '@/lib/validation/payment.schema'
 
+export const dynamic = 'force-dynamic'
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

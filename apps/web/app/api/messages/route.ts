@@ -2,6 +2,8 @@ import { withAuth } from '@/lib/auth/with-auth'
 import { sendMessage, listMessagesForMember } from '@/lib/messaging/message-service'
 import { CreateMessageSchema, ListMessagesQuerySchema } from '@/lib/validation/message.schema'
 
+export const dynamic = 'force-dynamic'
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

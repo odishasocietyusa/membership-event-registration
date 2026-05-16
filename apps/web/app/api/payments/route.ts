@@ -2,6 +2,8 @@ import { withAuth } from '@/lib/auth/with-auth'
 import { prisma } from '@/lib/db/prisma'
 import { ListPaymentsQuerySchema } from '@/lib/validation/payment.schema'
 
+export const dynamic = 'force-dynamic'
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

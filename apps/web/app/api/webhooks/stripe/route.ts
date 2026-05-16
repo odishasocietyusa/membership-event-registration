@@ -1,6 +1,8 @@
 import { stripe } from '@/lib/payments/stripe'
 import { handleCheckoutCompleted, handlePaymentFailed } from '@/lib/payments/webhook-handlers'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: Request): Promise<Response> {
   const body = await req.text()
   const sig = req.headers.get('stripe-signature')

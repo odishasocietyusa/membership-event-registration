@@ -2,6 +2,8 @@ import { prisma } from '@/lib/db/prisma'
 import { expireOverdueMemberships } from '@/lib/memberships/membership-service'
 import { Resend } from 'resend'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: Request): Promise<Response> {
   const resend = new Resend(process.env.RESEND_API_KEY)
   const FROM = process.env.RESEND_FROM_EMAIL ?? 'noreply@osa-americas.org'

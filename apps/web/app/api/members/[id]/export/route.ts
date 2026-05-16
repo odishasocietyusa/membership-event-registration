@@ -1,6 +1,8 @@
 import { withAuth } from '@/lib/auth/with-auth'
 import { exportMemberData } from '@/lib/members/member-service'
 
+export const dynamic = 'force-dynamic'
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

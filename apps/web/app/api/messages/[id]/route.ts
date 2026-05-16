@@ -1,6 +1,8 @@
 import { withAuth } from '@/lib/auth/with-auth'
 import { getMessageForViewer } from '@/lib/messaging/message-service'
 
+export const dynamic = 'force-dynamic'
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

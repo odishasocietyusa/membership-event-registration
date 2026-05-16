@@ -1,5 +1,7 @@
 import { getPublicMembershipTypes } from '@/lib/memberships/membership-service'
 
+export const dynamic = 'force-dynamic'
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

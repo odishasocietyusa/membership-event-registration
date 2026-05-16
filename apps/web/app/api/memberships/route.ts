@@ -4,6 +4,8 @@ import {
   listAllMemberships,
 } from '@/lib/memberships/membership-service'
 import {
+
+export const dynamic = 'force-dynamic'
   ApplyMembershipSchema,
   ListMembershipsQuerySchema,
 } from '@/lib/validation/membership.schema'

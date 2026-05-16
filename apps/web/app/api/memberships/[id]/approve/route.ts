@@ -2,6 +2,8 @@ import { withAuth } from '@/lib/auth/with-auth'
 import { approveMembership } from '@/lib/memberships/membership-service'
 import { ApproveMembershipSchema } from '@/lib/validation/membership.schema'
 
+export const dynamic = 'force-dynamic'
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

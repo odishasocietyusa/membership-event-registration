@@ -1,5 +1,7 @@
 import { withAuth } from '@/lib/auth/with-auth'
 import {
+
+export const dynamic = 'force-dynamic'
   getMyMembershipStatus,
   cancelMembership,
 } from '@/lib/memberships/membership-service'
