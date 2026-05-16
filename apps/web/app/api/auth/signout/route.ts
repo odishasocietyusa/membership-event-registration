@@ -28,7 +28,8 @@ export async function POST(): Promise<Response> {
     new URL('/login', process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : 'http://localhost:3000'
-    )
+    ),
+    { status: 303 }
   )
 
   // Expire all sb-* session cookies so the browser discards them
