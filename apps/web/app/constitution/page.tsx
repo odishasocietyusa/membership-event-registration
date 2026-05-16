@@ -1,14 +1,9 @@
-import { readFile } from 'fs/promises'
-import path from 'path'
-import { MDXRemote } from 'next-mdx-remote/rsc'
+import Constitution from '../../content/constitution.mdx'
 
-export default async function ConstitutionPage() {
-  const filePath = path.join(process.cwd(), 'content', 'constitution.mdx')
-  const source = await readFile(filePath, 'utf8')
-
+export default function ConstitutionPage() {
   return (
     <main>
-      <MDXRemote source={source} />
+      <Constitution />
     </main>
   )
 }

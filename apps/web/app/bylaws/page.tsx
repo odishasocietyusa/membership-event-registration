@@ -1,14 +1,9 @@
-import { readFile } from 'fs/promises'
-import path from 'path'
-import { MDXRemote } from 'next-mdx-remote/rsc'
+import Bylaws from '../../content/bylaws.mdx'
 
-export default async function BylawsPage() {
-  const filePath = path.join(process.cwd(), 'content', 'bylaws.mdx')
-  const source = await readFile(filePath, 'utf8')
-
+export default function BylawsPage() {
   return (
     <main>
-      <MDXRemote source={source} />
+      <Bylaws />
     </main>
   )
 }
