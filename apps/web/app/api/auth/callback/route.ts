@@ -51,9 +51,11 @@ async function resolvePostLoginPath(accessToken: string): Promise<string> {
 
     const member = await prisma.member.findUnique({ where: { userId: authUser.id } })
     const isRegistered = member?.address != null
-    const isActive = member?.memberStatus === 'active'
 
-    if (!isRegistered || !isActive) return '/register'
+    // Send unregistered users to complete their profile.
+    // Registered users go to dashboard regardless of membership status —
+    // the dashboard shows pending/active state appropriately.
+    if (!isRegistered) return '/register'
     return '/dashboard'
   } catch {
     // If profile check fails, fall back to register so user can complete setup
