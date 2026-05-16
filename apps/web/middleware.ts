@@ -9,12 +9,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next({ request })
   }
 
-  // Supabase stores the session in a cookie named sb-<project-ref>-auth-token.
-  // This lightweight check avoids importing @supabase/realtime-js which is
-  // incompatible with the Edge Runtime. Real JWT validation happens server-side
-  // in each route handler via withAuth.
+  // Supabase stores the session in cookies named sb-<project-ref>-auth-token (or
+  // chunked as sb-<ref>-auth-token.0, .1, … when the JWT is large). Use includes()
+  // so both forms are detected. Real JWT validation happens server-side in each
+  // route handler via withAuth; this is only a lightweight redirect gate.
   const hasSession = request.cookies.getAll().some(
-    ({ name }) => name.startsWith('sb-') && name.endsWith('-auth-token')
+    ({ name }) => name.startsWith('sb-') && name.includes('-auth-token')
   )
 
   if (!hasSession) {
