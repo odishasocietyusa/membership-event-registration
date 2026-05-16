@@ -80,6 +80,7 @@ export default function RegisterPage() {
   // step: null=loading, 1=account(email/pass only), 2=personal, 3=family, 4=address, 5=membership
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | null>(null)
   const [formData, setFormData] = useState<FormData>(INITIAL)
+  const [sessionEmail, setSessionEmail] = useState<string>('')
   const [errors, setErrors] = useState<FieldErrors>({})
   const [loading, setLoading] = useState(false)
   const [accountCreated, setAccountCreated] = useState(false)
@@ -96,6 +97,8 @@ export default function RegisterPage() {
         return
       }
 
+      setSessionEmail(session.user.email ?? '')
+
       // Fetch existing profile to pre-fill and determine which step to start at
       const res = await fetch('/api/members/me', {
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -103,10 +106,6 @@ export default function RegisterPage() {
 
       if (res.ok) {
         const { member } = await res.json()
-
-        // DEBUG — remove after confirming metadata keys
-        console.log('[register] member:', JSON.stringify(member))
-        console.log('[register] user_metadata:', JSON.stringify(session.user.user_metadata))
 
         // Prefer saved DB value; fall back to Google OAuth metadata from the session
         const meta = session.user.user_metadata ?? {}
@@ -444,6 +443,12 @@ export default function RegisterPage() {
         <section>
           <h2>Personal information</h2>
           <form onSubmit={(e) => { e.preventDefault(); handlePersonalNext() }} noValidate>
+            {sessionEmail && (
+              <div>
+                <label htmlFor="email">Email</label>
+                <input id="email" type="email" value={sessionEmail} readOnly disabled />
+              </div>
+            )}
             <div>
               <label htmlFor="firstName">First name</label>
               <input id="firstName" type="text" autoComplete="given-name"
