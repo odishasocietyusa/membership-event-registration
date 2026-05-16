@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma'
-import { supabaseAdmin } from '@/lib/auth/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/auth/supabase-admin'
 import { createDonationSession } from '@/lib/payments/stripe'
 import { DonateSchema } from '@/lib/validation/payment.schema'
 
@@ -26,7 +26,7 @@ export async function POST(req: Request): Promise<Response> {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
 
   if (token) {
-    const { data: { user } } = await supabaseAdmin.auth.getUser(token)
+    const { data: { user } } = await getSupabaseAdmin().auth.getUser(token)
     if (user?.email) {
       const member = await prisma.member.findUnique({ where: { email: user.email } })
       if (member) {

@@ -1,6 +1,6 @@
 import type { Member } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
-import { supabaseAdmin } from '@/lib/auth/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/auth/supabase-admin'
 import { ROLE_HIERARCHY, type Role } from '@/lib/auth/roles'
 
 // Re-exported alias so downstream code only imports from this module
@@ -33,7 +33,7 @@ export function withAuth(
     const {
       data: { user: authUser },
       error,
-    } = await supabaseAdmin.auth.getUser(token)
+    } = await getSupabaseAdmin().auth.getUser(token)
 
     if (error || !authUser || !authUser.email) {
       return jsonResponse(401, { error: 'Invalid or expired token' })
