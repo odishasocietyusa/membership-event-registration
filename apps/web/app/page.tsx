@@ -1,6 +1,7 @@
 import { sanityFetch } from '@/sanity/lib/client'
 import { ANNOUNCEMENTS_LATEST_QUERY } from '@/sanity/lib/queries'
 import type { SanityAnnouncement } from '@/types/sanity'
+import RegistrationPrompt from './registration-prompt'
 
 const HOMEPAGE_ANNOUNCEMENT_LIMIT = 5
 
@@ -16,7 +17,9 @@ export default async function Home() {
     <main>
       <h1>OSA Community Platform</h1>
       <p>The Odisha Society of the Americas</p>
-      <p>Platform is under development</p>
+
+      {/* Shown only to authenticated users who have not yet completed membership */}
+      <RegistrationPrompt />
 
       {announcements.length > 0 && (
         <section>

@@ -29,8 +29,8 @@ export async function createCheckoutSession(
       },
     ],
     mode: 'payment',
-    success_url: `${BASE_URL}/membership/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${BASE_URL}/membership`,
+    success_url: `${BASE_URL}/membership/success`,
+    cancel_url: `${BASE_URL}/register`,
     metadata: {
       memberId,
       paymentType: 'membership',
@@ -59,8 +59,8 @@ export async function createUpgradeSession(
       },
     ],
     mode: 'payment',
-    success_url: `${BASE_URL}/membership/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${BASE_URL}/membership`,
+    success_url: `${BASE_URL}/membership/success`,
+    cancel_url: `${BASE_URL}/register`,
     metadata: {
       memberId,
       paymentType: 'upgrade',

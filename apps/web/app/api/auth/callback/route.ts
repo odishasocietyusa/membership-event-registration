@@ -1,19 +1,16 @@
-// app/api/auth/callback/route.ts
-// Handles Supabase OAuth redirect — exchanges the `code` parameter for a session
-// cookie and redirects to the dashboard (or ?next= path if provided).
-
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { getSupabaseAdmin } from '@/lib/auth/supabase-admin'
+import { prisma } from '@/lib/db/prisma'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const nextParam = searchParams.get('next') ?? '/dashboard'
-  // Reject protocol-relative or absolute URLs — only allow same-origin paths
-  const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/dashboard'
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const baseUrl = forwardedHost ? `https://${forwardedHost}` : origin
 
   if (code) {
     const cookieStore = await cookies()
@@ -33,17 +30,29 @@ export async function GET(request: Request) {
         },
       }
     )
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      // On Vercel, the internal request URL origin differs from the public hostname.
-      // x-forwarded-host carries the real public-facing host.
-      const forwardedHost = request.headers.get('x-forwarded-host')
-      if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
-      }
-      return NextResponse.redirect(`${origin}${next}`)
+
+    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error && session) {
+      return NextResponse.redirect(`${baseUrl}${await resolvePostLoginPath(session.access_token)}`)
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
+  return NextResponse.redirect(`${baseUrl}/login?error=auth_callback_failed`)
+}
+
+async function resolvePostLoginPath(accessToken: string): Promise<string> {
+  try {
+    const { data: { user: authUser } } = await getSupabaseAdmin().auth.getUser(accessToken)
+    if (!authUser) return '/login'
+
+    const member = await prisma.member.findUnique({ where: { userId: authUser.id } })
+    const isRegistered = member?.address != null
+    const isActive = member?.memberStatus === 'active'
+
+    if (!isRegistered || !isActive) return '/register'
+    return '/dashboard'
+  } catch {
+    // If profile check fails, fall back to register so user can complete setup
+    return '/register'
+  }
 }

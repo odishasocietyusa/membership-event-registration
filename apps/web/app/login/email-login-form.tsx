@@ -47,7 +47,22 @@ export default function EmailLoginForm() {
       return
     }
 
-    router.push('/dashboard')
+    // Check profile completeness to determine where to send the user
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      const res = await fetch('/api/members/me', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (res.ok) {
+        const { member } = await res.json()
+        const isRegistered = member?.address != null
+        const isActive = member?.memberStatus === 'active'
+        router.push(!isRegistered || !isActive ? '/register' : '/dashboard')
+        return
+      }
+    }
+
+    router.push('/register')
   }
 
   return (
