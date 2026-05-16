@@ -32,8 +32,14 @@ export type UpdateMemberInput = z.infer<typeof UpdateMemberSchema>
 // Extends the member-self schema with admin-only fields
 
 export const AdminUpdateMemberSchema = UpdateMemberSchema.extend({
-  memberStatus: z.enum(['active', 'suspended']).optional(),
-  role:         z.enum(['member', 'admin']).optional(),
+  memberStatus:   z.enum(['active', 'expired', 'suspended']).optional(),
+  role:           z.enum(['member', 'admin']).optional(),
+  membershipType: z.enum([
+    'annualStudentNoVote', 'annualSingle', 'annualFamily',
+    'fiveYearFamily', 'life', 'lifeWard', 'patron', 'benefactor', 'honoraryNoVote',
+  ]).nullable().optional(),
+  joinDate:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  expiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
 })
 export type AdminUpdateMemberInput = z.infer<typeof AdminUpdateMemberSchema>
 

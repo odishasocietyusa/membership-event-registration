@@ -41,8 +41,11 @@ export interface UpdateMemberInput {
 }
 
 export interface AdminUpdateMemberInput extends UpdateMemberInput {
-  memberStatus?: 'active' | 'suspended'
+  memberStatus?: 'active' | 'expired' | 'suspended'
   role?: 'member' | 'admin'
+  membershipType?: string | null
+  joinDate?: string | null
+  expiryDate?: string | null
 }
 
 export interface CreateFamilyMemberInput {
@@ -81,10 +84,12 @@ export async function updateMember(
     throw Object.assign(new Error('Member not found'), { code: 'NOT_FOUND' })
   }
 
-  return prisma.member.update({
-    where: { id },
-    data,
-  })
+  const { joinDate, expiryDate, ...rest } = data
+  const prismaData: Record<string, unknown> = { ...rest }
+  if (joinDate !== undefined)   prismaData.joinDate   = joinDate   ? new Date(joinDate)   : null
+  if (expiryDate !== undefined) prismaData.expiryDate = expiryDate ? new Date(expiryDate) : null
+
+  return prisma.member.update({ where: { id }, data: prismaData })
 }
 
 export async function softDeleteMember(id: string): Promise<void> {
