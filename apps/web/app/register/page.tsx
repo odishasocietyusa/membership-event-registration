@@ -104,8 +104,14 @@ export default function RegisterPage() {
       if (res.ok) {
         const { member } = await res.json()
 
-        // Pre-fill personal info from saved data
-        const fullName: string = member.fullName ?? ''
+        // Prefer saved DB value; fall back to Google OAuth metadata from the session
+        const meta = session.user.user_metadata ?? {}
+        const googleFullName: string =
+          meta.full_name ??
+          (meta.given_name && meta.family_name
+            ? `${meta.given_name} ${meta.family_name}`
+            : meta.name ?? '')
+        const fullName: string = member.fullName ?? googleFullName
         const nameParts = fullName.trim().split(' ')
         const firstName = nameParts[0] ?? ''
         const lastName = nameParts.slice(1).join(' ') ?? ''
