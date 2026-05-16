@@ -39,7 +39,9 @@ export default async function DashboardPage() {
 
   const token = session.access_token
   const headers = { Authorization: `Bearer ${token}` }
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
   const [userRes, membershipRes] = await Promise.all([
     fetch(`${baseUrl}/api/auth/me`, { headers, cache: 'no-store' }),
