@@ -4,11 +4,11 @@ import {
   listAllMemberships,
 } from '@/lib/memberships/membership-service'
 import {
-
-export const dynamic = 'force-dynamic'
   ApplyMembershipSchema,
   ListMembershipsQuerySchema,
 } from '@/lib/validation/membership.schema'
+
+export const dynamic = 'force-dynamic'
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {

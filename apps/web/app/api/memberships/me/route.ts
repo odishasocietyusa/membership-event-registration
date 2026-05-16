@@ -1,10 +1,10 @@
 import { withAuth } from '@/lib/auth/with-auth'
 import {
-
-export const dynamic = 'force-dynamic'
   getMyMembershipStatus,
   cancelMembership,
 } from '@/lib/memberships/membership-service'
+
+export const dynamic = 'force-dynamic'
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
