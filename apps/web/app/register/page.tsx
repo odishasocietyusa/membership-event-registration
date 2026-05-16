@@ -104,6 +104,10 @@ export default function RegisterPage() {
       if (res.ok) {
         const { member } = await res.json()
 
+        // DEBUG — remove after confirming metadata keys
+        console.log('[register] member:', JSON.stringify(member))
+        console.log('[register] user_metadata:', JSON.stringify(session.user.user_metadata))
+
         // Prefer saved DB value; fall back to Google OAuth metadata from the session
         const meta = session.user.user_metadata ?? {}
         const googleFullName: string =
