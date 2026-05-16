@@ -14,6 +14,7 @@ export async function GET(request: Request) {
 
   if (code) {
     const cookieStore = await cookies()
+    const pendingCookies: { name: string; value: string; options: CookieOptions }[] = []
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,10 +23,8 @@ export async function GET(request: Request) {
           getAll() {
             return cookieStore.getAll()
           },
-          setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+          setAll(cookiesToSet) {
+            pendingCookies.push(...cookiesToSet)
           },
         },
       }
@@ -33,7 +32,12 @@ export async function GET(request: Request) {
 
     const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error && session) {
-      return NextResponse.redirect(`${baseUrl}${await resolvePostLoginPath(session.access_token)}`)
+      const redirectPath = await resolvePostLoginPath(session.access_token)
+      const response = NextResponse.redirect(`${baseUrl}${redirectPath}`)
+      pendingCookies.forEach(({ name, value, options }) => {
+        response.cookies.set(name, value, options)
+      })
+      return response
     }
   }
 
