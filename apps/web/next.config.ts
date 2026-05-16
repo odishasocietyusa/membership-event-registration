@@ -1,8 +1,7 @@
 import type { NextConfig } from 'next';
-import type { Configuration } from 'webpack';
 
 const nextConfig: NextConfig = {
-  webpack: (config: Configuration, { nextRuntime }: { nextRuntime?: string }) => {
+  webpack: (config, { nextRuntime }: { nextRuntime?: string }) => {
     if (nextRuntime === 'edge') {
       config.resolve = config.resolve ?? {}
       config.resolve.alias = {
