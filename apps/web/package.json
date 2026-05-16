@@ -23,8 +23,7 @@
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",
-    "@mdx-js/react": "^3.1.1",
-    "@next/mdx": "^16.2.6",
+    "@next/mdx": "^15.1.4",
     "@osa/validation": "workspace:*",
     "@portabletext/react": "^3.1.0",
     "@prisma/client": "^6.2.0",
