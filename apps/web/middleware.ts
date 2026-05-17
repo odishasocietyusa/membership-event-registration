@@ -3,7 +3,9 @@ import { NextResponse, type NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isProtected =
-    pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/events')
 
   if (!isProtected) {
     return NextResponse.next({ request })
