@@ -35,14 +35,14 @@ Build a server-rendered admin panel at `/admin` that allows OSA administrators t
 
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
-| FR-01 | `/admin` lists all members with name, email, role, membership type, status, join date | Must Have | Paginated if >50 rows |
+| FR-01 | `/admin` lists all members with name, email, **member ID**, role, membership type, status, join date | Must Have | Paginated if >50 rows |
 | FR-02 | Members list is searchable by name or email | Must Have | Client or server search |
 | FR-03 | Members list is filterable by membership status (active / pending / expired / cancelled) | Must Have | |
 | FR-04 | Clicking a member opens `/admin/members/[id]` with full profile details | Must Have | |
 | FR-05 | Member detail shows personal info, family members, and payment history | Must Have | |
 | FR-06 | Admin can change a member's role (member ↔ admin) from the detail page | Must Have | Uses existing `PUT /api/members/[id]/role` |
 | FR-07 | Admin can manually set membership status (activate / expire / cancel) | Must Have | Uses existing `PUT /api/members/[id]` |
-| FR-08 | `/admin/payments` lists all payment records with member name, amount, type, date, status | Must Have | |
+| FR-08 | `/admin/payments` lists all payment records with member name, **member ID**, **email**, amount, type, date, status | Must Have | Member ID and email must be visible on every admin page that lists or links members |
 | FR-09 | Admin can issue a refund from the payment detail view | Should Have | Uses existing `POST /api/payments/[id]/refund` |
 | FR-10 | Non-admin users attempting to access `/admin/*` are redirected to `/dashboard` | Must Have | |
 | FR-11 | Unauthenticated users attempting to access `/admin/*` are redirected to `/login` | Must Have | |
