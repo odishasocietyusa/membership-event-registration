@@ -83,7 +83,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
         {(search || status) && <a href="/admin">Clear</a>}
       </form>
 
-      <table>
+      <table border={1} cellPadding={4}>
         <thead>
           <tr>
             <th>Name</th>

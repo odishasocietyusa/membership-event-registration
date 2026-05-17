@@ -87,7 +87,7 @@ export default async function AdminPaymentsPage({ searchParams }: PageProps) {
         <p><strong>Total shown:</strong> ${(totalAmount / 100).toFixed(2)}</p>
       )}
 
-      <table>
+      <table border={1} cellPadding={4}>
         <thead>
           <tr>
             <th>Date</th>

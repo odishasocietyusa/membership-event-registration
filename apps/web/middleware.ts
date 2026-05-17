@@ -5,7 +5,13 @@ export function middleware(request: NextRequest) {
   const isProtected =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/admin') ||
-    pathname.startsWith('/events')
+    pathname.startsWith('/events') ||
+    pathname.startsWith('/members/policy') ||
+    pathname.startsWith('/members/search') ||
+    pathname.startsWith('/members/bog-minutes') ||
+    pathname.startsWith('/obituary') ||
+    pathname.startsWith('/chapters/executives') ||
+    pathname.startsWith('/chapters/bog-documents')
 
   if (!isProtected) {
     return NextResponse.next({ request })

@@ -298,7 +298,7 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
         {payments.length === 0 ? (
           <p>No payments on file.</p>
         ) : (
-          <table>
+          <table border={1} cellPadding={4}>
             <thead>
               <tr>
                 <th>Date</th>

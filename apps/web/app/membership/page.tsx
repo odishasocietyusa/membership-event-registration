@@ -120,8 +120,8 @@ export default async function MembershipPage() {
     <main>
       <h1>Membership</h1>
 
-      <section>
-        <h2>Your Details</h2>
+      <fieldset>
+        <legend>Your Details</legend>
         <p><strong>Member ID:</strong> {user.id}</p>
         <p><strong>Email:</strong> {user.email}</p>
         <p><strong>Status:</strong> {user.memberStatus ?? 'No active membership'}</p>
@@ -130,12 +130,12 @@ export default async function MembershipPage() {
         )}
         {user.joinDate   && <p><strong>Member since:</strong> {formatDate(user.joinDate)}</p>}
         {user.expiryDate && <p><strong>Expired on:</strong> {formatDate(user.expiryDate)}</p>}
-      </section>
+      </fieldset>
 
       {membershipPayments.length > 0 && (
-        <section>
-          <h2>Payment History</h2>
-          <table>
+        <fieldset>
+          <legend>Payment History</legend>
+          <table border={1} cellPadding={4}>
             <thead>
               <tr>
                 <th>Date</th>
@@ -155,21 +155,22 @@ export default async function MembershipPage() {
               ))}
             </tbody>
           </table>
-        </section>
+        </fieldset>
       )}
 
       {user.memberStatus === 'suspended' ? (
-        <section>
+        <fieldset>
+          <legend>Account Status</legend>
           <p>
             Your account is in suspended status. Please send an email to{' '}
             <a href="mailto:OSAEC@odishasociety.org">OSAEC@odishasociety.org</a>{' '}
             to discuss the matter with the Executives.
           </p>
-        </section>
+        </fieldset>
       ) : (
-        <section>
-          <h2>Choose a Membership</h2>
-          <table>
+        <fieldset>
+          <legend>Choose a Membership</legend>
+          <table border={1} cellPadding={4}>
             <thead>
               <tr>
                 <th>Tier</th>
@@ -236,7 +237,7 @@ export default async function MembershipPage() {
               })}
             </tbody>
           </table>
-        </section>
+        </fieldset>
       )}
     </main>
   )

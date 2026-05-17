@@ -125,7 +125,7 @@ OSA [home: /]
 
 | ID | Requirement | Target | Notes |
 |----|-------------|--------|-------|
-| NFR-01 | No styling | Bare HTML only | Per project Phase 3 constraint |
+| NFR-01 | Minimal visual distinction | Use `border="1" cellpadding="4"` on tables, `<fieldset>`+`<legend>` for sections, `<hr>` between major sections, nested `<ul>/<li>` for nav | No Tailwind, no inline styles, no CSS files — HTML attributes only |
 | NFR-02 | Server component | Nav reads session server-side | No client-side token exposure |
 | NFR-03 | Single auth check | One `getSession` + one member lookup in layout; pass user as prop to NavBar | Do not re-fetch per nav item |
 | NFR-04 | No broken links | All nav URLs return 200 or a stub | 404s are not acceptable |

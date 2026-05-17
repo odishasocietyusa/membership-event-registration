@@ -63,14 +63,14 @@ export default async function DashboardPage() {
     <main>
       <h1>Dashboard</h1>
 
-      <section>
-        <h2>Your Account</h2>
+      <fieldset>
+        <legend>Your Account</legend>
         <p><strong>Name:</strong> {displayName}</p>
         <p><strong>Email:</strong> {user?.email}</p>
-      </section>
+      </fieldset>
 
-      <section>
-        <h2>Membership</h2>
+      <fieldset>
+        <legend>Membership</legend>
 
         {!membership && (
           <div>
@@ -109,7 +109,7 @@ export default async function DashboardPage() {
             <a href="/register">Apply for a new membership</a>
           </div>
         )}
-      </section>
+      </fieldset>
 
       <section>
         <SignOutButton />
