@@ -2,21 +2,12 @@
  * Tests for apps/web/app/events/page.tsx
  *
  * Covers:
- * - EV-01: Page redirects to /login when no session exists
- * - EV-02: Page returns gated message when membership is expired
- * - EV-03: Page returns gated message when membership is suspended
- * - EV-04: Page returns gated message when no membership (null status)
- * - EV-05: Page renders events list for active members
- * - EV-06: Page handles empty events list without throwing
+ * - EV-01: EventsPage calls sanityFetch with the events query
+ * - EV-02: EventsPage handles null from sanityFetch without throwing
+ * - EV-03: EventsPage exports revalidate = 60
+ * - EV-04: EventsPage returns JSX (truthy) when events are present
+ * - EV-05: EventsPage renders without auth check (no Supabase/cookies)
  */
-
-jest.mock('@/lib/auth/supabase-server', () => ({
-  createSupabaseServer: jest.fn(),
-}))
-
-jest.mock('next/navigation', () => ({
-  redirect: jest.fn((url: string) => { throw new Error(`REDIRECT:${url}`) }),
-}))
 
 jest.mock('@/sanity/lib/client', () => ({
   sanityFetch: jest.fn(),
@@ -26,76 +17,59 @@ jest.mock('@/sanity/lib/queries', () => ({
   ALL_EVENTS_QUERY: 'mock-events-query',
 }))
 
-import EventsPage from '@/app/events/page'
-import { createSupabaseServer } from '@/lib/auth/supabase-server'
+import EventsPage, { revalidate } from '@/app/events/page'
 import { sanityFetch } from '@/sanity/lib/client'
 
-const mockCreateSupabaseServer = createSupabaseServer as jest.Mock
 const mockSanityFetch = sanityFetch as jest.Mock
-
-function mockSupabase(session: unknown) {
-  mockCreateSupabaseServer.mockResolvedValue({
-    auth: { getSession: jest.fn().mockResolvedValue({ data: { session } }) },
-  })
-}
-
-function mockMeEndpoint(memberStatus: string | null) {
-  global.fetch = jest.fn().mockResolvedValue({
-    json: () => Promise.resolve({ user: { memberStatus } }),
-  }) as jest.Mock
-}
 
 describe('EventsPage', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000'
   })
 
-  it('EV-01: redirects to /login when no session', async () => {
-    mockSupabase(null)
-    await expect(EventsPage()).rejects.toThrow('REDIRECT:/login')
+  /**
+   * EV-01: calls sanityFetch with events query
+   */
+  it('EV-01: calls sanityFetch with the events query', async () => {
+    mockSanityFetch.mockResolvedValueOnce([])
+    await EventsPage()
+    expect(mockSanityFetch).toHaveBeenCalledWith('mock-events-query')
   })
 
-  it('EV-02: shows renewal message when membership is expired', async () => {
-    mockSupabase({ access_token: 'token' })
-    mockMeEndpoint('expired')
-    const result = await EventsPage()
-    expect(result).toBeDefined()
-    // MembershipGate renders — sanityFetch should not be called
-    expect(mockSanityFetch).not.toHaveBeenCalled()
+  /**
+   * EV-02: handles null from sanityFetch without throwing
+   */
+  it('EV-02: handles null from sanityFetch without throwing', async () => {
+    mockSanityFetch.mockResolvedValueOnce(null)
+    await expect(EventsPage()).resolves.not.toThrow()
   })
 
-  it('EV-03: shows suspended message when membership is suspended', async () => {
-    mockSupabase({ access_token: 'token' })
-    mockMeEndpoint('suspended')
-    const result = await EventsPage()
-    expect(result).toBeDefined()
-    expect(mockSanityFetch).not.toHaveBeenCalled()
+  /**
+   * EV-03: exports revalidate = 60
+   */
+  it('EV-03: exports revalidate = 60', () => {
+    expect(revalidate).toBe(60)
   })
 
-  it('EV-04: shows join message when no membership', async () => {
-    mockSupabase({ access_token: 'token' })
-    mockMeEndpoint(null)
-    const result = await EventsPage()
-    expect(result).toBeDefined()
-    expect(mockSanityFetch).not.toHaveBeenCalled()
-  })
-
-  it('EV-05: renders events list for active members', async () => {
-    mockSupabase({ access_token: 'token' })
-    mockMeEndpoint('active')
+  /**
+   * EV-04: returns a defined value (JSX element) on success
+   */
+  it('EV-04: returns a defined JSX element when events are returned', async () => {
     mockSanityFetch.mockResolvedValueOnce([
       { _id: '1', title: 'Annual Convention', slug: 'annual-convention', start_date: '2026-06-01', location: 'New York' },
     ])
     const result = await EventsPage()
     expect(result).toBeDefined()
-    expect(mockSanityFetch).toHaveBeenCalled()
+    expect(result).not.toBeNull()
   })
 
-  it('EV-06: handles empty events list without throwing for active members', async () => {
-    mockSupabase({ access_token: 'token' })
-    mockMeEndpoint('active')
-    mockSanityFetch.mockResolvedValueOnce(null)
+  /**
+   * EV-05: page does NOT import Supabase — no auth check
+   * Verified by the fact that no Supabase mock is needed and no error is thrown
+   */
+  it('EV-05: renders without requiring Supabase or auth', async () => {
+    mockSanityFetch.mockResolvedValueOnce([])
+    // If page tried to use Supabase without a mock, this would throw
     await expect(EventsPage()).resolves.toBeDefined()
   })
 })
