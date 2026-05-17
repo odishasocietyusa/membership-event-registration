@@ -92,6 +92,8 @@ export default async function AdminPaymentsPage({ searchParams }: PageProps) {
           <tr>
             <th>Date</th>
             <th>Member</th>
+            <th>Member ID</th>
+            <th>Email</th>
             <th>Type</th>
             <th>Membership</th>
             <th>Amount</th>
@@ -109,6 +111,8 @@ export default async function AdminPaymentsPage({ searchParams }: PageProps) {
                   : p.memberId ?? 'Anonymous'
                 }
               </td>
+              <td>{p.memberId ?? '—'}</td>
+              <td>{p.member?.email ?? '—'}</td>
               <td>{p.paymentType}</td>
               <td>{p.membershipType ?? '—'}</td>
               <td>${(p.amountCents / 100).toFixed(2)}</td>
@@ -119,7 +123,7 @@ export default async function AdminPaymentsPage({ searchParams }: PageProps) {
             </tr>
           ))}
           {payments.length === 0 && (
-            <tr><td colSpan={7}>No payments found.</td></tr>
+            <tr><td colSpan={9}>No payments found.</td></tr>
           )}
         </tbody>
       </table>

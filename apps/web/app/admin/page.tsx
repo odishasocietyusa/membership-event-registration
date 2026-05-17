@@ -88,6 +88,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
           <tr>
             <th>Name</th>
             <th>Email</th>
+            <th>Member ID</th>
             <th>Role</th>
             <th>Membership</th>
             <th>Status</th>
@@ -100,6 +101,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
             <tr key={m.id}>
               <td>{m.fullName ?? '—'}</td>
               <td>{m.email}</td>
+              <td>{m.id}</td>
               <td>{m.role}</td>
               <td>{m.membershipType ?? '—'}</td>
               <td>{memberStatusLabel(m.memberStatus, m.membershipType)}</td>
@@ -108,7 +110,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
             </tr>
           ))}
           {members.length === 0 && (
-            <tr><td colSpan={7}>No members found.</td></tr>
+            <tr><td colSpan={8}>No members found.</td></tr>
           )}
         </tbody>
       </table>
