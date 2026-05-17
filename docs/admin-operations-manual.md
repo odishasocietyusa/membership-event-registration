@@ -493,10 +493,84 @@ Sanity Studio is embedded in the application at `/studio`. Only users with a San
 | News posts | Sanity Studio → News | Volunteer editors |
 | Announcements | Sanity Studio → Announcements | Volunteer editors |
 | Leadership programme | Sanity Studio → Leadership | Volunteer editors |
-| About, history pages | Sanity Studio → Static Pages | Admin / volunteer editors |
+| Static pages (About, Members, Activities, Chapters, Publications, Donate) | Sanity Studio → Static Pages | Admin / volunteer editors — see slug reference below |
 | Constitution, bylaws | `apps/web/content/*.mdx` files | Developer (requires code deploy) |
 | Chapters | Platform API / Supabase Studio | Admin |
 | Awards | Platform API (SPEC-5, planned) | Admin |
+
+### Static page slug reference
+
+Each static page in the website fetches its content from Sanity by a fixed slug. To publish content for a page, create a **Static Page** document in Sanity Studio (`/studio`) and set the **Slug** field to exactly the value in the table below.
+
+> The slug must match exactly (case-sensitive, hyphens not underscores). If no Sanity document exists for a slug, the page shows "Coming soon" — it will not error.
+
+#### About Us
+
+| Page | Sanity slug |
+|---|---|
+| Vision & Mission | `about-vision-mission` |
+| Member Rights & Privileges | `about-member-rights` |
+| OSA Administration | `about-administration` |
+| OSA Committees | `about-committees` |
+| Contact Us | `about-contact` |
+
+#### Members
+
+| Page | Sanity slug | Auth required? |
+|---|---|---|
+| Member Benefits | `members-benefits` | No |
+| Policy Documents & Forms | `members-policy` | Yes — logged-in members only |
+| Member Search | `members-search` | Yes — logged-in members only |
+| BOG Meeting Minutes | `members-bog-minutes` | Yes — logged-in members only |
+| Obituary | `obituary` | Yes — logged-in members only |
+
+#### Chapters
+
+| Page | Sanity slug | Auth required? |
+|---|---|---|
+| Chapter Details | `chapters` | No |
+| Chapter Executives | `chapters-executives` | Yes — logged-in members only |
+| BOG Documents | `chapters-bog-documents` | Yes — @odishasociety.org email only |
+
+#### Activities
+
+| Page | Sanity slug |
+|---|---|
+| Annual Convention | `activities-convention` |
+| Awards | `activities-awards` |
+| Odia Learning | `activities-odia-learning` |
+| Odissi Music | `activities-odissi-music` |
+| Odisha Development | `activities-odisha-development` |
+| OSA Public Library | `activities-library` |
+| OSA Higher Education | `activities-higher-education` |
+| Professional Networking | `activities-networking` |
+| Health & Wellness | `activities-health-wellness` |
+| Drama Festival | `activities-drama-festival` |
+| Sampark Dori | `activities-sampark-dori` |
+| Nilachakra (Kids) | `activities-nilachakra` |
+| Women's Forum | `activities-womens-forum` |
+| Classified | `activities-classified` |
+
+#### Publications & Utility
+
+| Page | Sanity slug |
+|---|---|
+| Urmi — Souvenir | `publications-urmi` |
+| Utkarsa — Newsletter | `publications-utkarsa` |
+| Donate | `donate` |
+| About OSA (landing) | `about-us` |
+
+#### How to publish a page for the first time
+
+1. Go to `https://<your-domain>/studio` and sign in with your Sanity account
+2. Click **Static Pages** in the left sidebar → **New Static Page**
+3. Fill in the **Title** (shown as the page heading on the website)
+4. Set the **Slug** field to the exact value from the table above — disable auto-generate if it differs
+5. Write the **Body** content using the rich text editor
+6. Click **Publish**
+7. The live page updates within 60 seconds
+
+---
 
 ### Force-revalidate a stale page
 
@@ -693,4 +767,4 @@ All four rows should show `rowsecurity = true`. If any show `false`, apply the p
 
 ---
 
-*Last updated: 2026-05-14 · Maintainer: platform admin*
+*Last updated: 2026-05-17 · Maintainer: platform admin*
