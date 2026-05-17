@@ -1,7 +1,7 @@
 # Feature Specification: Member Search
 
 > **Spec ID:** SPEC-16-member-search
-> **Status:** Draft
+> **Status:** Complete
 > **Author:** Utkal Nayak
 > **Created:** 2026-05-17
 
