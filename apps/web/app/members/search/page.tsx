@@ -1,9 +1,6 @@
 import { redirect } from 'next/navigation'
-import { PortableText } from '@portabletext/react'
 import { createSupabaseServer } from '@/lib/auth/supabase-server'
-import { sanityFetch } from '@/sanity/lib/client'
-import { STATIC_PAGE_BY_SLUG_QUERY } from '@/sanity/lib/queries'
-import type { SanityStaticPage } from '@/types/sanity'
+import MemberSearchClient from './MemberSearchClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +9,32 @@ export default async function MemberSearchPage() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect('/login')
 
-  const page = await sanityFetch<SanityStaticPage>(STATIC_PAGE_BY_SLUG_QUERY, { slug: 'members-search' })
-  if (!page) return <main><h1>Member Search</h1><p>Coming soon.</p></main>
-  return <main><h1>{page.title}</h1><PortableText value={page.body} /></main>
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+
+  const res  = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    cache: 'no-store',
+  })
+  const { user } = await res.json()
+
+  if (user?.memberStatus !== 'active') {
+    return (
+      <main>
+        <h1>Member Search</h1>
+        <p>
+          Member search is available to active members only.{' '}
+          <a href="/membership">View membership options</a>
+        </p>
+      </main>
+    )
+  }
+
+  return (
+    <main>
+      <h1>Member Search</h1>
+      <MemberSearchClient />
+    </main>
+  )
 }
