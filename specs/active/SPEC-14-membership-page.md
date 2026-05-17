@@ -192,8 +192,8 @@ apps/web/
 |----------|--------|--------|
 | Should Patron/Benefactor past payments (isUpgradePath: false) count toward future upgrade credit? | Resolved | No — only isUpgradePath: true payments contribute to the credit pool |
 | Should members within 1-year expiry window get full upgrade credit, or just active members? | Resolved | Both active and expired-within-1-year members get credit (existing `calculateUpgradeCost` logic) |
-| For first-time buyers (cumulativePaid = 0), should Life/Patron/Benefactor show "upgrade price" label or "full price"? | Open | Decide during design — either omit the label when credit = 0, or show "No prior credit" |
-| Should the success page auto-redirect to `/dashboard` after N seconds, or require a manual click? | Open | Decide during design |
+| For first-time buyers (cumulativePaid = 0), should Life/Patron/Benefactor show "upgrade price" label or "full price"? | Resolved | Show full price with no upgrade label when cumulativePaid = 0 |
+| Should the success page auto-redirect to `/dashboard` after N seconds, or require a manual click? | Resolved | Auto-redirect to `/dashboard` after 5 seconds with a visible countdown message |
 
 ---
 

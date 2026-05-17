@@ -32,7 +32,7 @@ export async function createCheckoutSession(
     ],
     mode: 'payment',
     success_url: `${BASE_URL}/membership/success`,
-    cancel_url: `${BASE_URL}/register`,
+    cancel_url: `${BASE_URL}/membership`,
     metadata: {
       memberId,
       paymentType: 'membership',
@@ -46,7 +46,9 @@ export async function createUpgradeSession(
   memberId: string,
   memberEmail: string,
   upgradeCostCents: number,
+  targetType: 'life' | 'patron' | 'benefactor' = 'life',
 ): Promise<string> {
+  const label = targetType.charAt(0).toUpperCase() + targetType.slice(1)
   const session = await stripe.checkout.sessions.create({
     customer_email: memberEmail,
     payment_method_types: ['card'],
@@ -54,7 +56,7 @@ export async function createUpgradeSession(
       {
         price_data: {
           currency: 'usd',
-          product_data: { name: 'OSA Life Membership Upgrade' },
+          product_data: { name: `OSA ${label} Membership Upgrade` },
           unit_amount: upgradeCostCents,
         },
         quantity: 1,
@@ -62,11 +64,11 @@ export async function createUpgradeSession(
     ],
     mode: 'payment',
     success_url: `${BASE_URL}/membership/success`,
-    cancel_url: `${BASE_URL}/register`,
+    cancel_url: `${BASE_URL}/membership`,
     metadata: {
       memberId,
       paymentType: 'upgrade',
-      membershipType: 'life',
+      membershipType: targetType,
     },
   })
   return session.url!

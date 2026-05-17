@@ -47,7 +47,16 @@ export interface UpgradeCostResult {
   autoActivate: boolean
 }
 
-export async function calculateUpgradeCost(memberId: string): Promise<UpgradeCostResult> {
+const UPGRADE_TARGET_FEE_IDS: Record<'life' | 'patron' | 'benefactor', string> = {
+  life:       'life',
+  patron:     'patron',
+  benefactor: 'benefactor',
+}
+
+export async function calculateUpgradeCost(
+  memberId: string,
+  targetType: 'life' | 'patron' | 'benefactor' = 'life',
+): Promise<UpgradeCostResult> {
   const member = await prisma.member.findUnique({ where: { id: memberId } })
   if (!member) return { eligible: false, reason: 'Member not found', costCents: 0, autoActivate: false }
 
@@ -60,8 +69,10 @@ export async function calculateUpgradeCost(memberId: string): Promise<UpgradeCos
     member.memberStatus === 'expired' &&
     member.expiryDate !== null &&
     member.expiryDate >= oneYearAgo
+  // First-time buyers (no prior membership) also get upgrade pricing
+  const hasNoPriorMembership = member.memberStatus === null && member.membershipType === null
 
-  if (!isActive && !isRecentlyExpired) {
+  if (!isActive && !isRecentlyExpired && !hasNoPriorMembership) {
     return {
       eligible: false,
       reason: member.memberStatus === 'expired'
@@ -72,12 +83,12 @@ export async function calculateUpgradeCost(memberId: string): Promise<UpgradeCos
     }
   }
 
-  const lifeFee = await prisma.membershipFee.findUnique({ where: { id: 'life' } })
-  if (!lifeFee) throw new Error('Life membership fee not seeded')
+  const targetFee = await prisma.membershipFee.findUnique({ where: { id: UPGRADE_TARGET_FEE_IDS[targetType] } })
+  if (!targetFee) throw new Error(`${targetType} membership fee not seeded`)
 
-  const lifeCents = lifeFee.amountDollars * 100
+  const targetCents = targetFee.amountDollars * 100
   const cumulativePaid = await calculateCumulativePaid(memberId)
-  const costCents = Math.max(0, lifeCents - cumulativePaid)
+  const costCents = Math.max(0, targetCents - cumulativePaid)
 
   return {
     eligible: true,
