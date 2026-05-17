@@ -115,9 +115,22 @@ export const ANNOUNCEMENTS_LATEST_QUERY = groq`
 `
 
 // ---------------------------------------------------------------------------
-// About (Static Page — slug-based lookup)
+// Static Pages — generic slug-based lookup
 // ---------------------------------------------------------------------------
 
+// Used by /about and all other static_page-backed routes
+export const STATIC_PAGE_BY_SLUG_QUERY = groq`
+  *[_type == "static_page" && slug.current == $slug][0] {
+    _id,
+    title,
+    "slug": slug.current,
+    body,
+    section,
+    last_updated
+  }
+`
+
+// Legacy alias kept for backward compat with /about/page.tsx
 export const ABOUT_PAGE_QUERY = groq`
   *[_type == "static_page" && slug.current == "about-us"][0] {
     _id,
