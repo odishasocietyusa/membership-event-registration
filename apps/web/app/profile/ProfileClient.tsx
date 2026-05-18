@@ -24,6 +24,7 @@ interface ProfileForm {
   address: AddressForm
   bio: string
   spouseName: string
+  spouseEmail: string
   souvenirPreference: string
   show_phone: boolean
   show_email: boolean
@@ -76,6 +77,8 @@ export default function ProfileClient({
 }: ProfileClientProps) {
   const addr = (member.address as Record<string, string> | null) ?? {}
   const vis  = (member.profileVisibility as Record<string, boolean> | null) ?? {}
+  const initialSpouseEmail = (initialFamilyMembers as FamilyMemberWithEmail[])
+    .find((fm) => fm.relation === 'spouse' && !fm.deletedAt)?.email ?? ''
 
   const [form, setForm] = useState<ProfileForm>({
     fullName:           member.fullName ?? '',
@@ -89,6 +92,7 @@ export default function ProfileClient({
     },
     bio:                initialBio,
     spouseName:         initialSpouseName,
+    spouseEmail:        initialSpouseEmail,
     souvenirPreference: member.souvenirPreference ?? '',
     show_phone:         vis.show_phone   ?? false,
     show_email:         vis.show_email   ?? false,
@@ -174,6 +178,19 @@ export default function ProfileClient({
       }
       const { member: updated } = await res.json()
       setChapterName(chapterDisplayName(updated.chapterId))
+
+      // Update spouse email on the FamilyMember row if spouse name is set
+      if (form.spouseName.trim()) {
+        const spouseFm = familyMembers.find((fm) => fm.relation === 'spouse' && !fm.deletedAt)
+        if (spouseFm) {
+          await fetch(`/api/members/me/family/${spouseFm.id}`, {
+            method:  'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body:    JSON.stringify({ email: form.spouseEmail.trim() || null }),
+          }).catch(() => { /* non-critical */ })
+        }
+      }
+
       setSaveSuccess(true)
     } catch {
       setSaveError('Network error. Please try again.')
@@ -356,6 +373,18 @@ export default function ProfileClient({
               onChange={(e) => setForm((prev) => ({ ...prev, spouseName: e.target.value }))}
             />
           </div>
+
+          {form.spouseName.trim() && (
+            <div>
+              <label htmlFor="spouseEmail">Spouse email (optional)</label>
+              <input
+                id="spouseEmail"
+                type="email"
+                value={form.spouseEmail}
+                onChange={(e) => setForm((prev) => ({ ...prev, spouseEmail: e.target.value }))}
+              />
+            </div>
+          )}
 
           <div>
             <label htmlFor="souvenirPreference">Souvenir preference</label>
