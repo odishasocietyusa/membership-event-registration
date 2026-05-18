@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/auth/supabase-server'
-import { STATE_OPTIONS, chapterDisplayName } from '@/lib/constants/address-options'
+import { STATE_OPTIONS, COUNTRY_OPTIONS, chapterDisplayName } from '@/lib/constants/address-options'
 
 export const dynamic = 'force-dynamic'
 
@@ -205,7 +205,11 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
             </div>
             <div>
               <label>Country<br />
-                <input name="country" defaultValue={member.address?.country ?? ''} />
+                <select name="country" defaultValue={member.address?.country ?? 'USA'}>
+                  {COUNTRY_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
               </label>
             </div>
           </fieldset>

@@ -11,7 +11,7 @@ import {
 } from '@osa/validation'
 import { createSupabaseBrowser } from '@/lib/auth/supabase-browser'
 import GoogleLoginButton from '@/app/login/login-button'
-import { STATE_OPTIONS } from '@/lib/constants/address-options'
+import { STATE_OPTIONS, COUNTRY_OPTIONS } from '@/lib/constants/address-options'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -597,9 +597,13 @@ export default function RegisterPage() {
             </div>
             <div>
               <label htmlFor="country">Country</label>
-              <input id="country" type="text" autoComplete="country-name"
+              <select id="country" autoComplete="country-name"
                 value={formData.address.country}
-                onChange={(e) => setFormData((prev) => ({ ...prev, address: { ...prev.address, country: e.target.value } }))} />
+                onChange={(e) => setFormData((prev) => ({ ...prev, address: { ...prev.address, country: e.target.value } }))}>
+                {COUNTRY_OPTIONS.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
               {errors.country && <p role="alert">{errors.country}</p>}
             </div>
             {errors.form && <p role="alert">{errors.form}</p>}

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { createSupabaseBrowser } from '@/lib/auth/supabase-browser'
 import { US_STATES, CA_PROVINCES } from '@/lib/constants/geo'
+import { chapterDisplayName } from '@/lib/constants/address-options'
 import type { MemberSearchResult, MemberSearchResponse } from '@/lib/validation/member.schema'
 
 const MEMBERSHIP_TYPE_LABELS: Record<string, string> = {
@@ -262,6 +263,7 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
                     <th>First Name</th>
                     <th>City</th>
                     <th>State</th>
+                    <th>Chapter</th>
                     <th>Member Since</th>
                     <th>Membership Type</th>
                     <th>Status</th>
@@ -275,6 +277,7 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
                       <td>{m.firstName      ?? '—'}</td>
                       <td>{m.city           ?? '—'}</td>
                       <td>{m.state          ?? '—'}</td>
+                      <td>{chapterDisplayName(m.chapterId)}</td>
                       <td>{m.memberSince    ?? '—'}</td>
                       <td>{m.membershipType ? (MEMBERSHIP_TYPE_LABELS[m.membershipType] ?? m.membershipType) : '—'}</td>
                       <td>{m.memberStatus   ? (MEMBER_STATUS_LABELS[m.memberStatus]     ?? m.memberStatus)   : '—'}</td>

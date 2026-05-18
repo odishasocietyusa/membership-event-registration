@@ -140,6 +140,7 @@ export const MemberSearchResultSchema = z.object({
   lastName:       z.string().nullable(),
   city:           z.string().nullable(),
   state:          z.string().nullable(),
+  chapterId:      z.string().nullable(),
   memberSince:    z.string().nullable(),
   membershipType: z.string().nullable(),
   memberStatus:   z.string().nullable(),

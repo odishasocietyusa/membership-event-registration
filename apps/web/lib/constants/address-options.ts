@@ -88,6 +88,13 @@ export const CHAPTER_LABELS: Record<string, string> = {
   'washington-dc':  'Washington DC Chapter',
 }
 
+export const COUNTRY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'USA',    label: 'USA' },
+  { value: 'Canada', label: 'Canada' },
+  { value: 'India',  label: 'India' },
+  { value: 'Other',  label: 'Other' },
+]
+
 export function chapterDisplayName(chapterId: string | null | undefined): string {
   if (!chapterId) return 'No Chapter'
   return CHAPTER_LABELS[chapterId] ?? chapterId

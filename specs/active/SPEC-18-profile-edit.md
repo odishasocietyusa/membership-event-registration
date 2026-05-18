@@ -51,10 +51,11 @@ This spec also includes a prerequisite fix to `withAuth`: switching the `Member`
 | FR-04b | When address is saved, the server automatically derives and writes `chapterId` by looking up `address.state` (or `address.country = "Canada"`) against the chapter–jurisdiction table | Must Have | Server-side only; member never sends `chapterId` |
 | FR-04c | If the member's state does not match any chapter jurisdiction, `chapterId` is set to `null` | Must Have | Displayed as "No Chapter" |
 | FR-04d | Chapter display name is shown read-only on the profile page, updated after each save | Must Have | |
-| FR-06 | Family members section lists existing family members (name, relation, date of birth, HS graduation year) with a Remove button per entry | Must Have | |
-| FR-07 | User can add a new family member by filling name, relation, optional date of birth, optional HS graduation year | Must Have | Uses existing `POST /api/members/me/family` |
+| FR-06 | Family members section lists existing family members (name, relation, date of birth, HS graduation year, email if spouse) with a Remove button per entry | Must Have | Email shown only for spouse entries |
+| FR-07 | User can add a new family member by filling name, relation, optional date of birth, optional HS graduation year; if relation is spouse, an optional email field is also shown | Must Have | Uses existing `POST /api/members/me/family` |
 | FR-08 | Removing a family member calls `DELETE /api/members/me/family/:id`; entry disappears without page reload | Must Have | |
-| FR-09 | User can edit an existing family member's details (name, date of birth, HS graduation year) via `PUT /api/members/me/family/:id` | Must Have | New endpoint — see §4.3 |
+| FR-09 | User can edit an existing family member's details (name, date of birth, HS graduation year, email if spouse) via `PUT /api/members/me/family/:id` | Must Have | New endpoint — see §4.3 |
+| FR-09b | Spouse email is stored on the `FamilyMember` row; requires a DB migration adding `email String?` to the `family_members` table | Must Have | Optional field — no validation beyond valid email format |
 | FR-10 | Saving profile changes calls `PUT /api/members/me` with all editable fields | Must Have | Partial updates supported — only changed fields sent |
 | FR-11 | Bio and spouse name are included in the profile save call; `UpdateMemberSchema` extended to include these | Must Have | Currently only in `CreateProfileSchema` |
 | FR-12 | On save success, a confirmation message is shown inline; page stays loaded | Must Have | No full reload |
@@ -108,8 +109,10 @@ This spec also includes a prerequisite fix to `withAuth`: switching the `Member`
 | Chapter not client-settable | Active member | Send `PUT /api/members/me` with `chapterId: "florida"` in body | `chapterId` ignored; chapter derived from address state only |
 | Save with no changes | User clicks Save immediately | — | API still called; confirmation shown (idempotent) |
 | Add family member | User fills add-family form | Submit | Entry appears in list; `POST /api/members/me/family` called |
+| Add spouse with email | User adds family member with relation=spouse and fills email | Submit | Email stored on `FamilyMember` row |
 | Remove family member | Existing family member listed | Click Remove | Entry removed from list; `DELETE` called |
 | Edit family member | Existing family member listed | Edit name, click save row | `PUT /api/members/me/family/:id` called |
+| Edit spouse email | Existing spouse entry | Edit email, click save row | `PUT /api/members/me/family/:id` called; email updated |
 | Read-only fields | Any authenticated user | Inspect form / direct API call | email, status, type, dates not accepted by `PUT /api/members/me` |
 | `withAuth` userId lookup | Member with `userId` set | Any authenticated request | Member found by `userId`, not email |
 | `withAuth` email fallback | Admin-pre-created row, `userId` null | First login | Falls back to email lookup, binds `userId` |
@@ -132,9 +135,10 @@ This spec also includes a prerequisite fix to `withAuth`: switching the `Member`
 | File | Action | Notes |
 |------|--------|-------|
 | `apps/web/lib/auth/with-auth.ts` | **Modify** | Change `findUnique({ where: { email } })` to try `userId` first, email fallback |
-| `apps/web/lib/validation/member.schema.ts` | **Modify** | Extend `UpdateMemberSchema` to include `bio?: string` and `spouseName?: string`; remove `chapterId` (no longer client-settable); add `UpdateFamilyMemberSchema` |
+| `apps/web/lib/validation/member.schema.ts` | **Modify** | Extend `UpdateMemberSchema` to include `bio?: string` and `spouseName?: string`; remove `chapterId` (no longer client-settable); add `UpdateFamilyMemberSchema` (includes `email?: string` for spouse) |
 | `apps/web/lib/members/member-service.ts` | **Modify** | Update `updateMember()` to: derive `chapterId` via `prisma.chapter.findFirst({ where: { states: { has: stateAbbr } } })`; persist `bio` and `spouseName` into `profileData` and `FamilyMember` (spouse); add `updateFamilyMember()` |
-| `apps/web/prisma/seed.ts` | **Modify** | Remove `KY` from both `ozark` and `southern` jurisdiction arrays — Kentucky is "No Chapter" pending formation of its own chapter |
+| `apps/web/prisma/schema.prisma` | **Modify** | Add `email String? @map("email")` to `FamilyMember` model |
+| `apps/web/prisma/migrations/` | **Create** | Migration adding `email` column to `family_members` table |
 | `apps/web/app/api/members/me/family/[id]/route.ts` | **Modify** | Add `PUT` handler for updating a family member's details |
 | `apps/web/app/profile/page.tsx` | **Create** | Server Component: auth guard, fetch member + family, pass as props to client |
 | `apps/web/app/profile/ProfileClient.tsx` | **Create** | Client Component: form with all editable fields, family member list/add/remove/edit, save handlers |
@@ -236,11 +240,11 @@ Chapter is resolved at save time by querying the `chapters` table: `prisma.chapt
 > This section is updated by Claude Code agents during implementation
 
 ### Phase 1: Analysis
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-18/01-analysis.md`
 
 ### Phase 2: Design
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-18/02-design.md`
 
 ### Phase 3: Implementation
