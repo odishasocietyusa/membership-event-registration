@@ -15,10 +15,10 @@ const chapters = [
   { id: 'new-england',    displayName: 'New England Chapter',    states: ['MA', 'CT', 'RI', 'ME', 'NH', 'VT'] },
   { id: 'ny-nj-pa',       displayName: 'NY-NJ-PA Chapter',       states: ['NY', 'NJ', 'PA'] },
   { id: 'ohio',           displayName: 'Ohio Chapter',           states: ['OH'] },
-  { id: 'ozark',          displayName: 'Ozark Chapter',          states: ['KS', 'KY', 'IA', 'MO'] },
+  { id: 'ozark',          displayName: 'Ozark Chapter',          states: ['KS', 'IA', 'MO'] },
   { id: 'rocky-mountain', displayName: 'Rocky Mountain Chapter', states: ['CO', 'MT', 'WY', 'ND', 'SD'] },
   { id: 'seattle',        displayName: 'Seattle Chapter',        states: ['WA'] },
-  { id: 'southern',       displayName: 'Southern Chapter',       states: ['TN', 'LA', 'MS', 'AL', 'KY'] },
+  { id: 'southern',       displayName: 'Southern Chapter',       states: ['TN', 'LA', 'MS', 'AL'] },
   { id: 'southwest',      displayName: 'Southwest Chapter',      states: ['TX', 'AR', 'NM', 'OK'] },
   { id: 'washington-dc',  displayName: 'Washington DC Chapter',  states: ['MD', 'DC', 'VA', 'WV', 'DE'] },
 ]
