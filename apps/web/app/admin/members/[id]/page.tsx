@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/auth/supabase-server'
+import { STATE_OPTIONS, chapterDisplayName } from '@/lib/constants/address-options'
 
 export const dynamic = 'force-dynamic'
 
@@ -148,6 +149,7 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
         <p><strong>Email:</strong> {member.email}</p>
         <p><strong>Phone:</strong> {member.phone ?? '—'}</p>
         <p><strong>Role:</strong> {member.role}</p>
+        <p><strong>Chapter:</strong> {chapterDisplayName(member.chapterId)}</p>
         <p><strong>Joined:</strong> {formatDate(member.joinDate)}</p>
         {member.address && (
           <p><strong>Address:</strong> {[
@@ -187,8 +189,13 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
               </label>
             </div>
             <div>
-              <label>State<br />
-                <input name="state" defaultValue={member.address?.state ?? ''} />
+              <label>State / Province<br />
+                <select name="state" defaultValue={member.address?.state ?? ''}>
+                  <option value="">Select…</option>
+                  {STATE_OPTIONS.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
               </label>
             </div>
             <div>

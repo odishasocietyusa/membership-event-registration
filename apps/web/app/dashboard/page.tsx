@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/auth/supabase-server'
 import SignOutButton from './sign-out-button'
+import { chapterDisplayName } from '@/lib/constants/address-options'
 
 // Membership types whose expiry date is always null (never expire)
 const NO_EXPIRY_TYPES = new Set(['life', 'lifeWard', 'honoraryNoVote'])
@@ -58,6 +59,7 @@ export default async function DashboardPage() {
   const joinDate: string | null = membership?.joinDate ?? null
   const expiryDate: string | null = membership?.expiryDate ?? null
   const neverExpires = membershipType ? NO_EXPIRY_TYPES.has(membershipType) : false
+  const chapter: string = chapterDisplayName(user?.chapterId)
 
   return (
     <main>
@@ -67,6 +69,7 @@ export default async function DashboardPage() {
         <legend>Your Account</legend>
         <p><strong>Name:</strong> {displayName}</p>
         <p><strong>Email:</strong> {user?.email}</p>
+        <p><strong>Chapter:</strong> {chapter}</p>
       </fieldset>
 
       <fieldset>

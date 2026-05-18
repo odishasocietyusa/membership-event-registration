@@ -10,6 +10,8 @@ import {
   ChildSchema,
 } from '@osa/validation'
 import { createSupabaseBrowser } from '@/lib/auth/supabase-browser'
+import GoogleLoginButton from '@/app/login/login-button'
+import { STATE_OPTIONS } from '@/lib/constants/address-options'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -332,6 +334,15 @@ export default function RegisterPage() {
   }
 
   // -------------------------------------------------------------------
+  // Sign out
+  // -------------------------------------------------------------------
+
+  async function handleSignOut() {
+    await fetch('/api/auth/signout', { method: 'POST' })
+    router.push('/login')
+  }
+
+  // -------------------------------------------------------------------
   // Child list helpers
   // -------------------------------------------------------------------
 
@@ -406,6 +417,10 @@ export default function RegisterPage() {
               </p>
             </div>
           ) : (
+            <>
+              <GoogleLoginButton />
+              <hr />
+              <p>Or register with email and password:</p>
             <form onSubmit={(e) => { e.preventDefault(); handleAccountNext() }} noValidate>
               <div>
                 <label htmlFor="email">Email</label>
@@ -432,6 +447,7 @@ export default function RegisterPage() {
               <p>Already have an account? <a href="/login">Sign in</a></p>
               <button type="submit" disabled={loading}>{loading ? 'Creating account…' : 'Next'}</button>
             </form>
+            </>
           )}
         </section>
       )}
@@ -561,10 +577,15 @@ export default function RegisterPage() {
               {errors.city && <p role="alert">{errors.city}</p>}
             </div>
             <div>
-              <label htmlFor="state">State</label>
-              <input id="state" type="text" autoComplete="address-level1"
+              <label htmlFor="state">State / Province</label>
+              <select id="state" autoComplete="address-level1"
                 value={formData.address.state}
-                onChange={(e) => setFormData((prev) => ({ ...prev, address: { ...prev.address, state: e.target.value } }))} />
+                onChange={(e) => setFormData((prev) => ({ ...prev, address: { ...prev.address, state: e.target.value } }))}>
+                <option value="">Select…</option>
+                {STATE_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
               {errors.state && <p role="alert">{errors.state}</p>}
             </div>
             <div>
@@ -646,6 +667,16 @@ export default function RegisterPage() {
             Cancel
           </button>
         </section>
+      )}
+
+      {sessionEmail && (
+        <footer>
+          <hr />
+          <p>
+            Signed in as <strong>{sessionEmail}</strong>.{' '}
+            <button type="button" onClick={handleSignOut}>Sign out</button>
+          </p>
+        </footer>
       )}
     </main>
   )

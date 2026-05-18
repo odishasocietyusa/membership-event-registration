@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/auth/supabase-server'
+import { chapterDisplayName } from '@/lib/constants/address-options'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,7 @@ interface Member {
   membershipType: string | null
   memberStatus: string | null
   joinDate: string | null
+  chapterId: string | null
 }
 
 interface PageProps {
@@ -89,6 +91,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
             <th>Name</th>
             <th>Email</th>
             <th>Member ID</th>
+            <th>Chapter</th>
             <th>Role</th>
             <th>Membership</th>
             <th>Status</th>
@@ -102,6 +105,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
               <td>{m.fullName ?? '—'}</td>
               <td>{m.email}</td>
               <td>{m.id}</td>
+              <td>{chapterDisplayName(m.chapterId)}</td>
               <td>{m.role}</td>
               <td>{m.membershipType ?? '—'}</td>
               <td>{memberStatusLabel(m.memberStatus, m.membershipType)}</td>
@@ -110,7 +114,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
             </tr>
           ))}
           {members.length === 0 && (
-            <tr><td colSpan={8}>No members found.</td></tr>
+            <tr><td colSpan={9}>No members found.</td></tr>
           )}
         </tbody>
       </table>
