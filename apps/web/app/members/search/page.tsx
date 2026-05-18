@@ -31,10 +31,12 @@ export default async function MemberSearchPage() {
     )
   }
 
+  const senderName = user?.fullName ?? user?.email ?? 'OSA Member'
+
   return (
     <main>
       <h1>Member Search</h1>
-      <MemberSearchClient />
+      <MemberSearchClient senderName={senderName} />
     </main>
   )
 }

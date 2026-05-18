@@ -156,3 +156,11 @@ export const MemberSearchResponseSchema = z.object({
   truncated: z.boolean(),
 })
 export type MemberSearchResponse = z.infer<typeof MemberSearchResponseSchema>
+
+// ── Send member message (POST /api/members/message) ───────────────────────────
+
+export const SendMemberMessageSchema = z.object({
+  toMemberId: z.string().uuid(),
+  message:    z.string().min(1, 'Message cannot be empty').max(1000, 'Maximum 1 000 characters'),
+})
+export type SendMemberMessageInput = z.infer<typeof SendMemberMessageSchema>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createSupabaseBrowser } from '@/lib/auth/supabase-browser'
 import { US_STATES, CA_PROVINCES } from '@/lib/constants/geo'
 import type { MemberSearchResult, MemberSearchResponse } from '@/lib/validation/member.schema'
@@ -25,7 +25,7 @@ const MEMBER_STATUS_LABELS: Record<string, string> = {
 
 const PAGE_SIZE = 100
 
-export default function MemberSearchClient() {
+export default function MemberSearchClient({ senderName }: { senderName: string }) {
   const [firstName, setFirstName] = useState('')
   const [lastName,  setLastName]  = useState('')
   const [city,      setCity]      = useState('')
@@ -39,6 +39,14 @@ export default function MemberSearchClient() {
   const [searched,  setSearched]  = useState(false)
   const [loading,   setLoading]   = useState(false)
   const [error,     setError]     = useState<string | null>(null)
+
+  // Overlay state
+  const dialogRef              = useRef<HTMLDialogElement>(null)
+  const [overlayRecipientId,   setOverlayRecipientId]   = useState<string | null>(null)
+  const [overlayRecipientName, setOverlayRecipientName] = useState('')
+  const [messageText,          setMessageText]          = useState('')
+  const [sending,              setSending]              = useState(false)
+  const [sendError,            setSendError]            = useState<string | null>(null)
 
   const stateOptions = country === 'Canada' ? CA_PROVINCES : US_STATES
 
@@ -104,6 +112,54 @@ export default function MemberSearchClient() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     fetchPage(1)
+  }
+
+  function openOverlay(memberId: string, recipientName: string) {
+    setOverlayRecipientId(memberId)
+    setOverlayRecipientName(recipientName)
+    setMessageText('')
+    setSendError(null)
+    dialogRef.current?.showModal()
+  }
+
+  function closeOverlay() {
+    setOverlayRecipientId(null)
+    setOverlayRecipientName('')
+    setMessageText('')
+    setSendError(null)
+    dialogRef.current?.close()
+  }
+
+  async function handleSend() {
+    if (!overlayRecipientId || !messageText.trim()) return
+    setSending(true)
+    setSendError(null)
+
+    try {
+      const supabase = createSupabaseBrowser()
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const res = await fetch('/api/members/message', {
+        method:  'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization:  `Bearer ${session?.access_token ?? ''}`,
+        },
+        body: JSON.stringify({ toMemberId: overlayRecipientId, message: messageText.trim() }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setSendError((data as { error?: string })?.error ?? 'Failed to send. Please try again.')
+        return
+      }
+
+      closeOverlay()
+    } catch {
+      setSendError('Network error. Please try again.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -219,7 +275,17 @@ export default function MemberSearchClient() {
                       <td>{m.memberSince    ?? '—'}</td>
                       <td>{m.membershipType ? (MEMBERSHIP_TYPE_LABELS[m.membershipType] ?? m.membershipType) : '—'}</td>
                       <td>{m.memberStatus   ? (MEMBER_STATUS_LABELS[m.memberStatus]     ?? m.memberStatus)   : '—'}</td>
-                      <td><a href={`/messages/new?to=${m.memberId}`}>Send Message</a></td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => openOverlay(
+                            m.memberId,
+                            [m.firstName, m.lastName].filter(Boolean).join(' ') || 'this member'
+                          )}
+                        >
+                          Send Message
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -248,6 +314,35 @@ export default function MemberSearchClient() {
           )}
         </section>
       )}
+      <dialog ref={dialogRef} onClose={closeOverlay}>
+        <p><strong>To:</strong> {overlayRecipientName}</p>
+        <p><strong>From:</strong> {senderName}</p>
+
+        <div>
+          <label htmlFor="messageText">Message</label>
+          <textarea
+            id="messageText"
+            value={messageText}
+            onChange={(e) => setMessageText(e.target.value)}
+            maxLength={1000}
+            rows={6}
+          />
+          <p>{1000 - messageText.length} characters remaining</p>
+        </div>
+
+        {sendError && <p role="alert">{sendError}</p>}
+
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={!messageText.trim() || sending}
+        >
+          {sending ? 'Sending…' : 'Send'}
+        </button>
+        <button type="button" onClick={closeOverlay} disabled={sending}>
+          Cancel
+        </button>
+      </dialog>
     </>
   )
 }
