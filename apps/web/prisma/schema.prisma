@@ -150,6 +150,7 @@ model FamilyMember {
   relation                FamilyRelation
   dateOfBirth             DateTime?      @map("date_of_birth") @db.Date
   highSchoolGraduationYear Int?          @map("high_school_graduation_year")
+  email                   String?        @map("email")
   createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamptz
   // Soft-delete — required by FR-09
   deletedAt               DateTime?      @map("deleted_at") @db.Timestamptz

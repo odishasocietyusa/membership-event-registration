@@ -38,7 +38,9 @@ export interface UpdateMemberInput {
     show_chapter: boolean
   }
   souvenirPreference?: 'electronic' | 'print'
-  chapterId?: string | null
+  bio?: string
+  spouseName?: string
+  // chapterId intentionally absent — server derives it; admin uses AdminUpdateMemberInput
 }
 
 export interface AdminUpdateMemberInput extends UpdateMemberInput {
@@ -47,6 +49,7 @@ export interface AdminUpdateMemberInput extends UpdateMemberInput {
   membershipType?: string | null
   joinDate?: string | null
   expiryDate?: string | null
+  chapterId?: string | null  // admin-only manual override
 }
 
 export interface CreateFamilyMemberInput {
@@ -54,6 +57,14 @@ export interface CreateFamilyMemberInput {
   relation: 'spouse' | 'child' | 'other'
   dateOfBirth?: string
   highSchoolGraduationYear?: number
+  email?: string
+}
+
+export interface UpdateFamilyMemberInput {
+  fullName?: string
+  dateOfBirth?: string | null
+  highSchoolGraduationYear?: number | null
+  email?: string
 }
 
 export interface CreateChapterInput {
@@ -85,12 +96,72 @@ export async function updateMember(
     throw Object.assign(new Error('Member not found'), { code: 'NOT_FOUND' })
   }
 
-  const { joinDate, expiryDate, ...rest } = data
+  // Destructure fields requiring special handling; remainder goes directly to Prisma
+  const { joinDate, expiryDate, bio, spouseName, address, ...rest } = data
   const prismaData: Record<string, unknown> = { ...rest }
+
+  // Date field conversions
   if (joinDate !== undefined)   prismaData.joinDate   = joinDate   ? new Date(joinDate)   : null
   if (expiryDate !== undefined) prismaData.expiryDate = expiryDate ? new Date(expiryDate) : null
 
-  return prisma.member.update({ where: { id }, data: prismaData })
+  // Address + chapter derivation
+  // When address provided and chapterId not explicitly set (member path), derive from address.
+  // Admin explicit chapterId in rest takes precedence.
+  if (address !== undefined) {
+    prismaData.address = address
+    if (data.chapterId === undefined) {
+      const lookupKey =
+        address.country === 'Canada' ? 'Canada' : (address.state ?? '')
+      const chapter = lookupKey
+        ? await prisma.chapter.findFirst({ where: { states: { has: lookupKey } } })
+        : null
+      prismaData.chapterId = chapter?.id ?? null
+    }
+  }
+
+  // profileData merge — read-then-merge to avoid clobbering unrelated keys
+  if (bio !== undefined || spouseName !== undefined) {
+    const existingProfileData =
+      (existing.profileData as Record<string, unknown> | null) ?? {}
+    const mergedProfileData = { ...existingProfileData }
+    if (bio !== undefined)        mergedProfileData.bio        = bio
+    if (spouseName !== undefined) mergedProfileData.spouseName = spouseName
+    prismaData.profileData = mergedProfileData
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const member = await tx.member.update({ where: { id }, data: prismaData })
+
+    // Spouse FamilyMember upsert — only when spouseName was explicitly included in the update
+    if (spouseName !== undefined) {
+      const existingSpouse = await tx.familyMember.findFirst({
+        where: { primaryMemberId: id, relation: 'spouse', deletedAt: null },
+      })
+
+      if (spouseName === '') {
+        // Empty string → soft-delete existing spouse row
+        if (existingSpouse) {
+          await tx.familyMember.update({
+            where: { id: existingSpouse.id },
+            data:  { deletedAt: new Date() },
+          })
+        }
+      } else if (existingSpouse) {
+        await tx.familyMember.update({
+          where: { id: existingSpouse.id },
+          data:  { fullName: spouseName },
+        })
+      } else {
+        await tx.familyMember.create({
+          data: { primaryMemberId: id, fullName: spouseName, relation: 'spouse' },
+        })
+      }
+    }
+
+    return member
+  })
+
+  return updated
 }
 
 export async function softDeleteMember(id: string): Promise<void> {
@@ -215,6 +286,7 @@ export async function addFamilyMember(
       relation: data.relation,
       dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
       highSchoolGraduationYear: data.highSchoolGraduationYear,
+      email: data.email,
     },
   })
 }
@@ -246,6 +318,35 @@ export async function softDeleteFamilyMember(
   await prisma.familyMember.update({
     where: { id },
     data: { deletedAt: new Date() },
+  })
+}
+
+export async function updateFamilyMember(
+  id: string,
+  requestingMemberId: string,
+  data: UpdateFamilyMemberInput
+): Promise<FamilyMember> {
+  const familyMember = await prisma.familyMember.findUnique({
+    where: { id, deletedAt: null },
+  })
+
+  if (!familyMember) {
+    throw Object.assign(new Error('Family member not found'), { code: 'NOT_FOUND' })
+  }
+
+  if (familyMember.primaryMemberId !== requestingMemberId) {
+    throw Object.assign(new Error('Forbidden'), { code: 'FORBIDDEN' })
+  }
+
+  const updateData: Record<string, unknown> = {}
+  if (data.fullName !== undefined)                 updateData.fullName                 = data.fullName
+  if (data.dateOfBirth !== undefined)              updateData.dateOfBirth              = data.dateOfBirth ? new Date(data.dateOfBirth) : null
+  if (data.highSchoolGraduationYear !== undefined) updateData.highSchoolGraduationYear = data.highSchoolGraduationYear ?? null
+  if (data.email !== undefined)                    updateData.email                    = data.email
+
+  return prisma.familyMember.update({
+    where: { id },
+    data: updateData,
   })
 }
 

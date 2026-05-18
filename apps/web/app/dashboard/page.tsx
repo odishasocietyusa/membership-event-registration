@@ -70,6 +70,7 @@ export default async function DashboardPage() {
         <p><strong>Name:</strong> {displayName}</p>
         <p><strong>Email:</strong> {user?.email}</p>
         <p><strong>Chapter:</strong> {chapter}</p>
+        <p><a href="/profile">Edit Profile</a></p>
       </fieldset>
 
       <fieldset>

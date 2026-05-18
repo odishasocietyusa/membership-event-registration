@@ -24,7 +24,9 @@ export const UpdateMemberSchema = z.object({
   address:            AddressSchema.optional(),
   profileVisibility:  ProfileVisibilitySchema.optional(),
   souvenirPreference: z.enum(['electronic', 'print']).optional(),
-  chapterId:          z.string().nullable().optional(), // null clears the chapter
+  bio:                z.string().max(1000).optional(),
+  spouseName:         z.string().max(200).optional(),
+  // chapterId intentionally absent — server derives it from address; never accepted from client
 })
 export type UpdateMemberInput = z.infer<typeof UpdateMemberSchema>
 
@@ -40,6 +42,7 @@ export const AdminUpdateMemberSchema = UpdateMemberSchema.extend({
   ]).nullable().optional(),
   joinDate:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   expiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  chapterId:  z.string().nullable().optional(), // admin-only manual chapter override
 })
 export type AdminUpdateMemberInput = z.infer<typeof AdminUpdateMemberSchema>
 
@@ -50,8 +53,20 @@ export const CreateFamilyMemberSchema = z.object({
   relation:                 z.enum(['spouse', 'child', 'other']),
   dateOfBirth:              z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // YYYY-MM-DD
   highSchoolGraduationYear: z.number().int().min(1900).max(new Date().getFullYear() + 6).optional(),
+  email:                    z.string().email().optional(),
 })
 export type CreateFamilyMemberInput = z.infer<typeof CreateFamilyMemberSchema>
+
+// ── Family member update (PUT /api/members/me/family/:id) ─────────────────────
+
+export const UpdateFamilyMemberSchema = z.object({
+  fullName:                 z.string().min(1).max(200).optional(),
+  dateOfBirth:              z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  highSchoolGraduationYear: z.number().int().min(1900).max(new Date().getFullYear() + 6).nullable().optional(),
+  email:                    z.string().email().optional(),
+  // relation intentionally excluded — not editable after creation
+})
+export type UpdateFamilyMemberInput = z.infer<typeof UpdateFamilyMemberSchema>
 
 // ── Admin link-member (POST /api/admin/link-member) ───────────────────────────
 

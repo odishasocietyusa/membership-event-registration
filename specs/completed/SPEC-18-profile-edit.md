@@ -248,9 +248,9 @@ Chapter is resolved at save time by querying the `chapters` table: `prisma.chapt
 - **Artifact:** `specs/artifacts/SPEC-18/02-design.md`
 
 ### Phase 3: Implementation
-- **Status:** Not Started
+- **Status:** Complete (migration pending — run after `supabase start`)
 - **Artifact:** `specs/artifacts/SPEC-18/03-implementation.md`
 
 ### Phase 4: QA & Testing
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-18/04-qa-report.md`

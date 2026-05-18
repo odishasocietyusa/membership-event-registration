@@ -40,31 +40,42 @@ export function withAuth(
     }
 
     // JIT sync: read-first, write only when needed.
-    // Three cases: new user (create), admin-pre-created row with no userId (update), existing (no write).
-    // try/catch on create handles the rare race where two concurrent first-logins both see null.
-    let member = await prisma.member.findUnique({ where: { email: authUser.email } })
+    // Lookup order: userId first (stable identity), email fallback (admin-pre-created rows).
+    // Four cases:
+    //   1. Found by userId                                   → proceed (no write)
+    //   2. Not found by userId, found by email, userId null  → bind userId (admin-pre-created)
+    //   3. Not found by userId, found by email, userId set   → proceed (edge case; no write)
+    //   4. Not found by either                               → JIT create
+    let member = await prisma.member.findUnique({ where: { userId: authUser.id } })
+
     if (!member) {
-      // Capture whatever Google provides at signup — name is available from OAuth metadata.
-      // City, state, phone, preferences are filled in manually on the registration page.
-      const meta = authUser.user_metadata ?? {}
-      const fullName: string | null =
-        meta.full_name ??
-        (meta.given_name && meta.family_name ? `${meta.given_name} ${meta.family_name}` : null) ??
-        null
-      try {
-        member = await prisma.member.create({
-          data: { email: authUser.email, userId: authUser.id, role: 'member', fullName },
+      // Try email fallback — handles admin-pre-created rows where userId is null
+      member = await prisma.member.findUnique({ where: { email: authUser.email } })
+
+      if (member && !member.userId) {
+        // Admin pre-created this row before the user ever logged in — bind their auth ID now
+        member = await prisma.member.update({
+          where: { id: member.id },
+          data: { userId: authUser.id },
         })
-      } catch {
-        member = await prisma.member.findUnique({ where: { email: authUser.email } })
-        if (!member) return jsonResponse(500, { error: 'Failed to initialise member record' })
+      } else if (!member) {
+        // Brand-new user — JIT create
+        // Capture whatever Google provides at signup — name is available from OAuth metadata.
+        // City, state, phone, preferences are filled in manually on the registration page.
+        const meta = authUser.user_metadata ?? {}
+        const fullName: string | null =
+          meta.full_name ??
+          (meta.given_name && meta.family_name ? `${meta.given_name} ${meta.family_name}` : null) ??
+          null
+        try {
+          member = await prisma.member.create({
+            data: { email: authUser.email, userId: authUser.id, role: 'member', fullName },
+          })
+        } catch {
+          member = await prisma.member.findUnique({ where: { email: authUser.email } })
+          if (!member) return jsonResponse(500, { error: 'Failed to initialise member record' })
+        }
       }
-    } else if (!member.userId) {
-      // Admin pre-created this row before the user ever logged in — bind their auth ID now
-      member = await prisma.member.update({
-        where: { id: member.id },
-        data: { userId: authUser.id },
-      })
     }
 
     if (member.deletedAt !== null) {

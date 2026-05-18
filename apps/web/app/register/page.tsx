@@ -22,7 +22,7 @@ type Child = { name: string; highSchoolGraduationYear: string; gender: string }
 type FormData = {
   account: { email: string; password: string; confirmPassword: string }
   personal: { firstName: string; lastName: string; phone: string; bio: string }
-  family: { spouseName: string; children: Child[] }
+  family: { spouseName: string; spouseEmail: string; children: Child[] }
   address: { street: string; city: string; state: string; zip: string; country: string }
   membershipType: string
 }
@@ -42,7 +42,7 @@ type MembershipFeeItem = {
 const INITIAL: FormData = {
   account: { email: '', password: '', confirmPassword: '' },
   personal: { firstName: '', lastName: '', phone: '', bio: '' },
-  family: { spouseName: '', children: [] },
+  family: { spouseName: '', spouseEmail: '', children: [] },
   address: { street: '', city: '', state: '', zip: '', country: 'USA' },
   membershipType: '',
 }
@@ -133,8 +133,9 @@ export default function RegisterPage() {
             bio: (savedProfile?.bio as string) ?? '',
           },
           family: {
-            spouseName: (savedProfile?.spouseName as string) ?? '',
-            children: prev.family.children,
+            spouseName:  (savedProfile?.spouseName as string) ?? '',
+            spouseEmail: prev.family.spouseEmail,
+            children:    prev.family.children,
           },
           address: savedAddress
             ? {
@@ -287,6 +288,30 @@ export default function RegisterPage() {
       const body = await res.json().catch(() => ({}))
       setErrors({ form: body.message ?? 'Failed to save profile. Please try again.' })
       return
+    }
+
+    // If spouse email was provided, find the spouse FamilyMember and set its email.
+    // Non-critical: failure is silently ignored — email can be set on /profile.
+    const spouseEmail = formData.family.spouseEmail.trim()
+    if (spouseEmail && formData.family.spouseName.trim()) {
+      const familyRes = await fetch('/api/members/me/family', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (familyRes.ok) {
+        const { familyMembers } = await familyRes.json()
+        const spouse = (familyMembers as { id: string; relation: string }[])
+          .find((fm) => fm.relation === 'spouse')
+        if (spouse) {
+          await fetch(`/api/members/me/family/${spouse.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ email: spouseEmail }),
+          }).catch(() => { /* non-critical */ })
+        }
+      }
     }
 
     setStep(5)
@@ -511,6 +536,14 @@ export default function RegisterPage() {
                 value={formData.family.spouseName}
                 onChange={(e) => setFormData((prev) => ({ ...prev, family: { ...prev.family, spouseName: e.target.value } }))} />
             </div>
+            {formData.family.spouseName.trim() && (
+              <div>
+                <label htmlFor="spouseEmail">Spouse email (optional)</label>
+                <input id="spouseEmail" type="email"
+                  value={formData.family.spouseEmail}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, family: { ...prev.family, spouseEmail: e.target.value } }))} />
+              </div>
+            )}
             <fieldset>
               <legend>Children</legend>
               {formData.family.children.map((child, idx) => {

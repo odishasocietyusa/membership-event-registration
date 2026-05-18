@@ -42,6 +42,7 @@ export default function NavBar({ user }: NavBarProps) {
                 <>
                   <li><Link href="/members/policy">Policy Documents &amp; Forms</Link></li>
                   <li><Link href="/dashboard">Member Dashboard</Link></li>
+                  <li><Link href="/profile">My Profile</Link></li>
                   <li><Link href="/members/search">Member Search</Link></li>
                   <li><Link href="/members/bog-minutes">BOG Meeting Minutes</Link></li>
                   <li><Link href="/obituary">Obituary</Link></li>
@@ -115,7 +116,7 @@ export default function NavBar({ user }: NavBarProps) {
         {' | '}
         {isAuthed ? (
           <>
-            <span>{displayName}</span>
+            <Link href="/profile">{displayName}</Link>
             {' | '}
             <form method="POST" action="/api/auth/signout">
               <button type="submit">Sign Out</button>
