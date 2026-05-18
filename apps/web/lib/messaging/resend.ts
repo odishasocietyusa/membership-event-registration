@@ -30,6 +30,8 @@ export async function sendRelayEmail(input: RelayEmailInput): Promise<void> {
       '---',
       'To reply, log in to the OSA member portal and send a message directly.',
       'Do not reply to this email — replies are not monitored.',
+      '',
+      'Odisha Society of the Americas — www.odishasociety.org',
     ].join('\n'),
   })
 }
