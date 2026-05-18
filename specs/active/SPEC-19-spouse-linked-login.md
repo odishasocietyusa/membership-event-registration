@@ -99,6 +99,9 @@ This spec also introduces a controlled email-change flow for primary members: th
 | Primary email conflict | New email already in Member table | Confirms change | Error: "This email is already registered" |
 | Revoked spouse logs in again | `FamilyMember.spouseUserId` cleared | Old spouse logs in with old email | No FamilyMember match found; new empty Member created; redirected to /register |
 | Normal member login unaffected | Member with `Member.userId` set logs in | Logs in | Found by userId; spouse lookup not triggered |
+| Spouse re-registers (email/pwd) | Spouse already has Supabase account | Enters same email on /register Step 1 | Supabase returns "User already registered"; error shown |
+| Spouse first login via Google on /register | Spouse clicks Google button on /register | OAuth completes | Callback detects FamilyMember email match; redirects to /dashboard with spouse banner |
+| Primary re-visits /register when logged in | Primary already has full profile | Navigates to /register | Session detected; bootstrap redirects to Step 5 (membership) as today |
 
 ---
 
@@ -145,6 +148,8 @@ New sequence adds a **step 2b** between steps 2 and 3:
 | `apps/web/app/profile/page.tsx` | **Modify** | Pass `isSpouseSession` flag as prop to ProfileClient |
 | `apps/web/app/dashboard/page.tsx` | **Modify** | Show spouse banner when `isSpouseSession` |
 | `apps/web/app/components/nav-bar.tsx` | **Modify** | Pass `isSpouseSession` to show banner in nav or page layout |
+| `apps/web/app/api/auth/callback/route.ts` | **Modify** | `resolvePostLoginPath()` must check for spouse FamilyMember email match before defaulting to `/register`; spouse first-time login redirects to `/dashboard` not `/register` |
+| `apps/web/app/register/page.tsx` | **Modify** | `bootstrap()` must detect when the returned member row belongs to a spouse session and redirect to `/dashboard` instead of resuming registration steps |
 
 ### 4.4 Files NOT to Modify
 - `apps/web/app/api/members/me/route.ts` — PUT handler already correct; spouse uses same route
