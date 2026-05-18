@@ -47,6 +47,7 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
   const [messageText,          setMessageText]          = useState('')
   const [sending,              setSending]              = useState(false)
   const [sendError,            setSendError]            = useState<string | null>(null)
+  const [sendSuccess,          setSendSuccess]          = useState(false)
 
   const stateOptions = country === 'Canada' ? CA_PROVINCES : US_STATES
 
@@ -127,6 +128,7 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
     setOverlayRecipientName('')
     setMessageText('')
     setSendError(null)
+    setSendSuccess(false)
     dialogRef.current?.close()
   }
 
@@ -154,7 +156,8 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
         return
       }
 
-      closeOverlay()
+      setSendSuccess(true)
+      setTimeout(closeOverlay, 2000)
     } catch {
       setSendError('Network error. Please try again.')
     } finally {
@@ -315,33 +318,39 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
         </section>
       )}
       <dialog ref={dialogRef} onClose={closeOverlay}>
-        <p><strong>To:</strong> {overlayRecipientName}</p>
-        <p><strong>From:</strong> {senderName}</p>
+        {sendSuccess ? (
+          <p role="status">Message sent to {overlayRecipientName}. This window will close shortly.</p>
+        ) : (
+          <>
+            <p><strong>To:</strong> {overlayRecipientName}</p>
+            <p><strong>From:</strong> {senderName}</p>
 
-        <div>
-          <label htmlFor="messageText">Message</label>
-          <textarea
-            id="messageText"
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            maxLength={1000}
-            rows={6}
-          />
-          <p>{1000 - messageText.length} characters remaining</p>
-        </div>
+            <div>
+              <label htmlFor="messageText">Message</label>
+              <textarea
+                id="messageText"
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                maxLength={1000}
+                rows={6}
+              />
+              <p>{1000 - messageText.length} characters remaining</p>
+            </div>
 
-        {sendError && <p role="alert">{sendError}</p>}
+            {sendError && <p role="alert">{sendError}</p>}
 
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!messageText.trim() || sending}
-        >
-          {sending ? 'Sending…' : 'Send'}
-        </button>
-        <button type="button" onClick={closeOverlay} disabled={sending}>
-          Cancel
-        </button>
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={!messageText.trim() || sending}
+            >
+              {sending ? 'Sending…' : 'Send'}
+            </button>
+            <button type="button" onClick={closeOverlay} disabled={sending}>
+              Cancel
+            </button>
+          </>
+        )}
       </dialog>
     </>
   )
