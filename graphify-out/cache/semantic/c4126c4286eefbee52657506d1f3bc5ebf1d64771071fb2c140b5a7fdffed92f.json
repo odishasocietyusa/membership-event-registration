@@ -1,0 +1,1 @@
+{"nodes": [{"id": "spec_8_obituary", "label": "Obituary Page Spec", "file_type": "document", "source_file": "specs/active/SPEC-8-obituary-page.md"}], "edges": [{"source": "spec_8_obituary", "target": "sanity_cms", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "specs/active/SPEC-8-obituary-page.md"}], "hyperedges": []}

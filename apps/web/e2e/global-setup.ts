@@ -69,7 +69,9 @@ export default async function globalSetup() {
   await page.fill('#email', TEST_USER_EMAIL)
   await page.fill('#password', TEST_USER_PASSWORD)
   await page.click('button[type="submit"]')
-  await page.waitForURL('**/dashboard', { timeout: 15_000 })
+  // New users without a complete profile are sent to /register instead of /dashboard.
+  // Wait for either — the auth cookies are set regardless of which route we land on.
+  await page.waitForURL(/\/(dashboard|register)/, { timeout: 15_000 })
 
   await context.storageState({ path: path.join(authDir, 'user.json') })
   await browser.close()

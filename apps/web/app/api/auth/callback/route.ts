@@ -10,7 +10,10 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const forwardedHost = request.headers.get('x-forwarded-host')
-  const baseUrl = forwardedHost ? `https://${forwardedHost}` : origin
+  const forwardedProto = request.headers.get('x-forwarded-proto')
+  const isLocal = forwardedHost?.includes('localhost') || origin.includes('localhost') || origin.includes('127.0.0.1')
+  const protocol = forwardedProto || (isLocal ? 'http' : 'https')
+  const baseUrl = forwardedHost ? `${protocol}://${forwardedHost}` : origin
 
   if (code) {
     const cookieStore = await cookies()

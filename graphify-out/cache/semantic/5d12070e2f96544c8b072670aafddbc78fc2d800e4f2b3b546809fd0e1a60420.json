@@ -1,0 +1,1 @@
+{"nodes": [{"id": "spec_5_awards", "label": "Awards Module Spec", "file_type": "document", "source_file": "specs/active/SPEC-5-awards-module.md"}], "edges": [{"source": "spec_5_awards", "target": "supabase", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "specs/active/SPEC-5-awards-module.md"}], "hyperedges": []}

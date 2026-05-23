@@ -1,0 +1,1 @@
+{"nodes": [{"id": "stripe", "label": "Stripe Payments", "file_type": "concept", "source_file": "docs/payment-module-capabilities.md"}], "edges": [{"source": "api_app", "target": "stripe", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "docs/payment-module-capabilities.md"}], "hyperedges": []}

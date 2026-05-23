@@ -83,16 +83,16 @@ enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
-[storage.analytics]
-enabled = false
-max_namespaces = 5
-max_tables = 10
-max_catalogs = 2
-
-[storage.vector]
-enabled = false
-max_buckets = 10
-max_indexes = 5
+# [storage.analytics]
+# enabled = false
+# max_namespaces = 5
+# max_tables = 10
+# max_catalogs = 2
+# 
+# [storage.vector]
+# enabled = false
+# max_buckets = 10
+# max_indexes = 5
 
 [auth]
 enabled = true

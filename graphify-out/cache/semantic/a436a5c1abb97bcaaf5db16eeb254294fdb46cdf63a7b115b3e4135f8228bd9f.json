@@ -1,0 +1,1 @@
+{"nodes": [{"id": "middleware", "label": "Next.js Middleware", "file_type": "code", "source_file": "apps/web/middleware.ts"}], "edges": [{"source": "middleware", "target": "auth_callback_route", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "apps/web/middleware.ts"}], "hyperedges": []}
