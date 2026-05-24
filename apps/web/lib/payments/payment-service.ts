@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/db/prisma'
 import type { MembershipType, PaymentType, PaymentStatus } from '@prisma/client'
 
-// Tiers that have no expiry date
-const NO_EXPIRY_TYPES = new Set<MembershipType>(['life', 'lifeWard'])
+import { NO_EXPIRY_TYPES } from '../memberships/constants'
 
 // Expiry durations in days for annual/multi-year tiers
 const EXPIRY_DAYS: Partial<Record<MembershipType, number>> = {

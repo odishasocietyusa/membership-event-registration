@@ -1,12 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/auth/supabase-server'
+import { formatDate } from '@/lib/utils/date'
 
 export const dynamic = 'force-dynamic'
-
-function formatDate(date: string | null): string {
-  if (!date) return '—'
-  return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-}
 
 interface Payment {
   id: string
@@ -104,7 +100,7 @@ export default async function AdminPaymentsPage({ searchParams }: PageProps) {
         <tbody>
           {(payments as Payment[]).map((p) => (
             <tr key={p.id}>
-              <td>{formatDate(p.createdAt)}</td>
+              <td>{formatDate(p.createdAt, '—', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
               <td>
                 {p.member
                   ? <a href={`/admin/members/${p.memberId}`}>{p.member.fullName ?? p.member.email}</a>

@@ -23,12 +23,7 @@ export interface PaginatedMembershipList {
   limit: number
 }
 
-// Membership types that never expire
-export const NO_EXPIRY_TYPES = new Set<MembershipType>([
-  'life',
-  'lifeWard',
-  'honoraryNoVote',
-])
+export { NO_EXPIRY_TYPES } from './constants'
 
 // Days until expiry for each type (types not listed here are non-expiring)
 export const EXPIRY_DAYS: Partial<Record<MembershipType, number>> = {

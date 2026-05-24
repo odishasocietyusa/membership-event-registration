@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/auth/supabase-server'
 import { calculateCumulativePaid } from '@/lib/payments/payment-service'
+import { formatDate } from '@/lib/utils/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,11 +16,6 @@ const TIER_LABELS: Record<string, string> = {
 }
 
 const UPGRADE_TIERS = new Set(['life', 'patron', 'benefactor'])
-
-function formatDate(date: string | null): string {
-  if (!date) return '—'
-  return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-}
 
 function formatDollars(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`
@@ -128,8 +124,8 @@ export default async function MembershipPage() {
         {user.membershipType && (
           <p><strong>Last membership tier:</strong> {TIER_LABELS[user.membershipType] ?? user.membershipType}</p>
         )}
-        {user.joinDate   && <p><strong>Member since:</strong> {formatDate(user.joinDate)}</p>}
-        {user.expiryDate && <p><strong>Expired on:</strong> {formatDate(user.expiryDate)}</p>}
+        {user.joinDate   && <p><strong>Member since:</strong> {formatDate(user.joinDate, '—', { year: 'numeric', month: 'short', day: 'numeric' })}</p>}
+        {user.expiryDate && <p><strong>Expired on:</strong> {formatDate(user.expiryDate, '—', { year: 'numeric', month: 'short', day: 'numeric' })}</p>}
       </fieldset>
 
       {membershipPayments.length > 0 && (
@@ -147,7 +143,7 @@ export default async function MembershipPage() {
             <tbody>
               {membershipPayments.map((p) => (
                 <tr key={p.id}>
-                  <td>{formatDate(p.createdAt)}</td>
+                  <td>{formatDate(p.createdAt, '—', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
                   <td>{p.paymentType}</td>
                   <td>{p.membershipType ? (TIER_LABELS[p.membershipType] ?? p.membershipType) : '—'}</td>
                   <td>{formatDollars(p.amountCents)}</td>

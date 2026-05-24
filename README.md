@@ -2,14 +2,15 @@
 
 > Membership and Event Management System for The Odisha Society of the Americas
 
-A comprehensive platform for managing memberships, event registrations, and community content built with modern full-stack technologies.
+A full-stack platform for managing memberships, event registrations, and community content — built as a single Next.js application with Supabase Auth, Prisma ORM, Stripe payments, and Sanity CMS.
 
 ## 🏗️ Tech Stack
 
-- **Frontend**: Next.js 15.1.4 (App Router) + Tailwind CSS
-- **Backend**: NestJS 10.4.8 + Prisma 6.2.0
-- **Database**: PostgreSQL (via Supabase)
-- **Auth**: Supabase Auth (Google + Microsoft OAuth)
+- **Framework**: Next.js 15.1.4 (App Router) + Tailwind CSS + React 19
+- **API**: Next.js Route Handlers (`app/api/`) — no separate backend
+- **Database**: PostgreSQL via Supabase · Prisma 6.2.0 ORM
+- **Auth**: Supabase Auth (email/password + Google OAuth)
+- **CMS**: Sanity (events, news, announcements, static pages)
 - **Payments**: Stripe
 - **Email**: Resend
 - **Monorepo**: Turborepo + pnpm workspaces
@@ -19,8 +20,8 @@ A comprehensive platform for managing memberships, event registrations, and comm
 ```
 osa-community-platform/
 ├── apps/
-│   ├── web/          # Next.js frontend (port 3000)
-│   └── api/          # NestJS reference implementation (port 3001)
+│   ├── web/          # Next.js app (port 3000) — frontend + API + Prisma
+│   └── supabase/     # Local Supabase config
 ├── packages/
 │   ├── shared-types/ # Shared TypeScript types
 │   ├── validation/   # Zod validation schemas
@@ -31,495 +32,263 @@ osa-community-platform/
 
 ## 💻 Local Developer Setup
 
-Complete these steps **once** before running the project for the first time. All tools listed are required.
+Complete these steps **once** before running the project for the first time.
 
 ---
 
 ### 1. Node.js (v20 or higher)
 
-The JavaScript runtime. Required for Next.js, NestJS, and all tooling.
-
 ```bash
-# Check if already installed
 node --version   # must be >= 20.0.0
 
-# Install via nvm (recommended — lets you switch versions per project)
+# Install via nvm (recommended)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-source ~/.zshrc          # or ~/.bashrc if using bash
-nvm install 22
-nvm use 22
-
-# Or install directly from https://nodejs.org (LTS release)
+source ~/.zshrc
+nvm install 22 && nvm use 22
 ```
 
 ---
 
 ### 2. pnpm (v11 or higher)
 
-The package manager used across the entire monorepo. Do **not** use npm or yarn — the workspace setup requires pnpm.
-
 ```bash
-# Check if already installed
 pnpm --version   # must be >= 11.0.0
-
-# Install via npm (one-time bootstrap)
 npm install -g pnpm@latest
-
-# Or via Homebrew
-brew install pnpm
 ```
 
 ---
 
 ### 3. Docker Desktop
 
-Required to run Supabase locally. The Supabase CLI spins up PostgreSQL, Auth, Storage, and Studio as Docker containers.
+Required to run Supabase locally.
 
 ```bash
-# Check if already installed
-docker --version   # any recent version is fine
-
-# Install Docker Desktop
-# → https://www.docker.com/products/docker-desktop/
-# Download the installer for your OS and follow the setup wizard.
-
-# After install, open Docker Desktop and wait for it to show "Engine running"
-# before proceeding to the Supabase step.
+docker --version
+# Install from https://www.docker.com/products/docker-desktop/
+# Open Docker Desktop and wait for "Engine running" before continuing.
 ```
 
 ---
 
 ### 4. Supabase CLI
 
-Manages the local Supabase stack (database, auth, storage, email).
-
 ```bash
-# Check if already installed
 supabase --version   # must be >= 2.0.0
-
-# Install via Homebrew (macOS/Linux)
-brew install supabase/tap/supabase
-
-# Or via npm
-npm install -g supabase
-
-# Log in to your Supabase account (needed for remote operations only)
+brew install supabase/tap/supabase   # macOS
 supabase login
 ```
 
-> Docker Desktop must be running before you use any `supabase` commands.
-
 ---
 
-### 5. Stripe CLI
-
-Required for testing payment webhooks locally. Stripe events are forwarded to your local server.
+### 5. Stripe CLI (optional — for webhook testing)
 
 ```bash
-# Check if already installed
-stripe --version
-
-# Install via Homebrew (macOS)
 brew install stripe/stripe-cli/stripe
-
-# Or download from https://stripe.com/docs/stripe-cli#install
-
-# Log in (links CLI to your Stripe account)
 stripe login
-```
-
----
-
-### 6. Git
-
-Required to clone the repository and manage branches.
-
-```bash
-# Check if already installed
-git --version
-
-# Install via Homebrew
-brew install git
-
-# Or download from https://git-scm.com/downloads
 ```
 
 ---
 
 ### Verify All Tools
 
-Run this block to confirm everything is installed before proceeding:
-
 ```bash
 echo "Node:     $(node --version)"
 echo "pnpm:     $(pnpm --version)"
 echo "Docker:   $(docker --version)"
 echo "Supabase: $(supabase --version)"
-echo "Stripe:   $(stripe --version)"
-echo "Git:      $(git --version)"
-```
-
-Expected output (versions may be higher):
-```
-Node:     v22.x.x
-pnpm:     11.x.x
-Docker:   Docker version 29.x.x
-Supabase: 2.x.x
-Stripe:   stripe version 1.x.x
-Git:      git version 2.x.x
 ```
 
 ---
 
 ## 🚀 How to Run
 
-### Prerequisites
-
-- **Node.js**: v20.0.0 or higher
-- **pnpm**: v9.0.0 or higher
-- **Docker Desktop**: For running Supabase locally
-
 ### Initial Setup
 
 ```bash
-# 1. Clone the repository
+# 1. Clone and install
 git clone <repo-url>
 cd membership-event-registration
-
-# 2. Install dependencies
 pnpm install
 
-# 3. Start Supabase local development
+# 2. Start local Supabase (PostgreSQL + Auth + Studio + Mailpit)
 supabase start
 
-# This will start all Supabase services:
-# - PostgreSQL (localhost:54322)
-# - Studio (http://127.0.0.1:54323)
-# - API (http://127.0.0.1:54321)
-# - Mailpit (http://127.0.0.1:54324)
-
-# 4. Set up environment variables
+# 3. Configure environment
 cp apps/web/.env.example apps/web/.env.local
-cp apps/api/.env.example apps/api/.env
+# Fill in the values printed by: supabase status
 
-# Note: .env files are already configured with local Supabase credentials
-# from Phase 1 setup. No changes needed for local development.
-
-# 5. Generate Prisma Client and run migrations
-cd apps/api
-pnpm prisma generate
-pnpm prisma migrate deploy
+# 4. Push schema and seed data
+cd apps/web
+npx prisma db push
+npx prisma db seed
 cd ../..
-
-# 6. Seed the database
-cd apps/api
-pnpm prisma db seed
-cd ../..
-
-# Expected output:
-# ✅ Event categories seeded (10 categories)
-# ✅ Membership types seeded (4 types)
 ```
 
-### Start Development Servers
+### Start Development
 
 ```bash
-# Start both Next.js and NestJS in development mode
-pnpm dev
-
-# Or start individually:
-pnpm dev --filter=web    # Next.js only
-pnpm dev --filter=api    # NestJS only
+pnpm dev                   # starts Next.js on http://localhost:3000
 ```
 
-**Services will be available at**:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001/api
-- Supabase Studio: http://127.0.0.1:54323
-- Mailpit (Email): http://127.0.0.1:54324
+**Services available at:**
+| Service | URL |
+|---------|-----|
+| Frontend + API | http://localhost:3000 |
+| Supabase Studio | http://127.0.0.1:54323 |
+| Mailpit (email) | http://127.0.0.1:54324 |
 
 ### Verify Installation
 
 ```bash
-# Check all services are running
-curl http://localhost:3000        # Next.js
-curl http://localhost:3001/api    # NestJS
-curl http://127.0.0.1:54323       # Supabase Studio
+curl http://localhost:3000               # Next.js responds
+curl http://localhost:3000/api/memberships/types  # returns membership fee tiers
 
-# Check database connection
-cd apps/api
-pnpm prisma studio                # Opens on http://localhost:5555
-
-# Verify seed data
-docker exec -it supabase_db_apps psql -U postgres -d postgres -c \
-  "SELECT COUNT(*) FROM event_categories;"
-# Expected: 10
-
-docker exec -it supabase_db_apps psql -U postgres -d postgres -c \
-  "SELECT COUNT(*) FROM membership_types;"
-# Expected: 4
+cd apps/web && npx prisma studio         # visual DB browser on :5555
 ```
 
-## 🧪 What Can You Test Now (Phase 1)
+## 🧪 Testing
 
-### ✅ Currently Working
+### Playwright E2E Tests
 
-| Feature | URL/Command | What to Check |
-|---------|-------------|---------------|
-| **Frontend** | http://localhost:3000 | Homepage loads with OSA branding |
-| **Backend** | http://localhost:3001/api | API is running (404 expected) |
-| **Database** | http://127.0.0.1:54323 | View all 14 tables in Studio |
-| **Seed Data** | Supabase Studio → Tables | 10 event categories, 4 membership types |
-| **Prisma Studio** | `pnpm --filter=api prisma studio` | Browse database visually |
-| **Email Inbox** | http://127.0.0.1:54324 | Mailpit catches all emails |
+```bash
+# Run all e2e tests (Playwright auto-starts Next.js)
+pnpm --filter=web test:e2e
 
-### 📊 Database Tables (14 Models)
+# Interactive UI mode
+pnpm --filter=web test:e2e:ui
 
-All tables are created and ready:
-- `users` - Core user accounts
-- `profiles` - Extended user information
-- `memberships` - User membership records
-- `membership_types` - Available tiers (seeded with 4 types)
-- `events` - Event listings
-- `event_categories` - Event categories (seeded with 10 categories)
-- `event_registrations` - Event signups
-- `waitlist` - Event waitlists
-- `articles` - News articles
-- `static_pages` - CMS pages
-- `payments` - Payment transactions
-- `media` - File uploads
-- `audit_logs` - Action tracking
+# Single spec
+cd apps/web && npx playwright test e2e/memberships.spec.ts
+```
 
-### 🔧 Database Triggers (3 Installed)
+### Jest Unit Tests
 
-- **Auth User Sync**: Auto-creates user record when signing up via Supabase
-- **Seat Counter**: Auto-updates event capacity when registrations change
-- **Waitlist Position**: Auto-assigns queue position when joining waitlist
+```bash
+pnpm --filter=web test
+```
 
-### ❌ Not Yet Implemented (Phase 2+)
+### Manual API Testing
 
-- User signup/login UI
-- Event registration UI
-- Stripe payment integration
-- Admin dashboard UI
-- Content management UI
+```bash
+# Get a token
+./scripts/get-auth-token.sh
 
-## 🔌 API Endpoints
+# Use it
+curl http://localhost:3000/api/members/me \
+  -H "Authorization: Bearer <token>"
+```
+
+## 🔌 API Endpoints (summary)
+
+All endpoints live at `http://localhost:3000/api/...`.
 
 ### Authentication
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/auth/me` | ✅ | Get current user |
 
-All protected endpoints require a JWT token from Supabase Auth. Include the token in the Authorization header:
-
-```bash
-Authorization: Bearer <your-jwt-token>
-```
-
-### Users API (`/api/users`)
-
+### Members
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
-| `GET` | `/api/users/me` | ✅ | Any | Get current user profile |
-| `POST` | `/api/users/me/profile` | ✅ | Any | Create user profile |
-| `PUT` | `/api/users/me/profile` | ✅ | Any | Update user profile |
-| `GET` | `/api/users/me/export` | ✅ | Any | Export user data (GDPR) |
-| `DELETE` | `/api/users/me` | ✅ | Any | Soft delete account |
-| `GET` | `/api/users` | ✅ | ADMIN | List all users (paginated) |
-| `GET` | `/api/users/:id` | ✅ | ADMIN | Get user by ID |
-| `PUT` | `/api/users/:id/role` | ✅ | ADMIN | Update user role |
-| `GET` | `/api/users/:id/export` | ✅ | ADMIN | Export user data by ID |
-| `DELETE` | `/api/users/:id` | ✅ | ADMIN | Soft delete user by ID |
+| `GET` | `/api/members/me` | ✅ | Any | Get own record |
+| `PUT` | `/api/members/me` | ✅ | Any | Update profile |
+| `DELETE` | `/api/members/me` | ✅ | Any | Soft-delete account |
+| `GET` | `/api/members/me/family` | ✅ | Any | List family members |
+| `POST` | `/api/members/me/family` | ✅ | Any | Add family member |
+| `GET` | `/api/members/me/export` | ✅ | Any | GDPR data export |
+| `GET` | `/api/members/search` | ✅ | Active | Search members |
+| `GET` | `/api/members` | ✅ | Admin | List all members |
+| `PUT` | `/api/members/:id/role` | ✅ | Admin | Update role |
 
-**Example: Create Profile**
-```bash
-curl -X POST http://localhost:3001/api/users/me/profile \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "John",
-    "lastName": "Doe",
-    "phone": "+1234567890",
-    "address": {
-      "street": "123 Main St",
-      "city": "New York",
-      "state": "NY",
-      "zip": "10001",
-      "country": "USA"
-    }
-  }'
-```
-
-### Memberships API (`/api/memberships`)
-
+### Memberships
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
+| `GET` | `/api/memberships/types` | ❌ | Public | List membership fee tiers |
 | `POST` | `/api/memberships` | ✅ | Any | Apply for membership |
-| `GET` | `/api/memberships/me` | ✅ | Any | Get own membership |
-| `DELETE` | `/api/memberships/me` | ✅ | Any | Cancel own membership |
-| `GET` | `/api/memberships` | ✅ | ADMIN | List all memberships |
-| `GET` | `/api/memberships/:id` | ✅ | ADMIN | Get membership by ID |
-| `POST` | `/api/memberships/:id/approve` | ✅ | ADMIN | Approve pending membership |
-| `POST` | `/api/memberships/:id/reject` | ✅ | ADMIN | Reject pending membership |
-| `DELETE` | `/api/memberships/:id` | ✅ | ADMIN | Cancel membership by ID |
+| `GET` | `/api/memberships/me` | ✅ | Any | Get own membership status |
+| `DELETE` | `/api/memberships/me` | ✅ | Any | Cancel membership |
+| `GET` | `/api/memberships/me/history` | ✅ | Any | Membership history |
+| `GET` | `/api/memberships` | ✅ | Admin | List all memberships |
+| `POST` | `/api/memberships/:id/approve` | ✅ | Admin | Approve pending |
+| `POST` | `/api/memberships/:id/reject` | ✅ | Admin | Reject pending |
+| `POST` | `/api/memberships/honorary/assign` | ✅ | Admin | Grant honorary membership |
 
-**Example: Apply for Membership**
+### Payments
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/payments/me` | ✅ | Own payment history |
+| `POST` | `/api/payments/checkout-session` | ✅ | Create Stripe checkout |
+| `POST` | `/api/payments/upgrade-session` | ✅ | Create Stripe upgrade checkout |
+| `POST` | `/api/webhooks/stripe` | — | Stripe webhook handler |
+
+**Example — apply for membership:**
 ```bash
-curl -X POST http://localhost:3001/api/memberships \
+curl -X POST http://localhost:3000/api/memberships \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{
-    "membershipTypeId": "uuid-of-membership-type"
-  }'
+  -d '{ "membershipType": "annualSingle" }'
 ```
 
-**Example: Approve Membership (Admin)**
+**Example — create checkout session:**
 ```bash
-curl -X POST http://localhost:3001/api/memberships/<membership-id>/approve \
-  -H "Authorization: Bearer <admin-token>" \
+curl -X POST http://localhost:3000/api/payments/checkout-session \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{
-    "approvalNote": "Approved - Payment received via check #1234"
-  }'
+  -d '{ "membershipType": "annualSingle" }'
 ```
-
-**Example: List All Memberships (Admin)**
-```bash
-curl -X GET "http://localhost:3001/api/memberships?skip=0&take=10&status=PENDING" \
-  -H "Authorization: Bearer <admin-token>"
-```
-
-### Membership Status Flow
-
-```
-PENDING → ACTIVE → EXPIRED
-   ↓         ↓
-CANCELLED  CANCELLED
-```
-
-- **PENDING**: Application submitted, awaiting admin approval
-- **ACTIVE**: Approved and valid membership
-- **EXPIRED**: Membership passed expiry date
-- **CANCELLED**: User or admin cancelled the membership
 
 ## 🛠️ Common Commands
 
-### Development
-
 ```bash
-# Start all apps
+# Dev
 pnpm dev
-
-# Build all apps
 pnpm build
-
-# Run tests
-pnpm test
-
-# Lint code
 pnpm lint
-
-# Format code
 pnpm format
-```
 
-### Database
+# Database (from apps/web/)
+cd apps/web
+npx prisma db push       # sync schema to local DB
+npx prisma db seed       # seed membership fee tiers
+npx prisma studio        # visual DB browser
+npx prisma generate      # regenerate Prisma client after schema change
 
-```bash
-# Open Prisma Studio
-pnpm --filter=api prisma studio
-
-# Create a new migration
-cd apps/api
-pnpm prisma migrate dev --name <migration_name>
-
-# Apply migrations
-pnpm prisma migrate deploy
-
-# Reset database (⚠️ deletes all data)
-pnpm prisma migrate reset
-
-# Seed database
-pnpm prisma db seed
-```
-
-### Supabase
-
-```bash
-# Start Supabase
+# Supabase
 supabase start
-
-# Stop Supabase
 supabase stop
-
-# View Supabase status
 supabase status
 
-# Open Supabase Studio
-open http://127.0.0.1:54323
-```
-
-### Clean Up
-
-```bash
-# Clean all build artifacts
+# Clean up
 pnpm clean
-
-# Stop Supabase and remove containers
-supabase stop --all
-docker system prune -f
+supabase stop --all && docker system prune -f
 ```
 
 ## 📖 Documentation
 
-- **Architecture**: See `docs/osa-architecture.md`
-- **Deployment**: See `docs/deployment-manual.md` ← staging and production setup runbook
-- **Work Orchestration**: See `docs/work-orchestration.md` ← start here if you're a new contributor
-- **Feature Specs**: See `specs/active/`
-- **SDD Workflow**: See `specs/README.md`
-- **Postman Collection**: See `postman/README.md`
+- **Architecture**: `docs/osa-architecture.md`
+- **Feature Specs**: `specs/active/`
+- **SDD Workflow**: `specs/README.md`
 
 ## 🎯 Implementation Status
 
-- **Phase 1**: ✅ Foundation (Complete)
-  - Monorepo setup with Turborepo + pnpm
-  - Database schema with Prisma
-  - Local development with Supabase
-  - Seed data for membership types & event categories
-
-- **Phase 2**: ⏳ User & Membership (In Progress)
-  - ✅ User authentication with Supabase Auth (JIT Sync)
-  - ✅ User profiles (CRUD operations)
-  - ✅ Role-based access control (GUEST, MEMBER, CONTRIBUTOR, ADMIN)
-  - ✅ Membership application & approval workflow
-  - ✅ Admin approval system with notes
-  - ⏳ Stripe payment integration (Next)
-  - 📋 Email notifications
-
-- **Phase 3-6**: 📋 Planned
-  - Content Management System (Articles, Pages)
-  - Event Registration & Waitlist
-  - Testing & Optimization
-  - Launch Preparation
+- ✅ Turborepo monorepo + Supabase local stack + Prisma schema
+- ✅ Supabase Auth — email/password + Google OAuth
+- ✅ Full API layer — members, memberships, payments, messages, chapters, webhooks
+- ✅ Frontend pages — login, register, dashboard, profile, membership, admin, public content
+- ✅ Playwright e2e suite (~66 tests) + Jest unit tests
+- ✅ Sanity CMS integration — events, news, announcements
+- 📋 Events registration module — planned
 
 ## 🤝 Contributing
 
-This project was built with Claude Code. For development:
-
 1. Read `docs/osa-architecture.md` for system design
 2. Review active specs in `specs/active/`
-3. Follow coding standards (TypeScript, ESLint, Prettier)
-4. Write tests for new features
-5. Update documentation
+3. Follow the spec-driven development workflow (`specs/README.md`)
+4. Use TypeScript strict mode, Zod for validation, ESLint + Prettier
 
 ## 📝 License
 
 [Add license information]
-
-## 🔗 Links
-
-- **Supabase Dashboard**: https://app.supabase.com
-- **Vercel Dashboard**: https://vercel.com
-- **Railway Dashboard**: https://railway.app
-- **Stripe Dashboard**: https://dashboard.stripe.com
 
 ---
 

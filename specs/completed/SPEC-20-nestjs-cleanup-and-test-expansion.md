@@ -1,7 +1,7 @@
 # Feature Specification: NestJS Cleanup & Next.js Test Expansion
 
 > **Spec ID:** SPEC-20-nestjs-cleanup-and-test-expansion
-> **Status:** Draft
+> **Status:** Complete
 > **Author:** Utkal Nayak
 > **Created:** 2026-05-23
 
@@ -152,9 +152,9 @@ SPEC-11 completed the core NestJS → Next.js migration: `apps/api` has been del
 - **Artifact:** `specs/artifacts/SPEC-20-nestjs-cleanup-and-test-expansion/02-design.md`
 
 ### Phase 3: Implementation
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-20-nestjs-cleanup-and-test-expansion/03-implementation.md`
 
 ### Phase 4: QA & Testing
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-20-nestjs-cleanup-and-test-expansion/04-qa-report.md`

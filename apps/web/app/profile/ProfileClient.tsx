@@ -5,6 +5,7 @@ import { createSupabaseBrowser } from '@/lib/auth/supabase-browser'
 import { STATE_OPTIONS, COUNTRY_OPTIONS, chapterDisplayName } from '@/lib/constants/address-options'
 import type { MemberRow } from '@/lib/auth/with-auth'
 import type { FamilyMember } from '@prisma/client'
+import { formatDate } from '@/lib/utils/date'
 
 interface ProfileClientProps {
   member: MemberRow
@@ -50,7 +51,7 @@ interface EditFamilyForm {
 type FamilyMemberWithEmail = FamilyMember & { email?: string | null }
 
 const MEMBERSHIP_TYPE_LABELS: Record<string, string> = {
-  annualStudentNoVote: 'Annual Student',
+  annualStudentNoVote: 'Annual Student (no vote)',
   annualSingle:        'Annual Single',
   annualFamily:        'Annual Family',
   fiveYearFamily:      'Five-Year Family',
@@ -59,13 +60,6 @@ const MEMBERSHIP_TYPE_LABELS: Record<string, string> = {
   patron:              'Patron',
   benefactor:          'Benefactor',
   honoraryNoVote:      'Honorary',
-}
-
-function formatDate(date: string | Date | null | undefined): string {
-  if (!date) return '—'
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'long', day: 'numeric',
-  })
 }
 
 export default function ProfileClient({
@@ -324,8 +318,8 @@ export default function ProfileClient({
         <legend>Membership</legend>
         <p><strong>Type:</strong> {member.membershipType ? (MEMBERSHIP_TYPE_LABELS[member.membershipType] ?? member.membershipType) : '—'}</p>
         <p><strong>Status:</strong> {member.memberStatus ?? '—'}</p>
-        <p><strong>Join date:</strong> {formatDate(member.joinDate)}</p>
-        <p><strong>Expiry date:</strong> {formatDate(member.expiryDate)}</p>
+        <p><strong>Join date:</strong> {formatDate(member.joinDate, '—')}</p>
+        <p><strong>Expiry date:</strong> {formatDate(member.expiryDate, '—')}</p>
       </fieldset>
 
       <form onSubmit={handleSave}>
@@ -570,7 +564,7 @@ export default function ProfileClient({
                   <p>
                     <strong>{fm.fullName}</strong>
                     {' — '}{fm.relation}
-                    {fm.dateOfBirth && ` — Born ${formatDate(fm.dateOfBirth)}`}
+                    {fm.dateOfBirth && ` — Born ${formatDate(fm.dateOfBirth, '—')}`}
                     {fm.highSchoolGraduationYear && ` — HS grad ${fm.highSchoolGraduationYear}`}
                     {fm.relation === 'spouse' && fm.email && ` — ${fm.email}`}
                   </p>

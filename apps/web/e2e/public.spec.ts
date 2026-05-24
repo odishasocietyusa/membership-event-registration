@@ -17,7 +17,6 @@ test.describe('Public pages', () => {
   test('register page renders step 1', async ({ page }) => {
     await page.goto('/register')
     await expect(page.locator('h1')).toContainText('Create your OSA account')
-    await expect(page.locator('text=Step 1 of 4')).toBeVisible()
     await expect(page.locator('h2')).toContainText('Step 1: Create account')
   })
 

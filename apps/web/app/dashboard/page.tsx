@@ -2,18 +2,8 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/auth/supabase-server'
 import SignOutButton from './sign-out-button'
 import { chapterDisplayName } from '@/lib/constants/address-options'
-
-// Membership types whose expiry date is always null (never expire)
-const NO_EXPIRY_TYPES = new Set(['life', 'lifeWard', 'honoraryNoVote'])
-
-function formatDate(date: string | null): string {
-  if (!date) return '—'
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
+import { formatDate } from '@/lib/utils/date'
+import { NO_EXPIRY_TYPES } from '@/lib/memberships/constants'
 
 function membershipTypeLabel(type: string): string {
   const labels: Record<string, string> = {
@@ -94,15 +84,15 @@ export default async function DashboardPage() {
           <div>
             <p><strong>Status:</strong> Active</p>
             <p><strong>Type:</strong> {membershipTypeLabel(membershipType!)}</p>
-            <p><strong>Member since:</strong> {formatDate(joinDate)}</p>
-            <p><strong>Expires:</strong> {neverExpires ? 'Never Expires' : formatDate(expiryDate)}</p>
+            <p><strong>Member since:</strong> {formatDate(joinDate, '—')}</p>
+            <p><strong>Expires:</strong> {neverExpires ? 'Never Expires' : formatDate(expiryDate, '—')}</p>
           </div>
         )}
 
         {membership && memberStatus === 'expired' && (
           <div>
             <p><strong>Status:</strong> Expired</p>
-            <p>Your membership expired on {formatDate(expiryDate)}.</p>
+            <p>Your membership expired on {formatDate(expiryDate, '—')}.</p>
             <a href="/register">Renew your membership</a>
           </div>
         )}

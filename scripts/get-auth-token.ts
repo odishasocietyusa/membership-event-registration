@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /**
- * Get Supabase Auth Token for Postman Testing
+ * Get a Supabase auth token for manual API testing (curl, Insomnia, etc.)
  *
  * Usage:
  *   npx tsx scripts/get-auth-token.ts
@@ -11,15 +11,15 @@ import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
 
-// Load environment variables from apps/api/.env
-dotenv.config({ path: resolve(__dirname, '../apps/api/.env') });
+// Load environment variables from apps/web/.env.local
+dotenv.config({ path: resolve(__dirname, '../apps/web/.env.local') });
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error('❌ Error: SUPABASE_URL and SUPABASE_SERVICE_KEY must be set');
-  console.error('   Check apps/api/.env file');
+  console.error('❌ Error: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
+  console.error('   Check apps/web/.env.local file');
   process.exit(1);
 }
 
@@ -86,11 +86,9 @@ async function getAuthToken(email?: string, password?: string) {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   console.log(accessToken);
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-  console.log('📌 How to use in Postman:');
-  console.log('   1. Click the eye icon 👁️ (top right)');
-  console.log('   2. Find "auth_token" variable');
-  console.log('   3. Paste token in "Current Value" field');
-  console.log('   4. Click Save');
+  console.log('📌 How to use:');
+  console.log('   curl http://localhost:3000/api/members/me \\');
+  console.log('     -H "Authorization: Bearer $TOKEN"');
   console.log('\n🔄 Token expires in 1 hour\n');
 
   // Also print user info

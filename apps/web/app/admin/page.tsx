@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/auth/supabase-server'
 import { chapterDisplayName } from '@/lib/constants/address-options'
+import { formatDate } from '@/lib/utils/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,11 +11,6 @@ function memberStatusLabel(status: string | null, membershipType: string | null)
   if (status === 'suspended') return 'Suspended'
   if (membershipType)         return 'Pending'
   return 'No membership'
-}
-
-function formatDate(date: string | null): string {
-  if (!date) return '—'
-  return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 interface Member {
@@ -109,7 +105,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
               <td>{m.role}</td>
               <td>{m.membershipType ?? '—'}</td>
               <td>{memberStatusLabel(m.memberStatus, m.membershipType)}</td>
-              <td>{formatDate(m.joinDate)}</td>
+              <td>{formatDate(m.joinDate, '—', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
               <td><a href={`/admin/members/${m.id}`}>View</a></td>
             </tr>
           ))}

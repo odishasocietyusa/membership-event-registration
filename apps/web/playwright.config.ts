@@ -24,7 +24,11 @@ export default defineConfig({
     },
     {
       name: 'member',
-      testMatch: '**/dashboard.spec.ts',
+      testMatch: [
+        '**/dashboard.spec.ts',
+        '**/memberships.spec.ts',
+        '**/payments.spec.ts',
+      ],
       use: {
         storageState: '.auth/user.json',
       },

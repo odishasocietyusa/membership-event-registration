@@ -173,3 +173,6 @@ get-token.sh
 # Postman environment files (may contain auth tokens)
 postman/*.postman_environment.json
 !postman/OSA-Platform-Local.postman_environment.json
+
+# Graphify knowledge graph outputs and caches
+graphify-out/

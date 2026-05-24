@@ -1,8 +1,8 @@
 #!/bin/bash
-# Get Supabase Auth Token for Postman Testing
+# Get a Supabase auth token for manual API testing (curl, Insomnia, etc.)
 #
 # Usage:
-#   ./scripts/get-auth-token.sh
+#   ./scripts/get-auth-token.sh                          # creates a new temp user
 #   ./scripts/get-auth-token.sh existing@email.com Password123
 
 set -e
@@ -24,12 +24,17 @@ if ! curl -s http://127.0.0.1:54321/auth/v1/health > /dev/null 2>&1; then
 fi
 
 # Load environment variables
-if [ ! -f "apps/api/.env" ]; then
-    echo -e "${RED}❌ Error: apps/api/.env file not found${NC}"
+if [ ! -f "apps/web/.env.local" ]; then
+    echo -e "${RED}❌ Error: apps/web/.env.local file not found${NC}"
     exit 1
 fi
 
-source apps/api/.env
+source apps/web/.env.local
+
+# Map to short names used throughout this script
+SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL}"
+SUPABASE_SERVICE_KEY="${SUPABASE_SERVICE_ROLE_KEY}"
+SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY}"
 
 # Check for email/password arguments
 EMAIL=${1:-"test-postman-$(date +%s)@test.odishasociety.org"}
@@ -100,11 +105,9 @@ echo -e "${YELLOW}${ACCESS_TOKEN}${NC}"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo -e "${BLUE}📌 How to use in Postman:${NC}"
-echo "   1. Click the eye icon 👁️ (top right)"
-echo "   2. Find 'auth_token' variable"
-echo "   3. Paste token in 'Current Value' field"
-echo "   4. Click Save"
+echo -e "${BLUE}📌 How to use:${NC}"
+echo "   curl http://localhost:3000/api/members/me \\"
+echo "     -H \"Authorization: Bearer \$TOKEN\""
 echo ""
 echo -e "${YELLOW}⏱️  Token expires in 1 hour${NC}"
 echo ""

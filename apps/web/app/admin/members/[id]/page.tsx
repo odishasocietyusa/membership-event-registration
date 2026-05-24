@@ -2,13 +2,9 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/auth/supabase-server'
 import { STATE_OPTIONS, COUNTRY_OPTIONS, chapterDisplayName } from '@/lib/constants/address-options'
+import { formatDate } from '@/lib/utils/date'
 
 export const dynamic = 'force-dynamic'
-
-function formatDate(date: string | null): string {
-  if (!date) return '—'
-  return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-}
 
 function toDateInput(date: Date | string | null | undefined): string {
   if (!date) return ''
@@ -150,7 +146,7 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
         <p><strong>Phone:</strong> {member.phone ?? '—'}</p>
         <p><strong>Role:</strong> {member.role}</p>
         <p><strong>Chapter:</strong> {chapterDisplayName(member.chapterId)}</p>
-        <p><strong>Joined:</strong> {formatDate(member.joinDate)}</p>
+        <p><strong>Joined:</strong> {formatDate(member.joinDate, '—')}</p>
         {member.address && (
           <p><strong>Address:</strong> {[
             member.address.street, member.address.city,
@@ -262,7 +258,7 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
         <h2>Membership</h2>
         <p><strong>Type:</strong> {member.membershipType ?? '—'}</p>
         <p><strong>Status:</strong> {memberStatusLabel(member.memberStatus, member.membershipType)}</p>
-        <p><strong>Expires:</strong> {formatDate(member.expiryDate)}</p>
+        <p><strong>Expires:</strong> {formatDate(member.expiryDate, '—')}</p>
 
         {isPending && (
           <form action={approveMembership}>
@@ -298,7 +294,7 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
           <h2>Family Members</h2>
           <ul>
             {familyMembers.map((fm: { id: string; fullName: string; relation: string; dateOfBirth: string | null }) => (
-              <li key={fm.id}>{fm.fullName} ({fm.relation}){fm.dateOfBirth ? ` — DOB: ${formatDate(fm.dateOfBirth)}` : ''}</li>
+              <li key={fm.id}>{fm.fullName} ({fm.relation}){fm.dateOfBirth ? ` — DOB: ${formatDate(fm.dateOfBirth, '—')}` : ''}</li>
             ))}
           </ul>
         </section>
@@ -331,7 +327,7 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
                 stripePaymentIntentId: string | null
               }) => (
                 <tr key={p.id}>
-                  <td>{formatDate(p.createdAt)}</td>
+                  <td>{formatDate(p.createdAt, '—')}</td>
                   <td>{p.paymentType}</td>
                   <td>{p.membershipType ?? '—'}</td>
                   <td>${(p.amountCents / 100).toFixed(2)}</td>

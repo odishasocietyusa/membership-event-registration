@@ -12,6 +12,7 @@ import {
 import { createSupabaseBrowser } from '@/lib/auth/supabase-browser'
 import GoogleLoginButton from '@/app/login/login-button'
 import { STATE_OPTIONS, COUNTRY_OPTIONS } from '@/lib/constants/address-options'
+import { NO_EXPIRY_TYPES } from '@/lib/memberships/constants'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,8 +58,6 @@ const MEMBERSHIP_LABELS: Record<string, string> = {
   patron: 'Patron',
   benefactor: 'Benefactor',
 }
-
-const NO_EXPIRY_TYPES = new Set(['life', 'lifeWard'])
 
 function flattenZodErrors(result: ReturnType<typeof AccountSchema.safeParse>): FieldErrors {
   if (result.success) return {}

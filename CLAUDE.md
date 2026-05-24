@@ -22,77 +22,90 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OSA Community Platform - A full-stack membership and event management system for The Odisha Society of the Americas. Built as a Turborepo monorepo with Next.js frontend and NestJS backend.
+OSA Community Platform — a full-stack membership and event management system for The Odisha Society of the Americas. Single Next.js application (App Router) with API routes, Supabase Auth, Prisma ORM, Stripe payments, and Sanity CMS.
 
 📐 **Architecture reference:** See [`docs/osa-architecture.md`](docs/osa-architecture.md) for the target system design — stack, user roles, data flows, database schema (Supabase), CMS schema (Sanity), and content boundaries.
 
 **Key Features:**
-- Membership application & approval workflow with credit system
+- Membership application & approval workflow
 - Honorary memberships with admin override capabilities
 - Event registration with waitlist management (planned)
-- Supabase Auth with JIT (Just-In-Time) user sync
+- Supabase Auth (email/password + Google OAuth)
 - Stripe payment integration
-- Role-based access control (GUEST, MEMBER, CONTRIBUTOR, ADMIN)
+- Role-based access control (`member`, `admin`)
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15.1.4 with App Router, Tailwind CSS, React 19
-- **Backend**: NestJS 10.4.8 with Express
-- **Database**: PostgreSQL via Supabase
-- **ORM**: Prisma 6.2.0
-- **Auth**: Supabase Auth (Google + Microsoft OAuth)
+- **Framework**: Next.js 15.1.4 — App Router, React 19, Tailwind CSS
+- **API**: Next.js Route Handlers (`app/api/**`) — no separate backend server
+- **Database**: PostgreSQL via Supabase (local: port 54322)
+- **ORM**: Prisma 6.2.0 (schema + seed at `apps/web/prisma/`)
+- **Auth**: Supabase Auth (email/password + Google OAuth)
+- **CMS**: Sanity (content for events, news, announcements, static pages)
 - **Payments**: Stripe
-- **Monorepo**: Turborepo 2.3.3 + pnpm 10.17.1
-- **Testing**: Jest (unit), Playwright (API E2E)
-- **Package Manager**: pnpm (required - NOT npm or yarn)
+- **Monorepo**: Turborepo 2.3.3 + pnpm
+- **Testing**: Jest (unit), Playwright (e2e — browser + API)
+- **Package Manager**: pnpm (required — NOT npm or yarn)
 
 ## Monorepo Structure
 
 ```
 membership-event-registration/
-├── specs/                      # 📋 SPEC-DRIVEN DEVELOPMENT
-│   ├── templates/              # Templates for specs and agent artifacts
-│   ├── active/                 # Specs currently being implemented
-│   ├── completed/              # Successfully implemented specs
-│   └── artifacts/              # Agent outputs (analysis, design, impl, qa)
+├── specs/                          # 📋 SPEC-DRIVEN DEVELOPMENT
+│   ├── templates/                  # Templates for specs and agent artifacts
+│   ├── active/                     # Specs currently being implemented
+│   ├── completed/                  # Successfully implemented specs
+│   └── artifacts/                  # Agent outputs (analysis, design, impl, qa)
 ├── apps/
-│   ├── web/                    # Next.js frontend (port 3000) - MINIMAL UI
+│   ├── web/                        # Next.js app (port 3000) — frontend + API
 │   │   ├── app/
-│   │   │   ├── layout.tsx      # Root layout
-│   │   │   ├── page.tsx        # Placeholder home page
-│   │   │   └── globals.css     # Tailwind CSS
-│   │   └── [NO components/ or lib/ directories yet]
-│   └── api/                    # NestJS backend (port 3001) - FULLY IMPLEMENTED
-│       ├── src/
-│       │   ├── modules/
-│       │   │   ├── auth/       # ✅ Supabase Auth integration, JWT guards
-│       │   │   ├── memberships/# ✅ Credit system, honorary memberships
-│       │   │   ├── payments/   # ✅ Stripe integration, webhooks
-│       │   │   └── users/      # ✅ Profile management, GDPR
-│       │   ├── common/         # Shared decorators, guards
-│       │   └── prisma/         # Prisma service module
-│       ├── prisma/
-│       │   ├── schema.prisma   # ✅ 14+ models defined
-│       │   ├── migrations/     # ✅ Database migrations
-│       │   └── seed.ts         # ✅ Seed data (4 membership types)
-│       └── tests/              # ⚠️ Setup only, test files pending
-│           ├── auth.setup.ts   # Auth configuration
-│           └── README.md       # Test documentation
+│   │   │   ├── api/                # Route Handlers (all backend logic lives here)
+│   │   │   │   ├── auth/           # /api/auth/me, /api/auth/callback, /api/auth/signout
+│   │   │   │   ├── members/        # /api/members/me, /api/members/[id], family, search
+│   │   │   │   ├── memberships/    # /api/memberships, /api/memberships/me, types, approve…
+│   │   │   │   ├── payments/       # /api/payments/me, checkout-session, upgrade-session…
+│   │   │   │   ├── messages/       # /api/messages
+│   │   │   │   ├── chapters/       # /api/chapters
+│   │   │   │   ├── admin/          # /api/admin/link-member
+│   │   │   │   ├── cron/           # /api/cron/expiry-reminders
+│   │   │   │   └── webhooks/       # /api/webhooks/stripe
+│   │   │   ├── (pages)/            # All UI pages (login, register, dashboard, admin…)
+│   │   │   └── layout.tsx
+│   │   ├── lib/                    # Service layer (called by route handlers)
+│   │   │   ├── auth/               # withAuth helper, Supabase server/browser/admin clients
+│   │   │   ├── db/                 # Prisma singleton
+│   │   │   ├── members/            # member-service.ts
+│   │   │   ├── memberships/        # membership-service.ts
+│   │   │   ├── payments/           # payment-service.ts, stripe.ts, webhook-handlers.ts
+│   │   │   ├── messaging/          # message-service.ts, resend.ts
+│   │   │   └── validation/         # Zod schemas for all request bodies
+│   │   ├── e2e/                    # Playwright e2e tests
+│   │   │   ├── global-setup.ts     # Creates test user, stores token + browser auth
+│   │   │   ├── global-teardown.ts  # Deletes test user
+│   │   │   ├── public.spec.ts      # Public page renders
+│   │   │   ├── auth.spec.ts        # Login form + middleware redirect
+│   │   │   ├── register.spec.ts    # Registration form validation
+│   │   │   ├── api.spec.ts         # API route tests (public + authed + 401 checks)
+│   │   │   ├── dashboard.spec.ts   # Authenticated dashboard
+│   │   │   ├── memberships.spec.ts # Membership apply/cancel/history
+│   │   │   └── payments.spec.ts    # Payment routes
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma       # Database schema (all models)
+│   │   │   └── seed.ts             # Seed data (membership fee tiers)
+│   │   ├── sanity/                 # Sanity client, schemas, queries
+│   │   └── middleware.ts           # Auth redirect gate (cookie check)
+│   └── supabase/                   # Local Supabase config (config.toml)
 ├── packages/
-│   ├── shared-types/           # Shared TypeScript types
-│   ├── validation/             # Zod validation schemas
-│   └── config/                 # Shared ESLint, TypeScript, Tailwind configs
-├── postman/                    # 📮 API TESTING COLLECTION
-│   ├── OSA-Platform-API.postman_collection.json    # 28 endpoints
-│   ├── OSA-Platform-Local.postman_environment.json # Environment variables
-│   └── README.md               # Setup and usage guide
-├── scripts/                    # 🛠️ UTILITY SCRIPTS
+│   ├── shared-types/               # Shared TypeScript types
+│   ├── validation/                 # Zod validation schemas
+│   └── config/                     # Shared ESLint, TypeScript, Tailwind configs
+├── scripts/                        # 🛠️ UTILITY SCRIPTS
 │   ├── claude-session-report.py    # Track Claude Code usage & costs
 │   ├── session-report.sh           # Quick wrapper for session report
-│   ├── get-auth-token.sh           # Generate Supabase auth tokens
-│   └── get-auth-token.ts           # TypeScript version (requires deps)
-├── docs/                       # Architecture reference
-└── turbo.json                  # Turborepo task configuration
+│   ├── get-auth-token.sh           # Generate Supabase auth tokens for manual testing
+│   └── get-auth-token.ts           # TypeScript version (npx tsx scripts/get-auth-token.ts)
+├── docs/                           # Architecture reference
+└── turbo.json                      # Turborepo task configuration
 ```
 
 ## Common Development Commands
@@ -103,142 +116,119 @@ membership-event-registration/
 # Install dependencies (always use pnpm)
 pnpm install
 
-# Start local Supabase (required for database)
+# Start local Supabase (required for database + auth)
 supabase start
 
-# Generate Prisma Client and run migrations
-cd apps/api
-pnpm prisma:generate
-pnpm prisma:migrate
-pnpm prisma:seed
+# Push database schema and seed data
+cd apps/web
+npx prisma db push
+npx prisma db seed
 cd ../..
 ```
 
 ### Development
 
 ```bash
-# Start all apps (Next.js + NestJS)
-pnpm dev
+# Start Next.js (single server — handles both UI and API)
+pnpm dev                      # from root (Turborepo)
+pnpm dev --filter=web         # or target web app directly
 
-# Start specific app
-pnpm dev --filter=web    # Next.js frontend only
-pnpm dev --filter=api    # NestJS backend only
-
-# Build all apps
+# Build
 pnpm build
-
-# Build specific app
 pnpm build --filter=web
-pnpm build --filter=api
 
-# Lint all code
+# Lint / format
 pnpm lint
-
-# Format all code
 pnpm format
 ```
 
 ### Testing
 
-#### ✅ API Tests (Playwright) - **IMPLEMENTED**
-Comprehensive Playwright API tests covering 28 endpoints across 3 modules.
+#### Playwright E2E Tests
+Tests run against the live Next.js server on port 3000. Playwright auto-starts the server.
 
-**Test Files:**
-- ✅ `apps/api/tests/api/users.api.spec.ts` - ~30 tests (Profile management, roles, GDPR)
-- ✅ `apps/api/tests/api/memberships.api.spec.ts` - ~28 tests (CRUD, credit system, honorary)
-- ✅ `apps/api/tests/api/payments.api.spec.ts` - ~20 tests (Stripe integration, webhooks)
-- ✅ `apps/api/tests/fixtures/api-helpers.ts` - HTTP request helpers & assertions
-- ✅ `apps/api/tests/fixtures/test-data.ts` - Test data factories
-- ✅ `apps/api/tests/fixtures/supabase-helpers.ts` - User creation/deletion
-- ✅ `apps/api/tests/fixtures/stripe-helpers.ts` - Webhook payload generation
-
-**Running Tests:**
 ```bash
-# IMPORTANT: Playwright auto-starts the server - don't run pnpm dev manually!
+# Run all e2e tests (from apps/web/ or use --filter)
+pnpm --filter=web test:e2e
 
-# Run all API tests (from root directory)
-pnpm test:api
+# Interactive UI mode (recommended for debugging)
+pnpm --filter=web test:e2e:ui
 
-# Run in interactive UI mode
-pnpm test:api:ui
+# Debug mode (step through each action)
+pnpm --filter=web test:e2e:debug
 
-# Run in debug mode
-pnpm test:api:debug
+# Run a single spec file
+cd apps/web && npx playwright test e2e/memberships.spec.ts
 
-# If you have the server running manually, use CI mode:
-CI=true pnpm test:api
+# If Next.js is already running on port 3000, Playwright reuses it automatically
 ```
 
-**Test Coverage:**
-- ~78 tests total covering authentication, CRUD operations, RBAC, credit system, GDPR compliance
-- Many tests marked with `.skip()` - require admin user promotion or real Stripe configuration
+**Test files (`apps/web/e2e/`):**
+- `public.spec.ts` — public page renders
+- `auth.spec.ts` — login form + middleware redirect
+- `register.spec.ts` — registration flow validation
+- `api.spec.ts` — public API routes + 401 checks + authenticated member routes
+- `dashboard.spec.ts` — authenticated dashboard
+- `memberships.spec.ts` — membership apply, status, history, cancel
+- `payments.spec.ts` — payment listing, checkout-session validation
+
+**Test projects:**
+- `guest` — runs without auth (public.spec, auth.spec, register.spec, api.spec)
+- `member` — runs with stored browser auth state (dashboard.spec, memberships.spec, payments.spec)
 
 #### Unit Tests (Jest)
 ```bash
-# Run all unit tests
-pnpm test
+# Run unit tests
+pnpm --filter=web test
 
-# Run tests in watch mode
-cd apps/api
-pnpm test:watch
+# Watch mode
+cd apps/web && pnpm test -- --watch
 
-# Run tests with coverage
-pnpm test:cov
+# Coverage
+pnpm --filter=web test:coverage
 ```
 
-#### 📮 Postman Collection - **IMPLEMENTED**
-Complete Postman collection for manual API testing and exploration.
+Unit test files live next to source files as `*.test.ts`.
 
-**Files:**
-- ✅ `postman/OSA-Platform-API.postman_collection.json` - 28 endpoints with auto-capture scripts
-- ✅ `postman/OSA-Platform-Local.postman_environment.json` - Environment variables
-- ✅ `postman/README.md` - Complete setup guide with workflows
+#### Get a Token for Manual API Testing
+```bash
+# Create a temp test user and print their JWT
+./scripts/get-auth-token.sh
 
-**Quick Setup:**
-1. Import collection and environment into Postman
-2. Get auth token: `./scripts/get-auth-token.sh`
-3. Set token in Postman environment (`auth_token` variable)
-4. Start testing! Try "Get Current User" first
+# Use an existing account
+./scripts/get-auth-token.sh you@example.com YourPassword
 
-**See:** [postman/README.md](postman/README.md) for detailed instructions
+# Then test an API route:
+curl http://localhost:3000/api/members/me \
+  -H "Authorization: Bearer <token>"
+```
 
 ## Testing & Database Troubleshooting
 
-### Common Issues When Running Tests
+### Common Issues
 
-#### ❌ Port Already in Use (EADDRINUSE :::3001)
+#### ❌ Playwright Timeout (120s)
 
-**Problem:** Playwright tries to start the API server, but port 3001 is already in use.
+**Problem:** `Error: Timed out waiting 120000ms from config.webServer.`
 
-**Solution:**
+**Solution:** Run Next.js manually to see the real error:
 ```bash
-# Option 1: Let Playwright manage the server (RECOMMENDED)
-# Stop any manually running API server (Ctrl+C), then:
-pnpm test:api
-
-# Option 2: Keep manual server running
-# If you already have the API running, use CI mode:
-CI=true pnpm test:api
+cd apps/web
+pnpm dev
+# Look for: missing env vars, Prisma client not generated, Supabase not running
 ```
-
-**Why:** Playwright auto-starts the server via `webServer` config. Don't run `pnpm dev` manually unless using `CI=true`.
 
 ---
 
-#### ❌ Supabase Configuration Missing
+#### ❌ `globalSetup` fails — test user not created
 
-**Problem:** `Error: Supabase configuration is missing` when starting the API.
+**Problem:** Tests fail with `.auth/test-user.json` not found.
 
-**Solution:** Check environment variable names in `apps/api/.env`:
+**Solution:** Supabase must be running before `pnpm test:e2e`:
 ```bash
-# ✅ CORRECT (what NestJS expects):
-SUPABASE_SERVICE_KEY=eyJhbG...
-
-# ❌ WRONG:
-SUPABASE_SERVICE_ROLE_KEY=eyJhbG...  # Note the extra "_ROLE"
+supabase start
+pnpm --filter=web test:e2e
 ```
-
-**Why:** The NestJS `SupabaseService` looks for `SUPABASE_SERVICE_KEY`, not `SUPABASE_SERVICE_ROLE_KEY`.
 
 ---
 
@@ -247,462 +237,231 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbG...  # Note the extra "_ROLE"
 **Problem:**
 ```
 ERROR: template database "template1" has a collation version mismatch
-DETAIL: The template database was created using collation version 153.120,
-but the operating system provides version 153.121.
 ```
 
-**Solution (Nuclear Option - works reliably):**
+**Solution:**
 ```bash
-# Stop Supabase and remove all data
 supabase stop --no-backup
-
-# Start fresh
 supabase start
-
-# Rebuild database
-cd apps/api
-pnpm prisma db push
-pnpm prisma:seed
+cd apps/web
+npx prisma db push
+npx prisma db seed
 ```
-
-**Why:** macOS collation library was updated but the database template wasn't refreshed. Easiest fix is fresh start.
 
 ---
 
 #### ❌ Prisma Migration Errors (Type Does Not Exist)
 
-**Problem:**
-```
-Error: Migration failed to apply cleanly to the shadow database.
-ERROR: type "MembershipStatus" does not exist
-```
+**Problem:** `ERROR: type "MembershipStatus" does not exist`
 
-**Solution:** Use `db push` instead of migrations for local dev:
+**Solution:** Use `db push` (not `migrate`) for local dev — it reads the full schema at once:
 ```bash
-cd apps/api
-
-# Skip migrations entirely - push schema directly
-pnpm prisma db push
-
-# Then seed
-pnpm prisma:seed
+cd apps/web
+npx prisma db push
 ```
 
-**Why:** Migration files have ordering issues where enums are used before they're created. `db push` reads the complete schema and creates everything in the correct order.
+### Quick Start Checklist
 
----
-
-#### ❌ Playwright Timeout (120s)
-
-**Problem:** `Error: Timed out waiting 120000ms from config.webServer.`
-
-**Solution:** Server is failing to start. Run manually to see the error:
-```bash
-cd apps/api
-pnpm run start:dev
-
-# Watch for errors like:
-# - Missing Prisma Client → run `pnpm prisma:generate`
-# - Database connection errors → check Supabase is running
-# - Missing environment variables → check .env file
-```
-
-**Why:** Playwright waits for the server to respond on `http://localhost:3001`. If the server crashes on startup, it times out.
-
----
-
-### Quick Start Checklist (First Time Setup)
-
-**Before running any tests, verify these steps:**
-
-1. **Start Supabase**
-   ```bash
-   supabase start
-   ```
-
-2. **Get Supabase Credentials**
-   ```bash
-   supabase status
-   # Copy: service_role key, anon key, JWT secret
-   ```
-
-3. **Update Environment Variables** (`apps/api/.env`)
-   ```bash
-   SUPABASE_URL=http://127.0.0.1:54321
-   SUPABASE_SERVICE_KEY=<service_role-key-from-status>  # NOT _ROLE_KEY!
-   SUPABASE_ANON_KEY=<anon-key-from-status>
-   SUPABASE_JWT_SECRET=<jwt-secret-from-status>
-   DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-   ```
-
-4. **Setup Database**
-   ```bash
-   cd apps/api
-   pnpm prisma db push    # Use db push, not migrate
-   pnpm prisma:seed       # Seed 4 membership types
-   cd ../..
-   ```
-
-5. **Run Tests**
-   ```bash
-   # From project root (Playwright will auto-start the server)
-   pnpm test:api
-   ```
-
----
+1. `supabase start`
+2. Verify `apps/web/.env.local` has `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`
+3. `cd apps/web && npx prisma db push && npx prisma db seed`
+4. `pnpm --filter=web test:e2e`
 
 ### Database (Prisma)
 
 ```bash
-# All Prisma commands should be run from apps/api/
+# All Prisma commands run from apps/web/
 
-cd apps/api
-
-# Open Prisma Studio (visual database browser)
-pnpm prisma:studio
+cd apps/web
 
 # Generate Prisma Client (after schema changes)
-pnpm prisma:generate
+npx prisma generate
 
-# Create a new migration
-pnpm prisma migrate dev --name <migration_name>
-
-# Apply migrations to database
-pnpm prisma:migrate
+# Push schema to local DB (preferred over migrate for local dev)
+npx prisma db push
 
 # Seed the database
-pnpm prisma:seed
+npx prisma db seed
 
 # Reset database (⚠️ deletes all data)
-pnpm prisma migrate reset
+npx prisma migrate reset
+
+# Open Prisma Studio (visual DB browser)
+npx prisma studio
 
 # Format schema file
-pnpm prisma format
+npx prisma format
 ```
 
 ### Supabase
 
 ```bash
-# Start Supabase local stack
-supabase start
+supabase start      # start local stack
+supabase stop       # stop
+supabase status     # show keys + URLs
 
-# Stop Supabase
-supabase stop
-
-# View Supabase status
-supabase status
-
-# Access services:
-# - Studio: http://127.0.0.1:54323
-# - API: http://127.0.0.1:54321
-# - Mailpit: http://127.0.0.1:54324
-# - PostgreSQL: localhost:54322
+# Local service URLs:
+# Studio:     http://127.0.0.1:54323
+# Auth API:   http://127.0.0.1:54321
+# Mailpit:    http://127.0.0.1:54324
+# PostgreSQL: localhost:54322
 ```
 
 ### Utility Scripts
 
 #### Claude Code Session Report
-Track token usage, costs, and model information after each Claude Code session.
-
 ```bash
-# Generate report for current project
-python3 scripts/claude-session-report.py
-
-# Or use the quick wrapper
-./scripts/session-report.sh
+python3 scripts/claude-session-report.py   # full report
+./scripts/session-report.sh                # quick wrapper
 ```
+Report saved to `.claude-session-report.txt` (git-ignored).
 
-**Output includes:**
-- Model used (Opus/Sonnet/Haiku 4.5)
-- Token usage (input, output, cache)
-- Cost estimate (based on Claude API pricing)
-- Context usage (% of 200K window)
-- Session timing
-
-**Report saved to:** `.claude-session-report.txt` (git-ignored)
-
-**See:** [scripts/README.md](scripts/README.md) for detailed documentation
-
-#### Get Supabase Auth Token
-Generate auth tokens for Postman or manual API testing.
-
+#### Get Supabase Auth Token (manual API testing)
 ```bash
-# Create new test user and get token
-./scripts/get-auth-token.sh
-
-# Get token for existing user
-./scripts/get-auth-token.sh user@example.com Password123
+./scripts/get-auth-token.sh                          # creates temp user
+./scripts/get-auth-token.sh user@example.com Pass1!  # existing user
 ```
-
-**Output:**
-- JWT access token (valid for 1 hour)
-- User credentials (email, password, ID)
-- Instructions for using in Postman
-
-**Use case:** Testing API endpoints via Postman or curl
 
 ### Clean Up
 
 ```bash
-# Clean all build artifacts and node_modules
-pnpm clean
-
-# Stop and remove Supabase containers
-supabase stop --all
+pnpm clean                        # clear build artifacts
+supabase stop --all               # stop + remove containers
 docker system prune -f
 ```
 
 ## Architecture Patterns
 
-### NestJS Module Structure
+### Route Handler + Service Layer
 
-Each feature module follows this pattern:
+All API logic follows a two-layer pattern:
 
 ```
-src/modules/<feature>/
-├── <feature>.module.ts        # Module definition
-├── <feature>.controller.ts    # HTTP routes & validation
-├── <feature>.service.ts       # Business logic
-├── dto/                       # Data Transfer Objects
-│   ├── create-<feature>.dto.ts
-│   └── update-<feature>.dto.ts
-└── interfaces/                # TypeScript interfaces
+app/api/<feature>/route.ts      ← HTTP layer: auth check, parse body, call service, return Response
+lib/<feature>/<feature>-service.ts  ← Business logic: Prisma queries, domain rules
+lib/validation/<feature>.schema.ts  ← Zod schemas for request body validation
 ```
 
-**Key Modules:**
-- `auth/` - Supabase Auth integration, JWT validation, guards
-- `users/` - User profiles, GDPR exports, role management
-- `memberships/` - Membership CRUD, approval workflow, credit system
-- `payments/` - Stripe integration, webhooks, admin overrides
-- `prisma/` - **Database access module** (see explanation below)
-
-### Prisma Module - Database Access Layer
-
-The **Prisma module** (`src/prisma/`) is a special NestJS module that provides database access across the entire application:
-
-**What it does:**
-1. **PrismaService** - A singleton service that manages the database connection
-2. **Type-safe database queries** - Converts your code into SQL automatically
-3. **Shared across all modules** - Auth, Users, Memberships, and Payments all inject `PrismaService`
-
-**Files:**
-- `src/prisma/prisma.module.ts` - Exports PrismaService globally
-- `src/prisma/prisma.service.ts` - Wraps Prisma Client with lifecycle hooks
-- `prisma/schema.prisma` - **Blueprint** of your database (tables, columns, relations)
-
-**How modules use it:**
+Example:
 ```typescript
-// In any service (e.g., memberships.service.ts)
-constructor(private prisma: PrismaService) {}
+// app/api/memberships/route.ts
+export const POST = withAuth(async (req, { user }) => {
+  const parsed = ApplyMembershipSchema.safeParse(await req.json())
+  if (!parsed.success) return jsonResponse(400, { error: parsed.error.flatten() })
+  const membership = await applyForMembership(user.id, parsed.data.membershipType)
+  return jsonResponse(201, { membership })
+})
 
-async getMembership(id: string) {
-  // Type-safe query - no SQL needed!
-  return this.prisma.membership.findUnique({
-    where: { id },
-    include: { user: true, membershipType: true }
-  });
+// lib/memberships/membership-service.ts
+export async function applyForMembership(userId: string, type: MembershipType) {
+  // Prisma query + domain rules
 }
 ```
-
-**Benefits:**
-- ✅ No manual SQL queries
-- ✅ TypeScript auto-completion for all database operations
-- ✅ Automatic migrations from schema changes
-- ✅ Prevents SQL injection attacks
-- ✅ Single source of truth for database structure
 
 ### Authentication & Authorization
 
-The API uses Supabase JWT tokens for authentication:
+Requests are authenticated via Supabase JWTs passed as `Authorization: Bearer <token>`.
 
-1. **JwtAuthGuard** - Validates JWT tokens on protected routes
-2. **RolesGuard** - Enforces role-based access control
-3. **@CurrentUser()** decorator - Extracts user from request
-4. **@Roles()** decorator - Specifies required roles for endpoints
+- **`withAuth(handler)`** — validates the JWT, injects the `user` object, returns 401 if missing/invalid
+- **`withAuth(handler, { role: 'admin' })`** — additionally requires `user.role === 'admin'`, returns 403 otherwise
+- **`middleware.ts`** — lightweight cookie check that redirects unauthenticated browser requests to `/login`
 
-Example usage:
-```typescript
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
-@Get('admin-only')
-async adminEndpoint(@CurrentUser() user: User) {
-  // Only ADMIN role can access
-}
-```
+**User Roles:**
+- `member` — default after registration; can apply for membership, manage profile
+- `admin` — full access to all admin endpoints
 
-**User Roles (hierarchical):**
-- `GUEST` - Default, can view public content only
-- `MEMBER` - Can register for events, manage profile
-- `CONTRIBUTOR` - Can create/edit content
-- `ADMIN` - Full access to all operations
+### Prisma Schema Organization (`apps/web/prisma/schema.prisma`)
 
-### Prisma Schema Organization
-
-The schema (`apps/api/prisma/schema.prisma`) is organized into domains:
-
-1. **Enums** - Status types for users, memberships, registrations, payments
-2. **User Domain** - Users and profiles
-3. **Membership Domain** - Membership types and user memberships
-4. **Event Domain** - Events, categories, registrations, waitlists
-5. **Content Domain** - Articles and static pages
-6. **Payment Domain** - Payments and Stripe integration
-7. **System Domain** - Media uploads and audit logs
-
-**Key Models:**
-- `User` - Core user accounts (synced from Supabase Auth)
-- `Profile` - Extended user info (name, address, preferences)
-- `Membership` - User membership records with credit system
-- `MembershipType` - Available tiers (seeded with 4 types)
-- `Payment` - Transaction records with Stripe integration
+Organized into domains:
+1. **Member domain** — `Member`, `FamilyMember`
+2. **Membership domain** — `MembershipFee` (types/pricing), membership status fields on `Member`
+3. **Payment domain** — `PaymentRecord`
+4. **Message domain** — `Message`
+5. **Chapter domain** — `Chapter`
+6. **Content domain** (Sanity) — managed externally; schema lives in `sanity/schemas/`
 
 ### Database Triggers (Supabase Functions)
 
-Three critical database triggers are installed:
-
-1. **Auth User Sync** - Auto-creates `User` record when signing up via Supabase Auth
-2. **Seat Counter** - Auto-updates event capacity when registrations change
-3. **Waitlist Position** - Auto-assigns queue position when joining waitlist
-
-### Credit System
-
-The membership credit system tracks expired memberships and provides credit toward renewals:
-
-**Rules:**
-- Credits apply only within 365 days of expiration
-- Credit amount = original payment amount
-- Credits automatically applied at checkout
-- One-time use (prevents reuse after application)
-
-**Implementation:**
-- Stored in `Membership.creditAmount` and `Membership.creditExpiresAt`
-- Applied via `Membership.creditAppliedFrom` reference
-- Calculated in `MembershipsService.calculateCheckoutAmount()`
+- **Auth User Sync** — auto-creates a `Member` record when a user signs up via Supabase Auth
 
 ### Honorary Memberships
 
-Admin-only feature to grant free memberships:
+Admin-only: assign a free membership directly via `POST /api/memberships/honorary/assign`. No payment required; member is immediately active.
 
-**Characteristics:**
-- Price: $0 (no payment required)
-- Status: Immediately ACTIVE (no approval needed)
-- Role: User auto-promoted to MEMBER role
-- Hidden: Not shown in public membership type listings
+### Credit System
 
-**Usage:** For special recognition, board members, or lifetime achievements
-
-### Admin Overrides
-
-Admins can override system-calculated values:
-
-- Membership status changes (PENDING → ACTIVE without payment)
-- Payment amount adjustments (charge different amount than system default)
-- All overrides logged in `AuditLog` table for accountability
+Expired memberships accrue credit toward renewal if within 365 days. Stored as `creditAmount` / `creditExpiresAt` on the `Member` record; applied at checkout.
 
 ## Environment Variables
 
-Required environment variables are documented in `.env.example` files:
+All env vars live in `apps/web/.env.local`. See `apps/web/.env.example` for the full list.
 
-### Frontend (`apps/web/.env.local`)
 ```bash
-# Supabase
+# Supabase (public — safe for client)
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<from-supabase-status>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<from: supabase status → anon key>
 
-# API
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
+# Supabase (server-only)
+SUPABASE_SERVICE_ROLE_KEY=<from: supabase status → service_role key>
 
-### Backend (`apps/api/.env`)
-```bash
-# Database
+# Database (for Prisma)
 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 DIRECT_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
-# Supabase
-SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_ANON_KEY=<from-supabase-status>
-SUPABASE_SERVICE_ROLE_KEY=<from-supabase-status>
-SUPABASE_JWT_SECRET=<from-supabase-status>
-
-# Stripe
+# Stripe (optional for local dev — checkout routes return 500 without it)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Server
-PORT=3001
-NODE_ENV=development
+# Cron protection
+CRON_SECRET=your-secret-here
 ```
 
-**Get Supabase credentials:**
-```bash
-supabase status
-# Copy the values for anon key, service_role key, and JWT secret
-```
+Get Supabase values: `supabase status`
 
 ## Important Notes
 
 ### Package Manager
-- **ALWAYS use `pnpm`** - This project requires pnpm, NOT npm or yarn
-- Turborepo is optimized for pnpm workspaces
-- If you encounter "command not found", install pnpm: `npm install -g pnpm`
+- **Always use `pnpm`** — npm/yarn will break workspace linking
 
 ### Running Commands
-- Monorepo commands: Run from **root directory** (uses Turborepo)
-- Database commands: Run from **apps/api/** directory
-- Test commands: Run from **root directory** (test:api) or **apps/api/** (test:watch)
+- Monorepo-level (turbo): run from **root**
+- Prisma commands: run from **`apps/web/`**
+- E2E tests: run from **`apps/web/`** or use `pnpm --filter=web test:e2e` from root
 
 ### Database Migrations
-- **Never** edit migration files directly
-- Always create new migrations for schema changes
-- Test migrations locally before committing
-- Seed data is version-controlled (`prisma/seed.ts`)
+- Use `npx prisma db push` for local dev (not `prisma migrate dev`)
+- Run migrations in CI/production via `prisma migrate deploy`
+- Seed data is version-controlled in `prisma/seed.ts`
 
 ### Testing Best Practices
-- Playwright API tests run against live local server
-- Tests create/clean up their own data (no shared state)
-- Use `auth.setup.ts` to create test users with different roles
-- Each test project (Guest, Member, Contributor, Admin) runs independently
+- Playwright creates/tears down a real test user in `globalSetup` / `globalTeardown`
+- Auth token stored in `.auth/test-user.json`; browser state in `.auth/user.json`
+- Admin-only routes are covered by `test.skip()` — require out-of-band DB role promotion
+- Stripe tests assert `200 || 500` — 500 is acceptable when no Stripe key is configured locally
 
 ### Code Quality
-- TypeScript strict mode enabled
-- ESLint configured for NestJS and Next.js
-- Prettier for code formatting
-- Use class-validator for DTO validation in NestJS
-- Use Zod for runtime validation in Next.js
+- TypeScript strict mode
+- Zod for all request body validation (in `lib/validation/`)
+- ESLint + Prettier configured
+- No `any` types in route handlers or service layer
 
 ### Common Pitfalls
-1. **Supabase not running** - Always run `supabase start` before `pnpm dev`
-2. **Missing Prisma Client** - Run `pnpm prisma:generate` after schema changes
-3. **Stale Turbo cache** - Run `pnpm clean` if builds seem outdated
-4. **Port conflicts** - Default ports: 3000 (web), 3001 (api), 54321-54324 (Supabase)
-5. **Wrong directory** - Prisma commands must run from `apps/api/`
+1. **Supabase not running** — `supabase start` before `pnpm dev` or `test:e2e`
+2. **Missing Prisma Client** — `cd apps/web && npx prisma generate` after schema changes
+3. **Stale Turbo cache** — `pnpm clean` if builds seem outdated
+4. **Port 3000 conflict** — stop the dev server and let Playwright start it, or it auto-reuses
 
 ## Current Implementation Status
 
-- **Phase 1**: ✅ Complete - Foundation, database, local dev setup
-- **Phase 2**: ✅ Complete - Backend API + Testing
-  - ✅ Authentication module (Supabase Auth, JIT sync, JWT guards)
-  - ✅ Users module (profiles, roles, GDPR compliance)
-  - ✅ Memberships module (credit system, honorary memberships, admin overrides)
-  - ✅ Payments module (Stripe integration, webhook handlers)
-  - ✅ Database schema (14+ Prisma models with migrations)
-  - ✅ API E2E tests (78 Playwright tests, 100% pass rate)
-  - ✅ Postman collection (28 endpoints with auto-capture scripts)
-  - ✅ Testing utilities (auth token generation, session reports)
-- **Phase 3**: 📋 Not Started - Frontend UI implementation
-  - ✅ Next.js app structure exists
-  - ❌ No authentication pages (login/signup)
-  - ❌ No membership application flow UI
-  - ❌ No event browsing/registration UI
-  - ❌ No user dashboard or admin panel
-- **Phase 4+**: 📋 Planned - CMS, events module, full event registration
-
-**Current Working Features:**
-- Backend API fully functional with Stripe payments, membership credit system, and RBAC
-- Comprehensive test coverage (78 Playwright tests covering 28 endpoints)
-- Complete Postman collection for manual testing and exploration
-- Utility scripts for session tracking and auth token generation
-- Ready for frontend integration
+- **Foundation** ✅ — Turborepo monorepo, Supabase local stack, Prisma schema, Sanity CMS
+- **Backend API** ✅ — All route handlers in `app/api/`: auth, members, memberships, payments, messages, chapters, webhooks, cron
+- **Authentication** ✅ — Email/password + Google OAuth via Supabase; `withAuth` guard; middleware redirect
+- **Frontend pages** ✅ — Login, register (multi-step), dashboard, profile, membership, admin panel, public content pages
+- **E2E test suite** ✅ — Playwright: ~66 tests across 7 spec files (public, auth, register, API, dashboard, memberships, payments)
+- **Unit tests** ✅ — Jest: service layer, auth utilities, webhook handlers
+- **CMS integration** ✅ — Sanity for events, news, announcements, static pages
+- **Payments** ✅ — Stripe checkout + upgrade sessions, webhook handler, receipt generation
+- **Events module** 📋 — Planned
 
 See `docs/osa-architecture.md` for system architecture and `specs/active/` for active feature specs.
 
