@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createSupabaseServer } from '@/lib/auth/supabase-server'
+import { getCurrentMember } from '@/lib/auth/get-current-member'
 import { sanityFetch } from '@/sanity/lib/client'
 import { ALL_EVENTS_QUERY } from '@/sanity/lib/queries'
 import type { SanityEvent } from '@/types/sanity'
@@ -32,19 +32,12 @@ function MembershipGate({ status }: { status: string | null }) {
 }
 
 export default async function EventsPage() {
-  const supabase = await createSupabaseServer()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect('/login')
+  const result = await getCurrentMember()
+  if (!result) redirect('/login')
+  const { member: user } = result
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  const headers = { Authorization: `Bearer ${session.access_token}` }
-
-  const { user } = await fetch(`${baseUrl}/api/auth/me`, { headers, cache: 'no-store' }).then(r => r.json())
-
-  if (user?.memberStatus !== 'active') {
-    return <MembershipGate status={user?.memberStatus ?? null} />
+  if (user.memberStatus !== 'active') {
+    return <MembershipGate status={user.memberStatus} />
   }
 
   const events = (await sanityFetch<SanityEvent[]>(ALL_EVENTS_QUERY)) ?? []
@@ -59,7 +52,7 @@ export default async function EventsPage() {
           {events.map((event) => (
             <li key={event._id}>
               <a href={`/events/${event.slug}`}>{event.title}</a>
-              <time>{event.start_date}</time>
+               — <time>{event.start_date}</time>
               <p>{event.location}</p>
             </li>
           ))}

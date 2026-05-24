@@ -50,9 +50,19 @@ export async function GET(request: Request) {
 async function resolvePostLoginPath(accessToken: string): Promise<string> {
   try {
     const { data: { user: authUser } } = await getSupabaseAdmin().auth.getUser(accessToken)
-    if (!authUser) return '/login'
+    if (!authUser || !authUser.email) return '/login'
 
     const member = await prisma.member.findUnique({ where: { userId: authUser.id } })
+
+    // SPEC-19: if no registered member found, check for spouse FamilyMember match
+    // before defaulting to /register. spouseUserId write happens in withAuth / getCurrentMember.
+    if (!member || !member.address) {
+      const spouseFm = await prisma.familyMember.findFirst({
+        where: { email: authUser.email, relation: 'spouse', deletedAt: null },
+      })
+      if (spouseFm) return '/dashboard'
+    }
+
     const isRegistered = member?.address != null
 
     // Send unregistered users to complete their profile.

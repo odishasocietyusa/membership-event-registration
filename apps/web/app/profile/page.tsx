@@ -30,7 +30,7 @@ export default async function ProfilePage() {
     redirect('/login')
   }
 
-  const { member }: { member: MemberRow } = await memberRes.json()
+  const { member, isSpouseSession }: { member: MemberRow; isSpouseSession: boolean } = await memberRes.json()
   const familyBody = familyRes.ok ? await familyRes.json() : { familyMembers: [] }
   const familyMembers: FamilyMember[] = familyBody.familyMembers ?? []
 
@@ -48,6 +48,7 @@ export default async function ProfilePage() {
         chapterName={chapterName}
         bio={bio}
         spouseName={spouseName}
+        isSpouseSession={isSpouseSession}
       />
     </main>
   )

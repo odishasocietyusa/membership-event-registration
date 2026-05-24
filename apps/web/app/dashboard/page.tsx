@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
-import { createSupabaseServer } from '@/lib/auth/supabase-server'
+import { getCurrentMember, type CurrentMemberResult } from '@/lib/auth/get-current-member'
+import { getMyMembershipStatus } from '@/lib/memberships/membership-service'
 import SignOutButton from './sign-out-button'
 import { chapterDisplayName } from '@/lib/constants/address-options'
 import { formatDate } from '@/lib/utils/date'
@@ -21,44 +22,41 @@ function membershipTypeLabel(type: string): string {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createSupabaseServer()
-  const { data: { session } } = await supabase.auth.getSession()
-
-  if (!session) {
+  const result: CurrentMemberResult | null = await getCurrentMember()
+  if (!result) {
     redirect('/login')
   }
+  const { member: user, isSpouseSession } = result
 
-  const token = session.access_token
-  const headers = { Authorization: `Bearer ${token}` }
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  let membership = null
+  try {
+    membership = await getMyMembershipStatus(user.id)
+  } catch (err) {
+    console.error('Failed to load membership status', err)
+  }
 
-  const [userRes, membershipRes] = await Promise.all([
-    fetch(`${baseUrl}/api/auth/me`, { headers, cache: 'no-store' }),
-    fetch(`${baseUrl}/api/memberships/me`, { headers, cache: 'no-store' }),
-  ])
-
-  const { user } = await userRes.json()
-  const membershipBody = membershipRes.ok ? await membershipRes.json() : null
-  const membership = membershipBody?.membership ?? null
-
-  const displayName = user?.fullName ?? user?.email ?? 'Member'
+  const displayName = user.fullName ?? user.email
   const membershipType: string | null = membership?.membershipType ?? null
   const memberStatus: string | null = membership?.memberStatus ?? null
-  const joinDate: string | null = membership?.joinDate ?? null
-  const expiryDate: string | null = membership?.expiryDate ?? null
-  const neverExpires = membershipType ? NO_EXPIRY_TYPES.has(membershipType) : false
-  const chapter: string = chapterDisplayName(user?.chapterId)
+  const joinDate: Date | null = membership?.joinDate ?? null
+  const expiryDate: Date | null = membership?.expiryDate ?? null
+  const neverExpires = membershipType ? (NO_EXPIRY_TYPES as Set<string>).has(membershipType) : false
+  const chapter: string = chapterDisplayName(user.chapterId)
 
   return (
     <main>
       <h1>Dashboard</h1>
 
+      {isSpouseSession && (
+        <p role="status">
+          You are accessing {user.fullName ?? user.email}&apos;s profile as their spouse.
+        </p>
+      )}
+
       <fieldset>
         <legend>Your Account</legend>
         <p><strong>Name:</strong> {displayName}</p>
-        <p><strong>Email:</strong> {user?.email}</p>
+        <p><strong>Email:</strong> {user.email}</p>
         <p><strong>Chapter:</strong> {chapter}</p>
         <p><a href="/profile">Edit Profile</a></p>
       </fieldset>

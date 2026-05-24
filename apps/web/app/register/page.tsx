@@ -106,7 +106,13 @@ export default function RegisterPage() {
       })
 
       if (res.ok) {
-        const { member } = await res.json()
+        const { member, isSpouseSession } = await res.json()
+
+        // SPEC-19: spouse sessions must not land on registration
+        if (isSpouseSession) {
+          window.location.href = '/dashboard'
+          return
+        }
 
         // Prefer saved DB value; fall back to Google OAuth metadata from the session
         const meta = session.user.user_metadata ?? {}
@@ -672,7 +678,7 @@ export default function RegisterPage() {
                     {' '}
                     {MEMBERSHIP_LABELS[type.membershipType] ?? type.membershipType}
                     {' — '}
-                    {NO_EXPIRY_TYPES.has(type.membershipType)
+                    {(NO_EXPIRY_TYPES as Set<string>).has(type.membershipType)
                       ? `$${type.amountDollars} (Lifetime)`
                       : `$${type.amountDollars} / year`}
                   </label>

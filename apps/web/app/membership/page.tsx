@@ -1,7 +1,11 @@
 import { redirect } from 'next/navigation'
-import { createSupabaseServer } from '@/lib/auth/supabase-server'
-import { calculateCumulativePaid } from '@/lib/payments/payment-service'
+import { getCurrentMember } from '@/lib/auth/get-current-member'
+import { getPublicMembershipTypes } from '@/lib/memberships/membership-service'
+import { prisma } from '@/lib/db/prisma'
+import { calculateCumulativePaid, calculateUpgradeCost, recordPayment } from '@/lib/payments/payment-service'
+import { createCheckoutSession, createUpgradeSession } from '@/lib/payments/stripe'
 import { formatDate } from '@/lib/utils/date'
+import type { MembershipType } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,41 +32,25 @@ interface MembershipFee {
   isAdminOnly: boolean
 }
 
-interface PaymentRecord {
-  id: string
-  createdAt: string
-  paymentType: string
-  membershipType: string | null
-  amountCents: number
-  status: string
-}
-
 export default async function MembershipPage() {
-  const supabase = await createSupabaseServer()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect('/login')
+  const result = await getCurrentMember()
+  if (!result) redirect('/login')
+  const { member: user } = result
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  const headers = { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
-
-  const { user } = await fetch(`${baseUrl}/api/auth/me`, { headers, cache: 'no-store' }).then(r => r.json())
-
-  if (!user?.address) redirect('/register')
+  if (!user.address) redirect('/register')
   if (user.memberStatus === 'active') redirect('/dashboard')
 
-  const [typesRes, paymentsRes] = await Promise.all([
-    fetch(`${baseUrl}/api/memberships/types`, { cache: 'no-store' }),
-    fetch(`${baseUrl}/api/payments/me`, { headers, cache: 'no-store' }),
+  const [allTiers, payments] = await Promise.all([
+    getPublicMembershipTypes(),
+    prisma.paymentRecord.findMany({
+      where: { memberId: user.id },
+      orderBy: { createdAt: 'desc' },
+    }),
   ])
-
-  const { types: allTiers = [] }: { types: MembershipFee[] } = await typesRes.json()
-  const { data: payments = [] }: { data: PaymentRecord[] } = await paymentsRes.json()
 
   const tiers = (allTiers as MembershipFee[]).filter(t => !t.isAdminOnly)
 
-  // Calculate cumulative paid (only isUpgradePath tiers count) via service directly
+  // Calculate cumulative paid via service directly
   const cumulativePaidCents = await calculateCumulativePaid(user.id)
 
   const lifeTier       = tiers.find(t => t.membershipType === 'life')
@@ -77,39 +65,50 @@ export default async function MembershipPage() {
 
   const lifeNudgeCents = upgradeAmounts.life
 
-  const membershipPayments = (payments as PaymentRecord[]).filter(
+  const membershipPayments = payments.filter(
     p => p.membershipType !== null && p.status === 'completed'
   )
 
-  // ── Server Actions ──────────────────────────────────────────────────────────
+  // ── Server Actions (Bypasses double-hop REST API endpoints) ──────────────────
 
   async function purchaseTier(formData: FormData) {
     'use server'
     const membershipType = formData.get('membershipType') as string
-    const supabase2 = await createSupabaseServer()
-    const { data: { session: s } } = await supabase2.auth.getSession()
-    if (!s) return
-    const base = process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-    const h = { Authorization: `Bearer ${s.access_token}`, 'Content-Type': 'application/json' }
-    const { url } = await fetch(`${base}/api/payments/checkout-session`, {
-      method: 'POST', headers: h, body: JSON.stringify({ membershipType }),
-    }).then(r => r.json())
+    const memberResult = await getCurrentMember()
+    if (!memberResult) return
+    const { member } = memberResult
+
+    const fee = await prisma.membershipFee.findUnique({ where: { membershipType } })
+    if (!fee || fee.isAdminOnly) return
+
+    const url = await createCheckoutSession(member.id, member.email, membershipType, fee.amountDollars)
     if (url) redirect(url)
   }
 
   async function upgradeToTier(formData: FormData) {
     'use server'
     const targetType = formData.get('targetType') as string
-    const supabase2 = await createSupabaseServer()
-    const { data: { session: s } } = await supabase2.auth.getSession()
-    if (!s) return
-    const base = process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-    const h = { Authorization: `Bearer ${s.access_token}`, 'Content-Type': 'application/json' }
-    const body = await fetch(`${base}/api/payments/upgrade-session`, {
-      method: 'POST', headers: h, body: JSON.stringify({ targetType }),
-    }).then(r => r.json())
-    if (body.activated) redirect('/membership/success')
-    if (body.url) redirect(body.url)
+    const memberResult = await getCurrentMember()
+    if (!memberResult) return
+    const { member } = memberResult
+
+    const result = await calculateUpgradeCost(member.id, targetType)
+    if (!result.eligible) return
+
+    if (result.autoActivate) {
+      await recordPayment({
+        memberId:         member.id,
+        status:           'completed',
+        paymentType:      'upgrade',
+        membershipType:   targetType as MembershipType,
+        amountCents:      0,
+        isAdminInitiated: false,
+      })
+      redirect('/membership/success')
+    }
+
+    const url = await createUpgradeSession(member.id, member.email, result.costCents, targetType)
+    if (url) redirect(url)
   }
 
   return (
@@ -124,8 +123,8 @@ export default async function MembershipPage() {
         {user.membershipType && (
           <p><strong>Last membership tier:</strong> {TIER_LABELS[user.membershipType] ?? user.membershipType}</p>
         )}
-        {user.joinDate   && <p><strong>Member since:</strong> {formatDate(user.joinDate, '—', { year: 'numeric', month: 'short', day: 'numeric' })}</p>}
-        {user.expiryDate && <p><strong>Expired on:</strong> {formatDate(user.expiryDate, '—', { year: 'numeric', month: 'short', day: 'numeric' })}</p>}
+        {user.joinDate   && <p><strong>Member since:</strong> {formatDate(user.joinDate.toISOString(), '—', { year: 'numeric', month: 'short', day: 'numeric' })}</p>}
+        {user.expiryDate && <p><strong>Expired on:</strong> {formatDate(user.expiryDate.toISOString(), '—', { year: 'numeric', month: 'short', day: 'numeric' })}</p>}
       </fieldset>
 
       {membershipPayments.length > 0 && (
@@ -143,7 +142,7 @@ export default async function MembershipPage() {
             <tbody>
               {membershipPayments.map((p) => (
                 <tr key={p.id}>
-                  <td>{formatDate(p.createdAt, '—', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                  <td>{formatDate(p.createdAt.toISOString(), '—', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
                   <td>{p.paymentType}</td>
                   <td>{p.membershipType ? (TIER_LABELS[p.membershipType] ?? p.membershipType) : '—'}</td>
                   <td>{formatDollars(p.amountCents)}</td>

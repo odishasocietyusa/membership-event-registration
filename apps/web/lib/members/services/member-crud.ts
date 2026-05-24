@@ -91,15 +91,20 @@ export async function softDeleteMember(id: string): Promise<void> {
 
   const now = new Date()
 
-  await prisma.member.update({
-    where: { id },
-    data: { deletedAt: now },
-  })
-
-  await prisma.familyMember.updateMany({
-    where: { primaryMemberId: id },
-    data: { deletedAt: now },
-  })
+  await prisma.$transaction([
+    // SPEC-19: clear spouse link fields before soft-deleting the spouse FamilyMember row
+    prisma.familyMember.updateMany({
+      where: { primaryMemberId: id, relation: 'spouse', deletedAt: null },
+      data: { email: null, spouseUserId: null, deletedAt: now },
+    }),
+    // Soft-delete all other family members
+    prisma.familyMember.updateMany({
+      where: { primaryMemberId: id, relation: { not: 'spouse' }, deletedAt: null },
+      data: { deletedAt: now },
+    }),
+    // Soft-delete the member
+    prisma.member.update({ where: { id }, data: { deletedAt: now } }),
+  ])
 }
 
 export async function exportMemberData(id: string): Promise<MemberExport> {

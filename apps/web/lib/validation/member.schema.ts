@@ -180,3 +180,10 @@ export const SendMemberMessageSchema = z.object({
   message:    z.string().min(1, 'Message cannot be empty').max(1000, 'Maximum 1 000 characters'),
 })
 export type SendMemberMessageInput = z.infer<typeof SendMemberMessageSchema>
+
+// ── Primary member email change (PUT /api/members/me/email) ──────────────────
+
+export const ChangeEmailSchema = z.object({
+  newEmail: z.string().email('Must be a valid email address').max(254),
+})
+export type ChangeEmailInput = z.infer<typeof ChangeEmailSchema>

@@ -13,6 +13,7 @@ interface ProfileClientProps {
   chapterName: string
   bio: string
   spouseName: string
+  isSpouseSession: boolean
 }
 
 interface AddressForm {
@@ -47,8 +48,8 @@ interface EditFamilyForm {
   email: string
 }
 
-// FamilyMember rows include email after the migration; cast until Prisma client regenerates.
-type FamilyMemberWithEmail = FamilyMember & { email?: string | null }
+// FamilyMember rows include email + spouseUserId after migrations; cast until Prisma client regenerates.
+type FamilyMemberWithEmail = FamilyMember & { email?: string | null; spouseUserId?: string | null }
 
 const MEMBERSHIP_TYPE_LABELS: Record<string, string> = {
   annualStudentNoVote: 'Annual Student (no vote)',
@@ -68,6 +69,7 @@ export default function ProfileClient({
   chapterName: initialChapterName,
   bio: initialBio,
   spouseName: initialSpouseName,
+  isSpouseSession,
 }: ProfileClientProps) {
   const addr = (member.address as Record<string, string> | null) ?? {}
   const vis  = (member.profileVisibility as Record<string, boolean> | null) ?? {}
@@ -112,6 +114,14 @@ export default function ProfileClient({
   })
   const [editError,    setEditError]   = useState<string | null>(null)
   const [editInFlight, setEditInFlight] = useState(false)
+
+  const [revokeInFlight,   setRevokeInFlight]   = useState(false)
+  const [revokeError,      setRevokeError]       = useState<string | null>(null)
+  const [revokeConfirming, setRevokeConfirming]  = useState(false)
+
+  const [newPrimaryEmail,     setNewPrimaryEmail]     = useState('')
+  const [emailChangeInFlight, setEmailChangeInFlight] = useState(false)
+  const [emailChangeError,    setEmailChangeError]    = useState<string | null>(null)
 
   async function getToken(): Promise<string> {
     const supabase = createSupabaseBrowser()
@@ -173,10 +183,11 @@ export default function ProfileClient({
       const { member: updated } = await res.json()
       setChapterName(chapterDisplayName(updated.chapterId))
 
-      // Update spouse email on the FamilyMember row if spouse name is set
+      // Update spouse email on the FamilyMember row if spouse name is set and link is not active
       if (form.spouseName.trim()) {
-        const spouseFm = familyMembers.find((fm) => fm.relation === 'spouse' && !fm.deletedAt)
-        if (spouseFm) {
+        const spouseFm = familyMembers.find((fm) => fm.relation === 'spouse' && !fm.deletedAt) as FamilyMemberWithEmail | undefined
+        const isLinked = !!(spouseFm?.spouseUserId)
+        if (spouseFm && !isLinked) {
           await fetch(`/api/members/me/family/${spouseFm.id}`, {
             method:  'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -190,6 +201,62 @@ export default function ProfileClient({
       setSaveError('Network error. Please try again.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleRevokeSpouseLink() {
+    setRevokeInFlight(true)
+    setRevokeError(null)
+    try {
+      const token = await getToken()
+      const res = await fetch('/api/members/me/spouse-link', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setRevokeError((body as { error?: string }).error ?? 'Revocation failed. Please try again.')
+        return
+      }
+      setFamilyMembers((prev) =>
+        prev.map((fm) =>
+          fm.relation === 'spouse' && !fm.deletedAt
+            ? { ...fm, email: null, spouseUserId: null }
+            : fm
+        )
+      )
+      setForm((prev) => ({ ...prev, spouseEmail: '' }))
+      setRevokeConfirming(false)
+    } catch {
+      setRevokeError('Network error. Please try again.')
+    } finally {
+      setRevokeInFlight(false)
+    }
+  }
+
+  async function handleChangePrimaryEmail(e: React.FormEvent) {
+    e.preventDefault()
+    setEmailChangeInFlight(true)
+    setEmailChangeError(null)
+    try {
+      const token = await getToken()
+      const res = await fetch('/api/members/me/email', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ newEmail: newPrimaryEmail.trim() }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setEmailChangeError((body as { error?: string }).error ?? 'Email change failed. Please try again.')
+        return
+      }
+      const supabase = createSupabaseBrowser()
+      await supabase.auth.signOut()
+      window.location.href = '/login'
+    } catch {
+      setEmailChangeError('Network error. Please try again.')
+    } finally {
+      setEmailChangeInFlight(false)
     }
   }
 
@@ -308,10 +375,38 @@ export default function ProfileClient({
     <>
       <fieldset>
         <legend>Account</legend>
+
+        {isSpouseSession && (
+          <p role="status">
+            You are accessing {member.fullName ?? member.email}&apos;s profile as their spouse.
+          </p>
+        )}
+
         <p><strong>Email:</strong> {member.email}</p>
-        <p><em>To change your login email or switch login method, please contact an OSA admin.</em></p>
         <p><strong>Role:</strong> {member.role}</p>
         <p><strong>Chapter:</strong> {chapterName}</p>
+
+        {!isSpouseSession && (
+          <section>
+            <h3>Change login email</h3>
+            <form onSubmit={handleChangePrimaryEmail}>
+              <div>
+                <label htmlFor="newPrimaryEmail">New email address</label>
+                <input
+                  id="newPrimaryEmail"
+                  type="email"
+                  value={newPrimaryEmail}
+                  onChange={(e) => setNewPrimaryEmail(e.target.value)}
+                  required
+                />
+              </div>
+              {emailChangeError && <p role="alert">{emailChangeError}</p>}
+              <button type="submit" disabled={emailChangeInFlight || !newPrimaryEmail.trim()}>
+                {emailChangeInFlight ? 'Updating...' : 'Confirm email change'}
+              </button>
+            </form>
+          </section>
+        )}
       </fieldset>
 
       <fieldset>
@@ -368,17 +463,57 @@ export default function ProfileClient({
             />
           </div>
 
-          {form.spouseName.trim() && (
-            <div>
-              <label htmlFor="spouseEmail">Spouse email (optional)</label>
-              <input
-                id="spouseEmail"
-                type="email"
-                value={form.spouseEmail}
-                onChange={(e) => setForm((prev) => ({ ...prev, spouseEmail: e.target.value }))}
-              />
-            </div>
-          )}
+          {form.spouseName.trim() && (() => {
+            const activeSpouseFm = familyMembers.find((fm) => fm.relation === 'spouse' && !fm.deletedAt) as FamilyMemberWithEmail | undefined
+            const spouseIsLinked = !!(activeSpouseFm?.spouseUserId)
+            return (
+              <div>
+                <label htmlFor="spouseEmail">Spouse email</label>
+
+                {spouseIsLinked ? (
+                  <>
+                    <input
+                      id="spouseEmail"
+                      type="email"
+                      value={activeSpouseFm?.email ?? ''}
+                      readOnly
+                      disabled
+                    />
+                    <p><em>Spouse has logged in. Email is read-only.</em></p>
+
+                    {!revokeConfirming ? (
+                      <button type="button" onClick={() => setRevokeConfirming(true)}>
+                        Change spouse login
+                      </button>
+                    ) : (
+                      <div>
+                        <p>
+                          This will revoke {activeSpouseFm?.email}&apos;s access. They will no longer be
+                          able to log in until you link a new email.
+                        </p>
+                        <button type="button" onClick={handleRevokeSpouseLink} disabled={revokeInFlight}>
+                          {revokeInFlight ? 'Revoking...' : 'Confirm revocation'}
+                        </button>
+                        {' '}
+                        <button type="button" onClick={() => setRevokeConfirming(false)} disabled={revokeInFlight}>
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+
+                    {revokeError && <p role="alert">{revokeError}</p>}
+                  </>
+                ) : (
+                  <input
+                    id="spouseEmail"
+                    type="email"
+                    value={form.spouseEmail}
+                    onChange={(e) => setForm((prev) => ({ ...prev, spouseEmail: e.target.value }))}
+                  />
+                )}
+              </div>
+            )
+          })()}
 
           <div>
             <label htmlFor="souvenirPreference">Souvenir preference</label>
@@ -542,12 +677,22 @@ export default function ProfileClient({
                   {fm.relation === 'spouse' && (
                     <div>
                       <label htmlFor={`edit_email_${fm.id}`}>Spouse email</label>
-                      <input
-                        id={`edit_email_${fm.id}`}
-                        type="email"
-                        value={editForm.email}
-                        onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
-                      />
+                      {(fm as FamilyMemberWithEmail).spouseUserId ? (
+                        <input
+                          id={`edit_email_${fm.id}`}
+                          type="email"
+                          value={editForm.email}
+                          readOnly
+                          disabled
+                        />
+                      ) : (
+                        <input
+                          id={`edit_email_${fm.id}`}
+                          type="email"
+                          value={editForm.email}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+                        />
+                      )}
                     </div>
                   )}
                   {editError && <p role="alert">{editError}</p>}

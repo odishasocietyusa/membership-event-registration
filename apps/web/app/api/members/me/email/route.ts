@@ -1,6 +1,6 @@
 import { withAuth } from '@/lib/auth/with-auth'
-import { updateMember, softDeleteMember } from '@/lib/members/member-service'
-import { UpdateMemberSchema } from '@/lib/validation/member.schema'
+import { changePrimaryEmail } from '@/lib/members/member-service'
+import { ChangeEmailSchema } from '@/lib/validation/member.schema'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,17 +14,16 @@ function jsonResponse(status: number, body: unknown): Response {
 function serviceErrorToResponse(err: unknown): Response {
   const code = (err as { code?: string }).code
   if (code === 'NOT_FOUND') return jsonResponse(404, { error: 'Not found' })
-  if (code === 'CONFLICT') return jsonResponse(409, { error: 'Conflict' })
-  if (code === 'FORBIDDEN') return jsonResponse(403, { error: 'Forbidden' })
+  if (code === 'CONFLICT')  return jsonResponse(409, { error: (err as Error).message })
   console.error(err)
   return jsonResponse(500, { error: 'Internal server error' })
 }
 
-export const GET = withAuth(async (_req, { user, isSpouseSession }) => {
-  return jsonResponse(200, { member: user, isSpouseSession })
-})
+export const PUT = withAuth(async (req, { user, isSpouseSession }) => {
+  if (isSpouseSession) {
+    return jsonResponse(403, { error: 'Spouse sessions cannot change the primary login email.' })
+  }
 
-export const PUT = withAuth(async (req, { user }) => {
   let body: unknown
   try {
     body = await req.json()
@@ -32,20 +31,15 @@ export const PUT = withAuth(async (req, { user }) => {
     return jsonResponse(400, { error: 'Invalid JSON body' })
   }
 
-  const parsed = UpdateMemberSchema.safeParse(body)
+  const parsed = ChangeEmailSchema.safeParse(body)
   if (!parsed.success) {
     return jsonResponse(400, { error: parsed.error.flatten() })
   }
 
   try {
-    const updated = await updateMember(user.id, parsed.data)
-    return jsonResponse(200, { member: updated })
+    await changePrimaryEmail(user.id, parsed.data.newEmail)
+    return jsonResponse(200, { message: 'Email updated. Please log in again with your new email.' })
   } catch (err) {
     return serviceErrorToResponse(err)
   }
-})
-
-export const DELETE = withAuth(async (_req, { user }) => {
-  await softDeleteMember(user.id)
-  return jsonResponse(200, { message: 'Account deactivated' })
 })
