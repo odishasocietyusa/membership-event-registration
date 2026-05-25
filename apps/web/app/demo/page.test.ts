@@ -7,7 +7,7 @@ jest.mock('next/navigation', () => ({
 import DemoPage from './page'
 import { notFound } from 'next/navigation'
 
-const mockNotFound = notFound as jest.Mock
+const mockNotFound = notFound as unknown as jest.Mock
 
 describe('DemoPage', () => {
   beforeEach(() => {
@@ -16,7 +16,7 @@ describe('DemoPage', () => {
 
   describe('in development', () => {
     beforeAll(() => {
-      process.env.NODE_ENV = 'development'
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true })
     })
 
     it('renders without calling notFound()', () => {

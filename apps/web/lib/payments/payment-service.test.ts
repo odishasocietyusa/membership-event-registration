@@ -44,12 +44,12 @@ describe('calculateCumulativePaid()', () => {
       { membershipType: 'annualSingle', amountCents: 2500 },
       { membershipType: 'annualFamily', amountCents: 4000 },
       { membershipType: 'patron',       amountCents: 50000 }, // excluded
-    ])
+    ] as any)
     mockMembershipFee.findMany.mockResolvedValueOnce([
       { membershipType: 'annualSingle' },
       { membershipType: 'annualFamily' },
       // patron is NOT returned because isUpgradePath=false
-    ])
+    ] as any)
 
     const result = await calculateCumulativePaid('mem-1')
     expect(result).toBe(6500) // 2500 + 4000, patron excluded
@@ -59,7 +59,7 @@ describe('calculateCumulativePaid()', () => {
     mockPaymentRecord.findMany.mockResolvedValueOnce([
       { membershipType: 'patron',      amountCents: 50000 },
       { membershipType: 'benefactor',  amountCents: 100000 },
-    ])
+    ] as any)
     mockMembershipFee.findMany.mockResolvedValueOnce([]) // neither is upgrade-path
 
     const result = await calculateCumulativePaid('mem-1')
@@ -78,15 +78,15 @@ describe('calculateUpgradeCost()', () => {
   const lifeFee = { amountDollars: 200 }
 
   it('returns eligible=true and correct cost for active member with prior payments', async () => {
-    mockMember.findUnique.mockResolvedValueOnce(activeMember)
-    mockMembershipFee.findUnique.mockResolvedValueOnce(lifeFee)
+    mockMember.findUnique.mockResolvedValueOnce(activeMember as any)
+    mockMembershipFee.findUnique.mockResolvedValueOnce(lifeFee as any)
     // calculateCumulativePaid internals
     mockPaymentRecord.findMany.mockResolvedValueOnce([
       { membershipType: 'annualSingle', amountCents: 4000 },
-    ])
+    ] as any)
     mockMembershipFee.findMany.mockResolvedValueOnce([
       { membershipType: 'annualSingle' },
-    ])
+    ] as any)
 
     const result = await calculateUpgradeCost('mem-1')
 
@@ -96,14 +96,14 @@ describe('calculateUpgradeCost()', () => {
   })
 
   it('returns autoActivate=true when cumulative >= life fee', async () => {
-    mockMember.findUnique.mockResolvedValueOnce(activeMember)
-    mockMembershipFee.findUnique.mockResolvedValueOnce(lifeFee)
+    mockMember.findUnique.mockResolvedValueOnce(activeMember as any)
+    mockMembershipFee.findUnique.mockResolvedValueOnce(lifeFee as any)
     mockPaymentRecord.findMany.mockResolvedValueOnce([
       { membershipType: 'annualSingle', amountCents: 20000 },
-    ])
+    ] as any)
     mockMembershipFee.findMany.mockResolvedValueOnce([
       { membershipType: 'annualSingle' },
-    ])
+    ] as any)
 
     const result = await calculateUpgradeCost('mem-1')
 
@@ -119,8 +119,8 @@ describe('calculateUpgradeCost()', () => {
       id: 'mem-1',
       memberStatus: 'expired',
       expiryDate: sixMonthsAgo,
-    })
-    mockMembershipFee.findUnique.mockResolvedValueOnce(lifeFee)
+    } as any)
+    mockMembershipFee.findUnique.mockResolvedValueOnce(lifeFee as any)
     mockPaymentRecord.findMany.mockResolvedValueOnce([])
     mockMembershipFee.findMany.mockResolvedValueOnce([])
 
@@ -137,7 +137,7 @@ describe('calculateUpgradeCost()', () => {
       id: 'mem-1',
       memberStatus: 'expired',
       expiryDate: twoYearsAgo,
-    })
+    } as any)
 
     const result = await calculateUpgradeCost('mem-1')
 
@@ -159,7 +159,7 @@ describe('calculateUpgradeCost()', () => {
 
 describe('activateMembership()', () => {
   it('sets expiryDate for annual membership type', async () => {
-    mockMember.update.mockResolvedValueOnce({})
+    mockMember.update.mockResolvedValueOnce({} as any)
 
     await activateMembership('mem-1', 'annualSingle')
 
@@ -170,7 +170,7 @@ describe('activateMembership()', () => {
   })
 
   it('sets expiryDate=null for life membership', async () => {
-    mockMember.update.mockResolvedValueOnce({})
+    mockMember.update.mockResolvedValueOnce({} as any)
 
     await activateMembership('mem-1', 'life')
 
@@ -179,7 +179,7 @@ describe('activateMembership()', () => {
   })
 
   it('sets expiryDate=null for lifeWard membership', async () => {
-    mockMember.update.mockResolvedValueOnce({})
+    mockMember.update.mockResolvedValueOnce({} as any)
 
     await activateMembership('mem-1', 'lifeWard')
 

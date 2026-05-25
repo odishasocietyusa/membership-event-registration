@@ -3,10 +3,10 @@
  *
  * Covers:
  * - EV-01: EventsPage calls sanityFetch with the events query
- * - EV-02: EventsPage handles null from sanityFetch without throwing
- * - EV-03: EventsPage exports revalidate = 60
+ * - EV-02: EventsPage handles empty array from sanityFetch without throwing
+ * - EV-03: EventsPage exports dynamic = 'force-dynamic'
  * - EV-04: EventsPage returns JSX (truthy) when events are present
- * - EV-05: EventsPage renders without auth check (no Supabase/cookies)
+ * - EV-05: EventsPage redirects to /login when getCurrentMember returns null
  */
 
 jest.mock('@/sanity/lib/client', () => ({
@@ -17,14 +17,37 @@ jest.mock('@/sanity/lib/queries', () => ({
   ALL_EVENTS_QUERY: 'mock-events-query',
 }))
 
-import EventsPage, { revalidate } from '@/app/events/page'
+jest.mock('@/lib/auth/get-current-member', () => ({
+  getCurrentMember: jest.fn(),
+}))
+
+jest.mock('next/navigation', () => ({
+  redirect: jest.fn(() => { throw new Error('NEXT_REDIRECT') }),
+}))
+
+import EventsPage, { dynamic } from '@/app/events/page'
 import { sanityFetch } from '@/sanity/lib/client'
+import { getCurrentMember } from '@/lib/auth/get-current-member'
+import { redirect } from 'next/navigation'
 
 const mockSanityFetch = sanityFetch as jest.Mock
+const mockGetCurrentMember = getCurrentMember as jest.Mock
+const mockRedirect = redirect as unknown as jest.Mock
+
+const activeMember = {
+  member: {
+    id: 'mem-1',
+    email: 'user@test.com',
+    memberStatus: 'active',
+    role: 'member',
+  },
+  isSpouseSession: false,
+}
 
 describe('EventsPage', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockGetCurrentMember.mockResolvedValue(activeMember)
   })
 
   /**
@@ -37,18 +60,18 @@ describe('EventsPage', () => {
   })
 
   /**
-   * EV-02: handles null from sanityFetch without throwing
+   * EV-02: handles empty events without throwing
    */
-  it('EV-02: handles null from sanityFetch without throwing', async () => {
-    mockSanityFetch.mockResolvedValueOnce(null)
+  it('EV-02: handles empty events from sanityFetch without throwing', async () => {
+    mockSanityFetch.mockResolvedValueOnce([])
     await expect(EventsPage()).resolves.not.toThrow()
   })
 
   /**
-   * EV-03: exports revalidate = 60
+   * EV-03: exports dynamic = 'force-dynamic'
    */
-  it('EV-03: exports revalidate = 60', () => {
-    expect(revalidate).toBe(60)
+  it('EV-03: exports dynamic = "force-dynamic"', () => {
+    expect(dynamic).toBe('force-dynamic')
   })
 
   /**
@@ -64,12 +87,11 @@ describe('EventsPage', () => {
   })
 
   /**
-   * EV-05: page does NOT import Supabase — no auth check
-   * Verified by the fact that no Supabase mock is needed and no error is thrown
+   * EV-05: redirects to /login when not authenticated
    */
-  it('EV-05: renders without requiring Supabase or auth', async () => {
-    mockSanityFetch.mockResolvedValueOnce([])
-    // If page tried to use Supabase without a mock, this would throw
-    await expect(EventsPage()).resolves.toBeDefined()
+  it('EV-05: redirects to /login when getCurrentMember returns null', async () => {
+    mockGetCurrentMember.mockResolvedValueOnce(null)
+    await expect(EventsPage()).rejects.toThrow('NEXT_REDIRECT')
+    expect(mockRedirect).toHaveBeenCalledWith('/login')
   })
 })

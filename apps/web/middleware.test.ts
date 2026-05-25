@@ -77,15 +77,13 @@ describe('middleware', () => {
   })
 
   /**
-   * MW-04: authenticated request to /dashboard → passes through
+   * MW-04: authenticated request (has session cookie) to /dashboard → passes through
+   * Middleware now checks for a Supabase session cookie instead of calling getUser.
    */
   it('MW-04: does not redirect authenticated request to /dashboard', async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: { id: 'uid-1', email: 'user@test.com' } },
-      error: null,
+    const request = new NextRequest('http://localhost/dashboard', {
+      headers: { cookie: 'sb-test-auth-token=some.session.value' },
     })
-
-    const request = makeRequest('http://localhost/dashboard')
     const response = await middleware(request)
 
     // Should pass through — not a redirect

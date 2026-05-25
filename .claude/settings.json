@@ -5,7 +5,11 @@
       "Bash(pnpm --version)",
       "Bash(docker --version)",
       "Bash(supabase --version)",
-      "Bash(stripe --version)"
+      "Bash(stripe --version)",
+      "Bash(pnpm test)",
+      "Bash(supabase db)",
+      "Bash(stripe listen)",
+      "Bash(prisma generate)"
     ]
   },
   "env": {

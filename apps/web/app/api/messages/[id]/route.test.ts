@@ -1,8 +1,8 @@
 // app/api/messages/[id]/route.test.ts
 
-let mockUser = {
+let mockUser: { id: string; role: 'member' | 'admin'; fullName: string; email: string; deletedAt: null } = {
   id: 'mem-1',
-  role: 'member' as const,
+  role: 'member',
   fullName: 'Utkal Nayak',
   email: 'utkal@test.com',
   deletedAt: null,
@@ -44,7 +44,7 @@ function makeRequest(id: string): [Request, { params: Promise<{ id: string }> }]
 
 beforeEach(() => {
   jest.clearAllMocks()
-  mockUser = { id: 'mem-1', role: 'member', fullName: 'Utkal Nayak', email: 'utkal@test.com', deletedAt: null }
+  mockUser = { id: 'mem-1', role: 'member' as const, fullName: 'Utkal Nayak', email: 'utkal@test.com', deletedAt: null }
 })
 
 describe('GET /api/messages/[id]', () => {

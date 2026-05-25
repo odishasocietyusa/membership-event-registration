@@ -1,9 +1,11 @@
 // app/api/payments/donate/route.test.ts
 
+const mockGetUser = jest.fn()
+
 jest.mock('@/lib/auth/supabase-admin', () => ({
-  supabaseAdmin: {
-    auth: { getUser: jest.fn() },
-  },
+  getSupabaseAdmin: () => ({
+    auth: { getUser: mockGetUser },
+  }),
 }))
 
 jest.mock('@/lib/db/prisma', () => ({
@@ -17,11 +19,9 @@ jest.mock('@/lib/payments/stripe', () => ({
 }))
 
 import { POST } from './route'
-import { supabaseAdmin } from '@/lib/auth/supabase-admin'
 import { prisma } from '@/lib/db/prisma'
 import { createDonationSession } from '@/lib/payments/stripe'
 
-const mockGetUser      = supabaseAdmin.auth.getUser as jest.Mock
 const mockFindUnique   = prisma.member.findUnique   as jest.Mock
 const mockDonateSession = createDonationSession     as jest.Mock
 

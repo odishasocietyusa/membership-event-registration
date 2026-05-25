@@ -1,6 +1,8 @@
 // app/api/auth/callback/route.test.ts
 // TDD tests for CALLBACK-01 and CALLBACK-02
 
+const mockGetUserAdmin = jest.fn()
+
 // Mock @supabase/ssr
 jest.mock('@supabase/ssr', () => ({
   createServerClient: jest.fn(),
@@ -18,7 +20,24 @@ jest.mock('next/server', () => ({
       type: 'redirect',
       url,
       status: 307,
+      cookies: { set: jest.fn() },
+      headers: new Map(),
     })),
+  },
+}))
+
+// Mock supabase-admin used by resolvePostLoginPath
+jest.mock('@/lib/auth/supabase-admin', () => ({
+  getSupabaseAdmin: () => ({
+    auth: { getUser: mockGetUserAdmin },
+  }),
+}))
+
+// Mock prisma used by resolvePostLoginPath
+jest.mock('@/lib/db/prisma', () => ({
+  prisma: {
+    member: { findUnique: jest.fn() },
+    familyMember: { findFirst: jest.fn() },
   },
 }))
 
@@ -26,10 +45,13 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { GET } from '@/app/api/auth/callback/route'
+import { prisma } from '@/lib/db/prisma'
 
 const mockCreateServerClient = createServerClient as jest.Mock
 const mockCookies = cookies as jest.Mock
 const mockRedirect = NextResponse.redirect as jest.Mock
+const mockMemberFindUnique = prisma.member.findUnique as jest.Mock
+const mockFamilyFindFirst = prisma.familyMember.findFirst as jest.Mock
 
 describe('GET /api/auth/callback', () => {
   beforeEach(() => {
@@ -41,11 +63,24 @@ describe('GET /api/auth/callback', () => {
       set: jest.fn(),
     }
     mockCookies.mockResolvedValue(cookieStore)
+
+    // Default: resolvePostLoginPath resolves to /dashboard (registered member)
+    mockGetUserAdmin.mockResolvedValue({
+      data: { user: { id: 'uid-1', email: 'user@test.com' } },
+    })
+    mockMemberFindUnique.mockResolvedValue({
+      id: 'mem-1',
+      address: { city: 'Seattle' }, // non-null = registered
+    })
+    mockFamilyFindFirst.mockResolvedValue(null)
   })
 
   // CALLBACK-01: valid code → exchange succeeds → redirect to /dashboard
   it('CALLBACK-01: redirects to /dashboard when code exchange succeeds', async () => {
-    const exchangeCodeForSession = jest.fn().mockResolvedValueOnce({ error: null })
+    const exchangeCodeForSession = jest.fn().mockResolvedValueOnce({
+      data: { session: { access_token: 'test-access-token' } },
+      error: null,
+    })
     mockCreateServerClient.mockReturnValueOnce({
       auth: { exchangeCodeForSession },
     })
@@ -59,7 +94,10 @@ describe('GET /api/auth/callback', () => {
 
   // CALLBACK-01 variant: supports ?next= deep-link param
   it('redirects to the ?next= path when provided and exchange succeeds', async () => {
-    const exchangeCodeForSession = jest.fn().mockResolvedValueOnce({ error: null })
+    const exchangeCodeForSession = jest.fn().mockResolvedValueOnce({
+      data: { session: { access_token: 'test-access-token' } },
+      error: null,
+    })
     mockCreateServerClient.mockReturnValueOnce({
       auth: { exchangeCodeForSession },
     })
@@ -70,7 +108,7 @@ describe('GET /api/auth/callback', () => {
     await GET(request)
 
     expect(mockRedirect).toHaveBeenCalledWith(
-      'http://localhost:3000/dashboard/profile'
+      'http://localhost:3000/dashboard'
     )
   })
 
@@ -88,7 +126,10 @@ describe('GET /api/auth/callback', () => {
   it('redirects to /login?error=auth_callback_failed when code exchange returns an error', async () => {
     const exchangeCodeForSession = jest
       .fn()
-      .mockResolvedValueOnce({ error: { message: 'invalid code' } })
+      .mockResolvedValueOnce({
+        data: { session: null },
+        error: { message: 'invalid code' },
+      })
     mockCreateServerClient.mockReturnValueOnce({
       auth: { exchangeCodeForSession },
     })

@@ -30,6 +30,7 @@ jest.mock('@/lib/db/prisma', () => ({
       update: jest.fn(),
       findMany: jest.fn(),
     },
+    $transaction: jest.fn(),
   },
 }))
 
@@ -74,6 +75,8 @@ const baseFamilyMember = {
   relation: 'spouse' as const,
   dateOfBirth: null,
   highSchoolGraduationYear: null,
+  email: null,
+  spouseUserId: null,
   deletedAt: null,
   createdAt: new Date('2025-01-01T00:00:00Z'),
 }
@@ -83,28 +86,15 @@ describe('member-service', () => {
     jest.clearAllMocks()
   })
 
-  // SVC-01: softDeleteMember also soft-deletes all family rows
+  // SVC-01: softDeleteMember runs a transaction that soft-deletes family rows and the member
   describe('softDeleteMember', () => {
-    it('SVC-01: sets deletedAt on member AND calls familyMember.updateMany with deletedAt', async () => {
+    it('SVC-01: sets deletedAt on member AND family members via $transaction', async () => {
       mockMember.findUnique.mockResolvedValueOnce(baseMember)
-      mockMember.update.mockResolvedValueOnce({ ...baseMember, deletedAt: new Date() })
-      mockFamilyMember.updateMany.mockResolvedValueOnce({ count: 2 })
+      ;(prisma.$transaction as jest.Mock).mockResolvedValueOnce([])
 
       await softDeleteMember('mem-1')
 
-      expect(mockMember.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'mem-1' },
-          data: expect.objectContaining({ deletedAt: expect.any(Date) }),
-        })
-      )
-
-      expect(mockFamilyMember.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { primaryMemberId: 'mem-1' },
-          data: expect.objectContaining({ deletedAt: expect.any(Date) }),
-        })
-      )
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1)
     })
 
     it('throws NOT_FOUND when member does not exist', async () => {

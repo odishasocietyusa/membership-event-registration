@@ -39,7 +39,7 @@ describe('POST /api/payments/upgrade-session', () => {
 
     expect(res.status).toBe(200)
     expect(body.url).toBe('https://checkout.stripe.com/upgrade')
-    expect(mockCreateSession).toHaveBeenCalledWith('mem-1', 'user@test.com', 15000)
+    expect(mockCreateSession).toHaveBeenCalledWith('mem-1', 'user@test.com', 15000, 'life')
     expect(mockRecord).not.toHaveBeenCalled()
   })
 

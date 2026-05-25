@@ -73,7 +73,7 @@ export default async function MembershipPage() {
 
   async function purchaseTier(formData: FormData) {
     'use server'
-    const membershipType = formData.get('membershipType') as string
+    const membershipType = formData.get('membershipType') as MembershipType
     const memberResult = await getCurrentMember()
     if (!memberResult) return
     const { member } = memberResult
@@ -88,6 +88,9 @@ export default async function MembershipPage() {
   async function upgradeToTier(formData: FormData) {
     'use server'
     const targetType = formData.get('targetType') as string
+    if (targetType !== 'life' && targetType !== 'patron' && targetType !== 'benefactor') {
+      return
+    }
     const memberResult = await getCurrentMember()
     if (!memberResult) return
     const { member } = memberResult

@@ -3,13 +3,15 @@
 // These require a running Supabase instance and real database.
 // All tests are skipped by default — remove .skip to run against live environment.
 
+const mockGetUser = jest.fn()
+
 // Mock withAuth and its dependencies for unit-level integration tests
 jest.mock('@/lib/auth/supabase-admin', () => ({
-  supabaseAdmin: {
+  getSupabaseAdmin: () => ({
     auth: {
-      getUser: jest.fn(),
+      getUser: mockGetUser,
     },
-  },
+  }),
 }))
 
 jest.mock('@/lib/db/prisma', () => ({
@@ -20,17 +22,19 @@ jest.mock('@/lib/db/prisma', () => ({
       update: jest.fn(),
       count: jest.fn(),
     },
+    familyMember: {
+      findFirst: jest.fn(),
+    },
   },
 }))
 
 import { GET } from '@/app/api/auth/me/route'
-import { supabaseAdmin } from '@/lib/auth/supabase-admin'
 import { prisma } from '@/lib/db/prisma'
 
-const mockGetUser = supabaseAdmin.auth.getUser as jest.Mock
 const mockFindUnique = prisma.member.findUnique as jest.Mock
 const mockCreate = prisma.member.create as jest.Mock
 const mockCount = prisma.member.count as jest.Mock
+const mockFamilyFindFirst = prisma.familyMember.findFirst as jest.Mock
 
 const baseMember = {
   id: 'mem-1',
@@ -125,7 +129,9 @@ describe('GET /api/auth/me', () => {
       error: null,
     })
     const newMember = { ...baseMember, id: 'new-mem', userId: 'new-uid', email: 'newuser@test.com' }
-    mockFindUnique.mockResolvedValueOnce(null)
+    // withAuth does userId lookup first, then email lookup — both return null for a new user
+    mockFindUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(null)
+    mockFamilyFindFirst.mockResolvedValueOnce(null)
     mockCreate.mockResolvedValueOnce(newMember)
 
     const req = new Request('http://localhost:3000/api/auth/me', {

@@ -167,28 +167,26 @@ describe('PUT /api/members/me', () => {
     expect(mockUpdateMember).not.toHaveBeenCalled()
   })
 
-  // MEM-07: PUT with chapterId=null clears chapter
-  it('MEM-07: returns 200 and calls updateMember with chapterId: null', async () => {
-    const updated = { ...baseMember, chapterId: null }
-    mockUpdateMember.mockResolvedValueOnce(updated)
+  // MEM-07: PUT with chapterId is silently stripped — members cannot set chapterId directly
+  it('MEM-07: chapterId is stripped by schema; updateMember is called with empty object', async () => {
+    mockUpdateMember.mockResolvedValueOnce(baseMember)
 
     const req = makeRequest('PUT', { chapterId: null })
     const res = await PUT(req)
 
     expect(res.status).toBe(200)
-    expect(mockUpdateMember).toHaveBeenCalledWith('mem-1', { chapterId: null })
+    expect(mockUpdateMember).toHaveBeenCalledWith('mem-1', {})
   })
 
-  // MEM-08: PUT with valid chapterId updates chapter
-  it('MEM-08: returns 200 and calls updateMember with chapterId', async () => {
-    const updated = { ...baseMember, chapterId: 'seattle' }
-    mockUpdateMember.mockResolvedValueOnce(updated)
+  // MEM-08: chapterId with a value is also stripped (admin-only field)
+  it('MEM-08: chapterId string value is stripped; updateMember is called with empty object', async () => {
+    mockUpdateMember.mockResolvedValueOnce(baseMember)
 
     const req = makeRequest('PUT', { chapterId: 'seattle' })
     const res = await PUT(req)
 
     expect(res.status).toBe(200)
-    expect(mockUpdateMember).toHaveBeenCalledWith('mem-1', { chapterId: 'seattle' })
+    expect(mockUpdateMember).toHaveBeenCalledWith('mem-1', {})
   })
 })
 
