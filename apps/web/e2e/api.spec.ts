@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 
-const BASE = 'http://localhost:3000'
+const BASE = process.env.BASE_URL || 'http://localhost:3000'
 
 function getAccessToken(): string {
   const file = path.resolve(__dirname, '../.auth/test-user.json')

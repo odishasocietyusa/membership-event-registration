@@ -9,14 +9,26 @@ export default async function globalTeardown() {
   const testUserFile = path.resolve(__dirname, '../.auth/test-user.json')
   if (!fs.existsSync(testUserFile)) return
 
-  const { id } = JSON.parse(fs.readFileSync(testUserFile, 'utf-8')) as { id: string }
+  const { id, isRemote } = JSON.parse(fs.readFileSync(testUserFile, 'utf-8')) as { id: string; isRemote?: boolean }
 
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const authDir = path.resolve(__dirname, '../.auth')
 
-  await admin.auth.admin.deleteUser(id)
-  fs.rmSync(path.resolve(__dirname, '../.auth'), { recursive: true, force: true })
+  if (isRemote) {
+    console.log(`🧹 Teardown: Remote Mode detected. Skipping dynamic database user deletion for safety.`)
+  } else {
+    console.log(`🧹 Teardown: Local Sandbox Mode detected. Deleting temporary E2E user ${id} from local database.`)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+    if (supabaseUrl && serviceKey) {
+      const admin = createClient(supabaseUrl, serviceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+      await admin.auth.admin.deleteUser(id)
+    }
+  }
+
+  // Always clean up local files
+  fs.rmSync(authDir, { recursive: true, force: true })
+  console.log(`✅ Temporary E2E auth directory cleaned up.`)
 }

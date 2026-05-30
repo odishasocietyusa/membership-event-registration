@@ -1,4 +1,7 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig } from '@playwright/test'
+
+const targetBaseURL = process.env.BASE_URL || 'http://localhost:3000'
+const isRemote = !!process.env.BASE_URL
 
 export default defineConfig({
   testDir: './e2e',
@@ -12,7 +15,7 @@ export default defineConfig({
   globalTeardown: './e2e/global-teardown.ts',
 
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: targetBaseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -20,7 +23,13 @@ export default defineConfig({
   projects: [
     {
       name: 'guest',
-      testMatch: ['**/public.spec.ts', '**/auth.spec.ts', '**/register.spec.ts', '**/api.spec.ts'],
+      testMatch: [
+        '**/public.spec.ts',
+        '**/auth.spec.ts',
+        '**/register.spec.ts',
+        '**/api.spec.ts',
+        '**/crawler.spec.ts', // 🟢 Dynamic page crawler (anonymous context)
+      ],
     },
     {
       name: 'member',
@@ -28,6 +37,7 @@ export default defineConfig({
         '**/dashboard.spec.ts',
         '**/memberships.spec.ts',
         '**/payments.spec.ts',
+        '**/stripe-checkout.spec.ts', // 🟢 Stripe Elements mock payment (authenticated context)
       ],
       use: {
         storageState: '.auth/user.json',
@@ -35,12 +45,15 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: true,
-    timeout: 120_000,
-    stdout: 'ignore',
-    stderr: 'pipe',
-  },
+  // ⚠️ Only spin up the local Next.js dev server if we are running in local mode
+  webServer: isRemote
+    ? undefined
+    : {
+        command: 'pnpm dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: true,
+        timeout: 120_000,
+        stdout: 'ignore',
+        stderr: 'pipe',
+      },
 })

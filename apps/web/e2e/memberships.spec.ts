@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 
-const BASE = 'http://localhost:3000'
-
 function getAccessToken(): string {
   const file = path.resolve(__dirname, '../.auth/test-user.json')
   const { accessToken } = JSON.parse(fs.readFileSync(file, 'utf-8')) as { accessToken: string }
@@ -12,7 +10,7 @@ function getAccessToken(): string {
 
 test.describe('Membership types — public', () => {
   test('GET /api/memberships/types returns list without auth', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/memberships/types`)
+    const res = await request.get('/api/memberships/types')
     expect(res.status()).toBe(200)
     const body = await res.json()
     expect(body).toHaveProperty('types')
@@ -23,24 +21,24 @@ test.describe('Membership types — public', () => {
 
 test.describe('Membership — unauthenticated (401 checks)', () => {
   test('POST /api/memberships returns 401', async ({ request }) => {
-    const res = await request.post(`${BASE}/api/memberships`, {
+    const res = await request.post('/api/memberships', {
       data: { membershipType: 'annualSingle' },
     })
     expect(res.status()).toBe(401)
   })
 
   test('GET /api/memberships/me returns 401', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/memberships/me`)
+    const res = await request.get('/api/memberships/me')
     expect(res.status()).toBe(401)
   })
 
   test('DELETE /api/memberships/me returns 401', async ({ request }) => {
-    const res = await request.delete(`${BASE}/api/memberships/me`)
+    const res = await request.delete('/api/memberships/me')
     expect(res.status()).toBe(401)
   })
 
   test('GET /api/memberships/me/history returns 401', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/memberships/me/history`)
+    const res = await request.get('/api/memberships/me/history')
     expect(res.status()).toBe(401)
   })
 })
@@ -51,7 +49,7 @@ test.describe('Membership — authenticated member', () => {
   let membershipId: string
 
   test('GET /api/memberships/me returns 200 for member with no membership', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/memberships/me`, {
+    const res = await request.get('/api/memberships/me', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
     })
     // 200 with null fields or 404 are both valid for a fresh user
@@ -59,7 +57,7 @@ test.describe('Membership — authenticated member', () => {
   })
 
   test('GET /api/memberships/me/history returns 200 with array', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/memberships/me/history`, {
+    const res = await request.get('/api/memberships/me/history', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
     })
     expect(res.status()).toBe(200)
@@ -68,7 +66,7 @@ test.describe('Membership — authenticated member', () => {
   })
 
   test('POST /api/memberships applies for annualSingle — creates pending membership', async ({ request }) => {
-    const res = await request.post(`${BASE}/api/memberships`, {
+    const res = await request.post('/api/memberships', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
       data: { membershipType: 'annualSingle' },
     })
@@ -80,7 +78,7 @@ test.describe('Membership — authenticated member', () => {
   })
 
   test('POST /api/memberships again returns 409 conflict', async ({ request }) => {
-    const res = await request.post(`${BASE}/api/memberships`, {
+    const res = await request.post('/api/memberships', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
       data: { membershipType: 'annualSingle' },
     })
@@ -88,7 +86,7 @@ test.describe('Membership — authenticated member', () => {
   })
 
   test('GET /api/memberships/me returns membership after applying', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/memberships/me`, {
+    const res = await request.get('/api/memberships/me', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
     })
     expect(res.status()).toBe(200)
@@ -97,7 +95,7 @@ test.describe('Membership — authenticated member', () => {
   })
 
   test('DELETE /api/memberships/me cancels membership', async ({ request }) => {
-    const res = await request.delete(`${BASE}/api/memberships/me`, {
+    const res = await request.delete('/api/memberships/me', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
     })
     expect(res.status()).toBe(200)
@@ -107,7 +105,7 @@ test.describe('Membership — authenticated member', () => {
 
 test.describe('Membership — admin routes (skipped: require admin role promotion)', () => {
   test.skip('GET /api/memberships returns 403 for non-admin', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/memberships`, {
+    const res = await request.get('/api/memberships', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
     })
     expect(res.status()).toBe(403)

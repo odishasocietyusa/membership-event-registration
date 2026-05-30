@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 
-const BASE = 'http://localhost:3000'
-
 function getAccessToken(): string {
   const file = path.resolve(__dirname, '../.auth/test-user.json')
   const { accessToken } = JSON.parse(fs.readFileSync(file, 'utf-8')) as { accessToken: string }
@@ -12,24 +10,24 @@ function getAccessToken(): string {
 
 test.describe('Payments — unauthenticated (401 checks)', () => {
   test('GET /api/payments/me returns 401', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/payments/me`)
+    const res = await request.get('/api/payments/me')
     expect(res.status()).toBe(401)
   })
 
   test('POST /api/payments/checkout-session returns 401', async ({ request }) => {
-    const res = await request.post(`${BASE}/api/payments/checkout-session`, { data: {} })
+    const res = await request.post('/api/payments/checkout-session', { data: {} })
     expect(res.status()).toBe(401)
   })
 
   test('POST /api/payments/upgrade-session returns 401', async ({ request }) => {
-    const res = await request.post(`${BASE}/api/payments/upgrade-session`, { data: {} })
+    const res = await request.post('/api/payments/upgrade-session', { data: {} })
     expect(res.status()).toBe(401)
   })
 })
 
 test.describe('Payments — authenticated member', () => {
   test('GET /api/payments/me returns 200 with empty data array for new user', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/payments/me`, {
+    const res = await request.get('/api/payments/me', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
     })
     expect(res.status()).toBe(200)
@@ -39,7 +37,7 @@ test.describe('Payments — authenticated member', () => {
   })
 
   test('POST /api/payments/checkout-session with unknown membership type returns 400', async ({ request }) => {
-    const res = await request.post(`${BASE}/api/payments/checkout-session`, {
+    const res = await request.post('/api/payments/checkout-session', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
       data: { membershipType: 'nonExistentType' },
     })
@@ -47,7 +45,7 @@ test.describe('Payments — authenticated member', () => {
   })
 
   test('POST /api/payments/checkout-session with admin-only type returns 400 or 403', async ({ request }) => {
-    const res = await request.post(`${BASE}/api/payments/checkout-session`, {
+    const res = await request.post('/api/payments/checkout-session', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
       data: { membershipType: 'honoraryNoVote' },
     })
@@ -58,7 +56,7 @@ test.describe('Payments — authenticated member', () => {
   test('POST /api/payments/checkout-session with valid type returns 200 or 500', async ({ request }) => {
     // 200 when STRIPE_SECRET_KEY is configured, 500 when Stripe SDK throws (no key in local dev).
     // Either is acceptable — we are testing auth + routing, not Stripe itself.
-    const res = await request.post(`${BASE}/api/payments/checkout-session`, {
+    const res = await request.post('/api/payments/checkout-session', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
       data: { membershipType: 'annualSingle' },
     })
@@ -70,7 +68,7 @@ test.describe('Payments — authenticated member', () => {
   })
 
   test('POST /api/payments/upgrade-session with valid type returns 200 or 500', async ({ request }) => {
-    const res = await request.post(`${BASE}/api/payments/upgrade-session`, {
+    const res = await request.post('/api/payments/upgrade-session', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
       data: { membershipType: 'annualFamily' },
     })
@@ -80,7 +78,7 @@ test.describe('Payments — authenticated member', () => {
 
 test.describe('Payments — admin routes (skipped: require admin role promotion)', () => {
   test.skip('GET /api/payments returns 403 for non-admin', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/payments`, {
+    const res = await request.get('/api/payments', {
       headers: { Authorization: `Bearer ${getAccessToken()}` },
     })
     expect(res.status()).toBe(403)

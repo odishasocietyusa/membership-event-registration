@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
-import { TEST_USER_EMAIL } from './global-setup'
+import { TEST_USER_EMAIL as DEFAULT_TEST_USER_EMAIL } from './global-setup'
+
+const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL ?? DEFAULT_TEST_USER_EMAIL
 
 function getAccessToken(): string {
   const file = path.resolve(__dirname, '../.auth/test-user.json')

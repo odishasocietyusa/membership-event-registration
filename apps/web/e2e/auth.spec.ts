@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test'
-import { TEST_USER_EMAIL, TEST_USER_PASSWORD } from './global-setup'
+import { TEST_USER_EMAIL as DEFAULT_TEST_USER_EMAIL, TEST_USER_PASSWORD as DEFAULT_TEST_USER_PASSWORD } from './global-setup'
+
+const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL ?? DEFAULT_TEST_USER_EMAIL
+const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD ?? DEFAULT_TEST_USER_PASSWORD
 
 test.describe('Login form validation', () => {
   test.beforeEach(async ({ page }) => {

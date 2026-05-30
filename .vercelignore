@@ -13,3 +13,25 @@ apps/api/
 
 # Monorepo tooling
 .turbo/
+
+# Agentic tooling and execution logs
+.agents/
+.claude/
+.agent-session-report.txt
+.claude-session-report.txt
+
+# Graphify knowledge graphs and AST index files
+graphify-out/
+
+# Developer documentation and license assets (root-level only)
+/README.md
+/AGENTS.md
+/CLAUDE.md
+/ONBOARDING.md
+/LICENSE
+
+# CI/CD and editor configurations
+.github/
+.vscode/
+.DS_Store
+
