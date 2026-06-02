@@ -37,8 +37,8 @@ const membershipFees = [
   { id: 'five-year-family',       membershipType: 'fiveYearFamily'      as const, amountDollars: 100,  isUpgradePath: true,  isAdminOnly: false },
   { id: 'life',                   membershipType: 'life'                as const, amountDollars: 200,  isUpgradePath: true,  isAdminOnly: false },
   { id: 'life-ward',              membershipType: 'lifeWard'            as const, amountDollars: 100,  isUpgradePath: true,  isAdminOnly: false },
-  { id: 'patron',                 membershipType: 'patron'              as const, amountDollars: 500,  isUpgradePath: false, isAdminOnly: false },
-  { id: 'benefactor',             membershipType: 'benefactor'          as const, amountDollars: 1000, isUpgradePath: false, isAdminOnly: false },
+  { id: 'patron',                 membershipType: 'patron'              as const, amountDollars: 500,  isUpgradePath: true,  isAdminOnly: false },
+  { id: 'benefactor',             membershipType: 'benefactor'          as const, amountDollars: 1000, isUpgradePath: true,  isAdminOnly: false },
   { id: 'honorary-no-vote',       membershipType: 'honoraryNoVote'      as const, amountDollars: 0,    isUpgradePath: false, isAdminOnly: true  },
 ]
 

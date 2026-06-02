@@ -6,6 +6,8 @@ import { STATE_OPTIONS, COUNTRY_OPTIONS, chapterDisplayName } from '@/lib/consta
 import type { MemberRow } from '@/lib/auth/with-auth'
 import type { FamilyMember } from '@prisma/client'
 import { formatDate } from '@/lib/utils/date'
+import type { UpgradeOption } from '@/lib/payments/payment-service'
+import { UpgradeSection } from '@/app/components/upgrade-section'
 
 interface ProfileClientProps {
   member: MemberRow
@@ -14,6 +16,7 @@ interface ProfileClientProps {
   bio: string
   spouseName: string
   isSpouseSession: boolean
+  upgradeOptions: { cumulativePaidCents: number; options: UpgradeOption[] }
 }
 
 interface AddressForm {
@@ -70,6 +73,7 @@ export default function ProfileClient({
   bio: initialBio,
   spouseName: initialSpouseName,
   isSpouseSession,
+  upgradeOptions,
 }: ProfileClientProps) {
   const addr = (member.address as Record<string, string> | null) ?? {}
   const vis  = (member.profileVisibility as Record<string, boolean> | null) ?? {}
@@ -414,8 +418,17 @@ export default function ProfileClient({
         <p><strong>Type:</strong> {member.membershipType ? (MEMBERSHIP_TYPE_LABELS[member.membershipType] ?? member.membershipType) : '—'}</p>
         <p><strong>Status:</strong> {member.memberStatus ?? '—'}</p>
         <p><strong>Join date:</strong> {formatDate(member.joinDate, '—')}</p>
-        <p><strong>Expiry date:</strong> {formatDate(member.expiryDate, '—')}</p>
+        {member.expiryDate && (
+          <p><strong>Valid through:</strong> {formatDate(member.expiryDate)}</p>
+        )}
       </fieldset>
+
+      {member.memberStatus === 'active' && (
+        <UpgradeSection
+          cumulativePaidCents={upgradeOptions.cumulativePaidCents}
+          options={upgradeOptions.options}
+        />
+      )}
 
       <form onSubmit={handleSave}>
         <fieldset>

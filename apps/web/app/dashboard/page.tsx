@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation'
 import { getCurrentMember, type CurrentMemberResult } from '@/lib/auth/get-current-member'
 import { getMyMembershipStatus } from '@/lib/memberships/membership-service'
+import { getUpgradeOptions } from '@/lib/payments/payment-service'
 import SignOutButton from './sign-out-button'
 import { chapterDisplayName } from '@/lib/constants/address-options'
 import { formatDate } from '@/lib/utils/date'
 import { NO_EXPIRY_TYPES } from '@/lib/memberships/constants'
+import { UpgradeSection } from '@/app/components/upgrade-section'
 
 function membershipTypeLabel(type: string): string {
   const labels: Record<string, string> = {
@@ -29,8 +31,12 @@ export default async function DashboardPage() {
   const { member: user, isSpouseSession } = result
 
   let membership = null
+  let upgradeOptions = { cumulativePaidCents: 0, options: [] as Awaited<ReturnType<typeof getUpgradeOptions>>['options'] }
   try {
-    membership = await getMyMembershipStatus(user.id)
+    ;[membership, upgradeOptions] = await Promise.all([
+      getMyMembershipStatus(user.id),
+      getUpgradeOptions(user.id),
+    ])
   } catch (err) {
     console.error('Failed to load membership status', err)
   }
@@ -83,7 +89,9 @@ export default async function DashboardPage() {
             <p><strong>Status:</strong> Active</p>
             <p><strong>Type:</strong> {membershipTypeLabel(membershipType!)}</p>
             <p><strong>Member since:</strong> {formatDate(joinDate, '—')}</p>
-            <p><strong>Expires:</strong> {neverExpires ? 'Never Expires' : formatDate(expiryDate, '—')}</p>
+            {!neverExpires && expiryDate && (
+              <p><strong>Valid through:</strong> {formatDate(expiryDate, '—')}</p>
+            )}
           </div>
         )}
 
@@ -102,6 +110,13 @@ export default async function DashboardPage() {
           </div>
         )}
       </fieldset>
+
+      {memberStatus === 'active' && (
+        <UpgradeSection
+          cumulativePaidCents={upgradeOptions.cumulativePaidCents}
+          options={upgradeOptions.options}
+        />
+      )}
 
       <section>
         <SignOutButton />

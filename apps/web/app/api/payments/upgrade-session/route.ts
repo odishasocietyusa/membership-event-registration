@@ -7,7 +7,7 @@ import type { MembershipType } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 
 const UpgradeSessionSchema = z.object({
-  targetType: z.enum(['life', 'patron', 'benefactor']).default('life'),
+  targetType: z.string().min(1),
 })
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -25,7 +25,7 @@ export const POST = withAuth(async (req, { user }) => {
   if (!parsed.success) return jsonResponse(400, { error: parsed.error.flatten() })
 
   const { targetType } = parsed.data
-  const result = await calculateUpgradeCost(user.id, targetType)
+  const result = await calculateUpgradeCost(user.id, targetType as MembershipType)
 
   if (!result.eligible) {
     return jsonResponse(400, { error: result.reason })
@@ -43,6 +43,6 @@ export const POST = withAuth(async (req, { user }) => {
     return jsonResponse(200, { activated: true })
   }
 
-  const url = await createUpgradeSession(user.id, user.email, result.costCents, targetType)
+  const url = await createUpgradeSession(user.id, user.email, result.costCents, targetType as MembershipType)
   return jsonResponse(200, { url })
 })

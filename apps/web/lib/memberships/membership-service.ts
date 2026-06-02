@@ -32,8 +32,6 @@ export const EXPIRY_DAYS: Partial<Record<MembershipType, number>> = {
   annualSingle:        365,
   annualFamily:        365,
   fiveYearFamily:      365 * 5,
-  patron:              365,
-  benefactor:          365,
 }
 
 function serviceError(code: string, message: string): Error {

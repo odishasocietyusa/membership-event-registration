@@ -21,9 +21,10 @@ export default async function ProfilePage() {
     process.env.NEXT_PUBLIC_SITE_URL ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
-  const [memberRes, familyRes] = await Promise.all([
-    fetch(`${baseUrl}/api/members/me`, { headers, cache: 'no-store' }),
-    fetch(`${baseUrl}/api/members/me/family`, { headers, cache: 'no-store' }),
+  const [memberRes, familyRes, upgradeRes] = await Promise.all([
+    fetch(`${baseUrl}/api/members/me`,                  { headers, cache: 'no-store' }),
+    fetch(`${baseUrl}/api/members/me/family`,            { headers, cache: 'no-store' }),
+    fetch(`${baseUrl}/api/memberships/upgrade-options`, { headers, cache: 'no-store' }),
   ])
 
   if (!memberRes.ok) {
@@ -33,6 +34,9 @@ export default async function ProfilePage() {
   const { member, isSpouseSession }: { member: MemberRow; isSpouseSession: boolean } = await memberRes.json()
   const familyBody = familyRes.ok ? await familyRes.json() : { familyMembers: [] }
   const familyMembers: FamilyMember[] = familyBody.familyMembers ?? []
+  const upgradeOptions = upgradeRes.ok
+    ? await upgradeRes.json() as { cumulativePaidCents: number; options: import('@/lib/payments/payment-service').UpgradeOption[] }
+    : { cumulativePaidCents: 0, options: [] }
 
   const profileData = (member.profileData as Record<string, unknown> | null) ?? {}
   const bio         = (profileData.bio        as string) ?? ''
@@ -49,6 +53,7 @@ export default async function ProfilePage() {
         bio={bio}
         spouseName={spouseName}
         isSpouseSession={isSpouseSession}
+        upgradeOptions={upgradeOptions}
       />
     </main>
   )

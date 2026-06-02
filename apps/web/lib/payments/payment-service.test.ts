@@ -18,7 +18,13 @@ jest.mock('@/lib/db/prisma', () => ({
   },
 }))
 
-import { calculateCumulativePaid, calculateUpgradeCost, activateMembership, recordPayment } from './payment-service'
+import {
+  calculateCumulativePaid,
+  calculateUpgradeCost,
+  activateMembership,
+  recordPayment,
+  applyUpgrade,
+} from './payment-service'
 import { prisma } from '@/lib/db/prisma'
 
 const mockPaymentRecord = prisma.paymentRecord as jest.Mocked<typeof prisma.paymentRecord>
@@ -32,6 +38,7 @@ beforeEach(() => jest.clearAllMocks())
 
 describe('calculateCumulativePaid()', () => {
   it('returns 0 when member has no completed payments', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ consecutiveSince: null } as any)
     mockPaymentRecord.findMany.mockResolvedValueOnce([])
     mockMembershipFee.findMany.mockResolvedValueOnce([])
 
@@ -40,47 +47,61 @@ describe('calculateCumulativePaid()', () => {
   })
 
   it('sums only upgrade-path tier payments', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ consecutiveSince: null } as any)
     mockPaymentRecord.findMany.mockResolvedValueOnce([
       { membershipType: 'annualSingle', amountCents: 2500 },
       { membershipType: 'annualFamily', amountCents: 4000 },
-      { membershipType: 'patron',       amountCents: 50000 }, // excluded
     ] as any)
     mockMembershipFee.findMany.mockResolvedValueOnce([
       { membershipType: 'annualSingle' },
       { membershipType: 'annualFamily' },
-      // patron is NOT returned because isUpgradePath=false
     ] as any)
 
     const result = await calculateCumulativePaid('mem-1')
-    expect(result).toBe(6500) // 2500 + 4000, patron excluded
+    expect(result).toBe(6500)
   })
 
-  it('excludes patron and benefactor tiers from cumulative total', async () => {
+  it('excludes patron and benefactor when isUpgradePath=false', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ consecutiveSince: null } as any)
     mockPaymentRecord.findMany.mockResolvedValueOnce([
-      { membershipType: 'patron',      amountCents: 50000 },
-      { membershipType: 'benefactor',  amountCents: 100000 },
+      { membershipType: 'patron',     amountCents: 50000 },
+      { membershipType: 'benefactor', amountCents: 100000 },
     ] as any)
-    mockMembershipFee.findMany.mockResolvedValueOnce([]) // neither is upgrade-path
+    mockMembershipFee.findMany.mockResolvedValueOnce([]) // neither returned — isUpgradePath=false
 
     const result = await calculateCumulativePaid('mem-1')
     expect(result).toBe(0)
+  })
+
+  it('filters payments by consecutiveSince when set', async () => {
+    const since = new Date('2025-01-01')
+    mockMember.findUnique.mockResolvedValueOnce({ consecutiveSince: since } as any)
+    mockPaymentRecord.findMany.mockResolvedValueOnce([
+      { membershipType: 'annualSingle', amountCents: 2500 },
+    ] as any)
+    mockMembershipFee.findMany.mockResolvedValueOnce([
+      { membershipType: 'annualSingle' },
+    ] as any)
+
+    const result = await calculateCumulativePaid('mem-1')
+    expect(result).toBe(2500)
+    // Verify createdAt filter was passed
+    const findManyCall = mockPaymentRecord.findMany.mock.calls[0]?.[0]
+    expect(findManyCall?.where?.createdAt).toEqual({ gte: since })
   })
 })
 
 // ── calculateUpgradeCost ───────────────────────────────────────────────────
 
 describe('calculateUpgradeCost()', () => {
-  const activeMember = {
-    id: 'mem-1',
-    memberStatus: 'active',
-    expiryDate: null,
-  }
+  const activeMember = { id: 'mem-1', memberStatus: 'active', expiryDate: null }
   const lifeFee = { amountDollars: 200 }
 
   it('returns eligible=true and correct cost for active member with prior payments', async () => {
-    mockMember.findUnique.mockResolvedValueOnce(activeMember as any)
+    mockMember.findUnique
+      .mockResolvedValueOnce(activeMember as any)           // calculateUpgradeCost fetch
+      .mockResolvedValueOnce({ consecutiveSince: null } as any) // calculateCumulativePaid fetch
     mockMembershipFee.findUnique.mockResolvedValueOnce(lifeFee as any)
-    // calculateCumulativePaid internals
     mockPaymentRecord.findMany.mockResolvedValueOnce([
       { membershipType: 'annualSingle', amountCents: 4000 },
     ] as any)
@@ -88,15 +109,17 @@ describe('calculateUpgradeCost()', () => {
       { membershipType: 'annualSingle' },
     ] as any)
 
-    const result = await calculateUpgradeCost('mem-1')
+    const result = await calculateUpgradeCost('mem-1', 'life')
 
     expect(result.eligible).toBe(true)
     expect(result.costCents).toBe(16000) // 20000 - 4000
     expect(result.autoActivate).toBe(false)
   })
 
-  it('returns autoActivate=true when cumulative >= life fee', async () => {
-    mockMember.findUnique.mockResolvedValueOnce(activeMember as any)
+  it('returns autoActivate=true when cumulative >= target fee', async () => {
+    mockMember.findUnique
+      .mockResolvedValueOnce(activeMember as any)
+      .mockResolvedValueOnce({ consecutiveSince: null } as any)
     mockMembershipFee.findUnique.mockResolvedValueOnce(lifeFee as any)
     mockPaymentRecord.findMany.mockResolvedValueOnce([
       { membershipType: 'annualSingle', amountCents: 20000 },
@@ -105,53 +128,112 @@ describe('calculateUpgradeCost()', () => {
       { membershipType: 'annualSingle' },
     ] as any)
 
-    const result = await calculateUpgradeCost('mem-1')
+    const result = await calculateUpgradeCost('mem-1', 'life')
 
     expect(result.eligible).toBe(true)
     expect(result.costCents).toBe(0)
     expect(result.autoActivate).toBe(true)
   })
 
-  it('returns eligible=true for member expired within 1 year', async () => {
-    const sixMonthsAgo = new Date()
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+  it('returns eligible=false for expired member', async () => {
     mockMember.findUnique.mockResolvedValueOnce({
       id: 'mem-1',
       memberStatus: 'expired',
-      expiryDate: sixMonthsAgo,
-    } as any)
-    mockMembershipFee.findUnique.mockResolvedValueOnce(lifeFee as any)
-    mockPaymentRecord.findMany.mockResolvedValueOnce([])
-    mockMembershipFee.findMany.mockResolvedValueOnce([])
-
-    const result = await calculateUpgradeCost('mem-1')
-
-    expect(result.eligible).toBe(true)
-    expect(result.costCents).toBe(20000)
-  })
-
-  it('returns eligible=false for member expired more than 1 year ago', async () => {
-    const twoYearsAgo = new Date()
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
-    mockMember.findUnique.mockResolvedValueOnce({
-      id: 'mem-1',
-      memberStatus: 'expired',
-      expiryDate: twoYearsAgo,
+      expiryDate: new Date(),
     } as any)
 
-    const result = await calculateUpgradeCost('mem-1')
+    const result = await calculateUpgradeCost('mem-1', 'life')
 
     expect(result.eligible).toBe(false)
-    expect(result.reason).toMatch(/upgrade window expired/i)
+    expect(result.reason).toMatch(/only active members/i)
   })
 
   it('returns eligible=false for member not found', async () => {
     mockMember.findUnique.mockResolvedValueOnce(null)
 
-    const result = await calculateUpgradeCost('mem-unknown')
+    const result = await calculateUpgradeCost('mem-unknown', 'life')
 
     expect(result.eligible).toBe(false)
     expect(result.reason).toMatch(/not found/i)
+  })
+
+  it('returns eligible=false for unknown targetType', async () => {
+    mockMember.findUnique.mockResolvedValueOnce(activeMember as any)
+    mockMembershipFee.findUnique.mockResolvedValueOnce(null)
+
+    const result = await calculateUpgradeCost('mem-1', 'life')
+
+    expect(result.eligible).toBe(false)
+    expect(result.reason).toMatch(/unknown/i)
+  })
+})
+
+// ── applyUpgrade ───────────────────────────────────────────────────────────
+
+describe('applyUpgrade()', () => {
+  it('sets expiryDate=null when upgrading to life', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ expiryDate: new Date('2027-01-01') } as any)
+    mockMember.update.mockResolvedValueOnce({} as any)
+
+    await applyUpgrade('mem-1', 'life')
+
+    const call = mockMember.update.mock.calls[0][0]
+    expect(call.data.membershipType).toBe('life')
+    expect(call.data.expiryDate).toBeNull()
+  })
+
+  it('sets expiryDate=null when upgrading to patron', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ expiryDate: new Date('2027-01-01') } as any)
+    mockMember.update.mockResolvedValueOnce({} as any)
+
+    await applyUpgrade('mem-1', 'patron')
+
+    const call = mockMember.update.mock.calls[0][0]
+    expect(call.data.expiryDate).toBeNull()
+  })
+
+  it('sets expiryDate=null when upgrading to benefactor', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ expiryDate: null } as any)
+    mockMember.update.mockResolvedValueOnce({} as any)
+
+    await applyUpgrade('mem-1', 'benefactor')
+
+    const call = mockMember.update.mock.calls[0][0]
+    expect(call.data.expiryDate).toBeNull()
+  })
+
+  it('sets expiryDate ~60 months out when upgrading to fiveYearFamily', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ expiryDate: new Date('2027-01-01') } as any)
+    mockMember.update.mockResolvedValueOnce({} as any)
+
+    const before = new Date()
+    await applyUpgrade('mem-1', 'fiveYearFamily')
+    const after = new Date()
+
+    const call = mockMember.update.mock.calls[0][0]
+    const expiry = call.data.expiryDate as Date
+    expect(expiry).toBeInstanceOf(Date)
+    // Should be ~60 months from now — check year range
+    const expectedYear = before.getFullYear() + 5
+    expect(expiry.getFullYear()).toBeGreaterThanOrEqual(expectedYear)
+    expect(expiry.getFullYear()).toBeLessThanOrEqual(after.getFullYear() + 5)
+  })
+
+  it('preserves expiryDate when upgrading between annual tiers', async () => {
+    const existingExpiry = new Date('2027-06-15')
+    mockMember.findUnique.mockResolvedValueOnce({ expiryDate: existingExpiry } as any)
+    mockMember.update.mockResolvedValueOnce({} as any)
+
+    await applyUpgrade('mem-1', 'annualFamily')
+
+    const call = mockMember.update.mock.calls[0][0]
+    expect(call.data.expiryDate).toEqual(existingExpiry)
+  })
+
+  it('throws when member not found', async () => {
+    mockMember.findUnique.mockResolvedValueOnce(null)
+
+    await expect(applyUpgrade('mem-unknown', 'life')).rejects.toThrow('applyUpgrade')
   })
 })
 
@@ -159,6 +241,7 @@ describe('calculateUpgradeCost()', () => {
 
 describe('activateMembership()', () => {
   it('sets expiryDate for annual membership type', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ memberStatus: 'active', consecutiveSince: new Date() } as any)
     mockMember.update.mockResolvedValueOnce({} as any)
 
     await activateMembership('mem-1', 'annualSingle')
@@ -170,6 +253,7 @@ describe('activateMembership()', () => {
   })
 
   it('sets expiryDate=null for life membership', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ memberStatus: 'active', consecutiveSince: new Date() } as any)
     mockMember.update.mockResolvedValueOnce({} as any)
 
     await activateMembership('mem-1', 'life')
@@ -178,13 +262,35 @@ describe('activateMembership()', () => {
     expect(call.data.expiryDate).toBeNull()
   })
 
-  it('sets expiryDate=null for lifeWard membership', async () => {
+  it('sets expiryDate=null for patron membership', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ memberStatus: 'active', consecutiveSince: new Date() } as any)
     mockMember.update.mockResolvedValueOnce({} as any)
 
-    await activateMembership('mem-1', 'lifeWard')
+    await activateMembership('mem-1', 'patron')
 
     const call = mockMember.update.mock.calls[0][0]
     expect(call.data.expiryDate).toBeNull()
+  })
+
+  it('resets consecutiveSince when member was expired', async () => {
+    mockMember.findUnique.mockResolvedValueOnce({ memberStatus: 'expired', consecutiveSince: new Date('2020-01-01') } as any)
+    mockMember.update.mockResolvedValueOnce({} as any)
+
+    await activateMembership('mem-1', 'annualSingle')
+
+    const call = mockMember.update.mock.calls[0][0]
+    expect(call.data.consecutiveSince).toBeInstanceOf(Date)
+  })
+
+  it('preserves consecutiveSince when member was already active (renewal)', async () => {
+    const since = new Date('2023-06-01')
+    mockMember.findUnique.mockResolvedValueOnce({ memberStatus: 'active', consecutiveSince: since } as any)
+    mockMember.update.mockResolvedValueOnce({} as any)
+
+    await activateMembership('mem-1', 'annualSingle')
+
+    const call = mockMember.update.mock.calls[0][0]
+    expect(call.data.consecutiveSince).toBeUndefined()
   })
 })
 
@@ -201,17 +307,17 @@ describe('recordPayment()', () => {
     })
 
     await recordPayment({
-      memberId:      'mem-1',
-      status:        'completed',
-      paymentType:   'membership',
+      memberId:       'mem-1',
+      status:         'completed',
+      paymentType:    'membership',
       membershipType: 'annualSingle',
-      amountCents:   2500,
+      amountCents:    2500,
     })
 
     expect(mockTransaction).toHaveBeenCalledTimes(1)
   })
 
-  it('does not call activateMembership when status is not completed', async () => {
+  it('does not call activate or applyUpgrade when status is not completed', async () => {
     const txMock = {
       paymentRecord: { create: jest.fn().mockResolvedValueOnce({}) },
       member: { update: jest.fn() },
@@ -221,17 +327,17 @@ describe('recordPayment()', () => {
     })
 
     await recordPayment({
-      memberId:      'mem-1',
-      status:        'failed',
-      paymentType:   'membership',
+      memberId:       'mem-1',
+      status:         'failed',
+      paymentType:    'membership',
       membershipType: 'annualSingle',
-      amountCents:   2500,
+      amountCents:    2500,
     })
 
     expect(txMock.member.update).not.toHaveBeenCalled()
   })
 
-  it('does not call activateMembership for donation (no membershipType)', async () => {
+  it('does not activate for donation (no membershipType)', async () => {
     const txMock = {
       paymentRecord: { create: jest.fn().mockResolvedValueOnce({}) },
       member: { update: jest.fn() },

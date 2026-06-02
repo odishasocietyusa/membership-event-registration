@@ -120,6 +120,7 @@ model Member {
   memberStatus       MemberStatus?       @map("member_status")
   joinDate           DateTime?           @map("join_date") @db.Date
   expiryDate         DateTime?           @map("expiry_date") @db.Date
+  consecutiveSince   DateTime?           @map("consecutive_since") @db.Date
   profileVisibility  Json?               @map("profile_visibility")
   profileData        Json?               @map("profile_data")
   role               Role                @default(member)

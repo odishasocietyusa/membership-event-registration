@@ -60,6 +60,7 @@ const baseMember = {
   memberStatus: null,
   joinDate: null,
   expiryDate: null,
+  consecutiveSince: null,
   profileVisibility: null,
   profileData: null,
   role: 'member' as const,

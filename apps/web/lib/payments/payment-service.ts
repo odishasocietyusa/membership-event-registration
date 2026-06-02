@@ -3,28 +3,39 @@ import type { MembershipType, PaymentType, PaymentStatus } from '@prisma/client'
 
 import { NO_EXPIRY_TYPES } from '../memberships/constants'
 
-// Expiry durations in days for annual/multi-year tiers
-const EXPIRY_DAYS: Partial<Record<MembershipType, number>> = {
-  annualStudentNoVote: 365,
-  annualSingle:        365,
-  annualFamily:        365,
-  fiveYearFamily:      365 * 5,
-  patron:              365,
-  benefactor:          365,
+// Calendar-correct month arithmetic — handles leap years and month-end clamping
+function addMonths(date: Date, months: number): Date {
+  const result = new Date(date)
+  result.setMonth(result.getMonth() + months)
+  return result
+}
+
+// Expiry durations in months for time-limited tiers
+const EXPIRY_MONTHS: Partial<Record<MembershipType, number>> = {
+  annualStudentNoVote: 12,
+  annualSingle:        12,
+  annualFamily:        12,
+  fiveYearFamily:      60,
 }
 
 export async function calculateCumulativePaid(memberId: string): Promise<number> {
+  const member = await prisma.member.findUnique({
+    where: { id: memberId },
+    select: { consecutiveSince: true },
+  })
+
   const records = await prisma.paymentRecord.findMany({
     where: {
       memberId,
       status: 'completed',
       paymentType: { in: ['membership', 'upgrade'] },
       membershipType: { not: null },
+      ...(member?.consecutiveSince
+        ? { createdAt: { gte: member.consecutiveSince } }
+        : {}),
     },
-    include: { member: false },
   })
 
-  // Fetch upgrade-path flags for all relevant membership types
   type RawRecord = { membershipType: MembershipType | null; amountCents: number }
   type RawFee = { membershipType: MembershipType }
   const types = [...new Set((records as RawRecord[]).map((r) => r.membershipType).filter(Boolean))]
@@ -46,65 +57,136 @@ export interface UpgradeCostResult {
   autoActivate: boolean
 }
 
-const UPGRADE_TARGET_FEE_IDS: Record<'life' | 'patron' | 'benefactor', string> = {
-  life:       'life',
-  patron:     'patron',
-  benefactor: 'benefactor',
-}
-
 export async function calculateUpgradeCost(
   memberId: string,
-  targetType: 'life' | 'patron' | 'benefactor' = 'life',
+  targetType: MembershipType,
 ): Promise<UpgradeCostResult> {
   const member = await prisma.member.findUnique({ where: { id: memberId } })
   if (!member) return { eligible: false, reason: 'Member not found', costCents: 0, autoActivate: false }
 
-  const now = new Date()
-  const oneYearAgo = new Date(now)
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-
-  const isActive = member.memberStatus === 'active'
-  const isRecentlyExpired =
-    member.memberStatus === 'expired' &&
-    member.expiryDate !== null &&
-    member.expiryDate >= oneYearAgo
-  // First-time buyers (no prior membership) also get upgrade pricing
-  const hasNoPriorMembership = member.memberStatus === null && member.membershipType === null
-
-  if (!isActive && !isRecentlyExpired && !hasNoPriorMembership) {
+  if (member.memberStatus !== 'active') {
     return {
       eligible: false,
-      reason: member.memberStatus === 'expired'
-        ? 'Upgrade window expired. Membership expired more than 1 year ago.'
-        : 'No active or recently expired membership.',
+      reason: 'Only active members can upgrade.',
       costCents: 0,
       autoActivate: false,
     }
   }
 
-  const targetFee = await prisma.membershipFee.findUnique({ where: { id: UPGRADE_TARGET_FEE_IDS[targetType] } })
-  if (!targetFee) throw new Error(`${targetType} membership fee not seeded`)
-
-  const targetCents = targetFee.amountDollars * 100
-  const cumulativePaid = await calculateCumulativePaid(memberId)
-  const costCents = Math.max(0, targetCents - cumulativePaid)
-
-  return {
-    eligible: true,
-    costCents,
-    autoActivate: costCents === 0,
+  const targetFee = await prisma.membershipFee.findUnique({ where: { membershipType: targetType } })
+  if (!targetFee) {
+    return { eligible: false, reason: `Unknown membership type: ${targetType}`, costCents: 0, autoActivate: false }
   }
+
+  const targetCents    = targetFee.amountDollars * 100
+  const cumulativePaid = await calculateCumulativePaid(memberId)
+  const costCents      = Math.max(0, targetCents - cumulativePaid)
+
+  return { eligible: true, costCents, autoActivate: costCents === 0 }
+}
+
+export interface UpgradeOption {
+  membershipType:   MembershipType
+  displayName:      string
+  fullPriceDollars: number
+  upgradeFeeCents:  number
+}
+
+export interface UpgradeOptionsResult {
+  cumulativePaidCents: number
+  options:             UpgradeOption[]
+}
+
+const MEMBERSHIP_LABELS: Record<MembershipType, string> = {
+  annualStudentNoVote: 'Annual Student',
+  annualSingle:        'Annual Single',
+  annualFamily:        'Annual Family',
+  fiveYearFamily:      'Five-Year Family',
+  life:                'Life',
+  lifeWard:            'Life (Ward)',
+  patron:              'Patron',
+  benefactor:          'Benefactor',
+  honoraryNoVote:      'Honorary',
+}
+
+export async function getUpgradeOptions(memberId: string): Promise<UpgradeOptionsResult> {
+  const member = await prisma.member.findUnique({
+    where: { id: memberId },
+    select: { memberStatus: true, membershipType: true },
+  })
+
+  const empty = { cumulativePaidCents: 0, options: [] }
+  if (!member || member.memberStatus !== 'active' || !member.membershipType) return empty
+  if (member.membershipType === 'honoraryNoVote') return empty
+
+  const currentFee = await prisma.membershipFee.findUnique({
+    where: { membershipType: member.membershipType },
+  })
+  if (!currentFee) return empty
+
+  const cumulativePaidCents = await calculateCumulativePaid(memberId)
+
+  const allFees = await prisma.membershipFee.findMany({
+    where: { isAdminOnly: false },
+    orderBy: { amountDollars: 'asc' },
+  })
+
+  const options: UpgradeOption[] = allFees
+    .filter((fee) =>
+      fee.membershipType !== member.membershipType &&
+      fee.membershipType !== 'honoraryNoVote' &&
+      fee.amountDollars > currentFee.amountDollars,
+    )
+    .map((fee) => ({
+      membershipType:   fee.membershipType,
+      displayName:      MEMBERSHIP_LABELS[fee.membershipType] ?? fee.membershipType,
+      fullPriceDollars: fee.amountDollars,
+      upgradeFeeCents:  Math.max(0, fee.amountDollars * 100 - cumulativePaidCents),
+    }))
+
+  return { cumulativePaidCents, options }
+}
+
+export async function applyUpgrade(
+  memberId: string,
+  membershipType: MembershipType,
+): Promise<void> {
+  const member = await prisma.member.findUnique({
+    where: { id: memberId },
+    select: { expiryDate: true },
+  })
+  if (!member) throw new Error(`applyUpgrade: member ${memberId} not found`)
+
+  let expiryDate: Date | null = member.expiryDate
+
+  if (NO_EXPIRY_TYPES.has(membershipType)) {
+    expiryDate = null
+  } else if (membershipType === 'fiveYearFamily') {
+    expiryDate = addMonths(new Date(), 60)
+  }
+  // Annual → annual upgrades: preserve current expiryDate (same billing cycle)
+
+  await prisma.member.update({
+    where: { id: memberId },
+    data: { membershipType, expiryDate },
+  })
 }
 
 export async function activateMembership(
   memberId: string,
   membershipType: MembershipType,
 ): Promise<void> {
+  const current = await prisma.member.findUnique({
+    where: { id: memberId },
+    select: { memberStatus: true, consecutiveSince: true },
+  })
+  const resetConsecutive =
+    !current || current.memberStatus === 'expired' || current.consecutiveSince === null
+
   let expiryDate: Date | null = null
   if (!NO_EXPIRY_TYPES.has(membershipType)) {
-    const days = EXPIRY_DAYS[membershipType] ?? 365
-    expiryDate = new Date()
-    expiryDate.setDate(expiryDate.getDate() + days)
+    const months = EXPIRY_MONTHS[membershipType] ?? 12
+    expiryDate = addMonths(new Date(), months)
   }
 
   await prisma.member.update({
@@ -113,7 +195,8 @@ export async function activateMembership(
       memberStatus:   'active',
       membershipType,
       joinDate:       new Date(),
-      expiryDate:     expiryDate,
+      expiryDate,
+      ...(resetConsecutive && { consecutiveSince: new Date() }),
     },
   })
 }
@@ -153,7 +236,11 @@ export async function recordPayment(input: RecordPaymentInput): Promise<void> {
     })
 
     if (input.status === 'completed' && input.memberId && membershipType) {
-      await activateMembership(input.memberId, membershipType)
+      if (input.paymentType === 'upgrade') {
+        await applyUpgrade(input.memberId, membershipType)
+      } else {
+        await activateMembership(input.memberId, membershipType)
+      }
     }
   })
 }

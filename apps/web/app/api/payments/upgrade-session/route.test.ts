@@ -24,41 +24,44 @@ const mockCreateSession = createUpgradeSession as jest.Mock
 
 beforeEach(() => jest.clearAllMocks())
 
-const req = new Request('http://test/api/payments/upgrade-session', {
-  method: 'POST',
-  headers: { Authorization: 'Bearer token' },
-})
+function makeReq(body: object) {
+  return new Request('http://test/api/payments/upgrade-session', {
+    method:  'POST',
+    headers: { Authorization: 'Bearer token', 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body),
+  })
+}
 
 describe('POST /api/payments/upgrade-session', () => {
   it('returns Stripe checkout URL when upgrade cost > 0', async () => {
     mockCalculate.mockResolvedValueOnce({ eligible: true, costCents: 15000, autoActivate: false })
     mockCreateSession.mockResolvedValueOnce('https://checkout.stripe.com/upgrade')
 
-    const res = await POST(req)
+    const res  = await POST(makeReq({ targetType: 'fiveYearFamily' }))
     const body = await res.json()
 
     expect(res.status).toBe(200)
     expect(body.url).toBe('https://checkout.stripe.com/upgrade')
-    expect(mockCreateSession).toHaveBeenCalledWith('mem-1', 'user@test.com', 15000, 'life')
+    expect(mockCreateSession).toHaveBeenCalledWith('mem-1', 'user@test.com', 15000, 'fiveYearFamily')
     expect(mockRecord).not.toHaveBeenCalled()
   })
 
-  it('auto-activates life membership when cost is $0', async () => {
+  it('auto-activates when upgrade cost is $0', async () => {
     mockCalculate.mockResolvedValueOnce({ eligible: true, costCents: 0, autoActivate: true })
     mockRecord.mockResolvedValueOnce(undefined)
 
-    const res = await POST(req)
+    const res  = await POST(makeReq({ targetType: 'life' }))
     const body = await res.json()
 
     expect(res.status).toBe(200)
     expect(body.activated).toBe(true)
     expect(mockRecord).toHaveBeenCalledWith(
       expect.objectContaining({
-        memberId:      'mem-1',
-        status:        'completed',
-        paymentType:   'upgrade',
+        memberId:       'mem-1',
+        status:         'completed',
+        paymentType:    'upgrade',
         membershipType: 'life',
-        amountCents:   0,
+        amountCents:    0,
       })
     )
     expect(mockCreateSession).not.toHaveBeenCalled()
@@ -66,16 +69,21 @@ describe('POST /api/payments/upgrade-session', () => {
 
   it('returns 400 when member is ineligible', async () => {
     mockCalculate.mockResolvedValueOnce({
-      eligible: false,
-      reason: 'Upgrade window expired. Membership expired more than 1 year ago.',
-      costCents: 0,
+      eligible:     false,
+      reason:       'Only active members can upgrade.',
+      costCents:    0,
       autoActivate: false,
     })
 
-    const res = await POST(req)
+    const res  = await POST(makeReq({ targetType: 'life' }))
     const body = await res.json()
 
     expect(res.status).toBe(400)
-    expect(body.error).toMatch(/upgrade window expired/i)
+    expect(body.error).toMatch(/only active members/i)
+  })
+
+  it('returns 400 when targetType is missing', async () => {
+    const res = await POST(makeReq({}))
+    expect(res.status).toBe(400)
   })
 })
