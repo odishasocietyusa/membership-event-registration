@@ -1,6 +1,35 @@
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  // Refreshes the session and writes updated auth cookies to the response.
+  // IMPORTANT: Do not insert logic between createServerClient and getUser() —
+  // subtle ordering bugs cause random sign-outs.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
   const pathname = request.nextUrl.pathname
   const isProtected =
     pathname.startsWith('/dashboard') ||
@@ -13,25 +42,13 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/chapters/executives') ||
     pathname.startsWith('/chapters/bog-documents')
 
-  if (!isProtected) {
-    return NextResponse.next({ request })
-  }
-
-  // Supabase stores the session in cookies named sb-<project-ref>-auth-token (or
-  // chunked as sb-<ref>-auth-token.0, .1, … when the JWT is large). Use includes()
-  // so both forms are detected. Real JWT validation happens server-side in each
-  // route handler via withAuth; this is only a lightweight redirect gate.
-  const hasSession = request.cookies.getAll().some(
-    ({ name }) => name.startsWith('sb-') && name.includes('-auth-token')
-  )
-
-  if (!hasSession) {
+  if (isProtected && !user) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
     return NextResponse.redirect(loginUrl)
   }
 
-  return NextResponse.next({ request })
+  return supabaseResponse
 }
 
 export const config = {
