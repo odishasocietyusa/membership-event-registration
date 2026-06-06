@@ -85,6 +85,7 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [loading, setLoading] = useState(false)
   const [accountCreated, setAccountCreated] = useState(false)
+  const [emailAlreadyRegistered, setEmailAlreadyRegistered] = useState(false)
   const [membershipTypes, setMembershipTypes] = useState<MembershipFeeItem[]>([])
 
   // Boot: detect session and determine starting step
@@ -187,6 +188,19 @@ export default function RegisterPage() {
 
   async function submitAccountStep() {
     setLoading(true)
+
+    const checkRes = await fetch(
+      `/api/members/check-email?email=${encodeURIComponent(formData.account.email)}`
+    )
+    if (checkRes.ok) {
+      const { exists } = await checkRes.json()
+      if (exists) {
+        setEmailAlreadyRegistered(true)
+        setLoading(false)
+        return
+      }
+    }
+
     const supabase = createSupabaseBrowser()
     const { error } = await supabase.auth.signUp({
       email: formData.account.email,
@@ -438,7 +452,26 @@ export default function RegisterPage() {
         <section>
           <h2>Step 1: Create account</h2>
 
-          {accountCreated ? (
+          {emailAlreadyRegistered ? (
+            <div>
+              <p>
+                <strong>{formData.account.email}</strong> is already registered with an OSA account.
+                Would you like to sign in instead?
+              </p>
+              <button type="button" onClick={() => router.push('/login')}>
+                Yes, Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailAlreadyRegistered(false)
+                  setFormData((prev) => ({ ...prev, account: { ...prev.account, email: '' } }))
+                }}
+              >
+                Register with a Different Email
+              </button>
+            </div>
+          ) : accountCreated ? (
             <div>
               <p>
                 We sent a verification link to <strong>{formData.account.email}</strong>.
