@@ -10,12 +10,12 @@
 ## 1. Design Overview
 
 ### 1.1 Solution Summary
-Add an `AwardName` reference table (text-slug PK, seeded with OSA-defined names) and an `Award` table (UUID PK, FK to `AwardName`, optional FK to `Member`, plus `recipientName`, `citation`, `year`, `category`, `photoUrl`). Expose four App-Router routes that mirror SPEC-3 conventions: two public GETs and three admin-guarded writes (POST list, PATCH/DELETE single, POST photo). Photo upload uses `multipart/form-data` and stores the file in the Supabase `award-photos` bucket via the existing `supabaseAdmin` client; the resulting public URL is written back to `awards.photo_url`.
+Add an `AwardName` reference table (text-slug PK, seeded with OSA-defined names) and an `Award` table (UUID PK, FK to `AwardName`, optional FK to `Member`, plus `recipientName`, `citation`, `year`, `category`, `photoUrl`). Expose three App-Router routes that mirror SPEC-3 conventions: two public GETs and three admin-guarded writes (POST list, PATCH/DELETE single). The `photoUrl` field is passed as a string inside the JSON payloads, allowing admins to provide externally hosted URLs.
 
 ### 1.2 Design Principles Applied
 - **Reuse over invention** — mirror `lib/members/member-service.ts` + `app/api/members/[id]/route.ts` patterns.
-- **Boundary-faithful** — touch only files this spec owns; the only schema touch on the existing `Member` model is the inverse relation back-reference (called out explicitly below for team-lead approval).
-- **Minimum surface** — no pagination, no `GET /api/award-names` endpoint, no storage cleanup. Add when needed.
+- **Boundary-faithful** — touch only files this spec owns; the only schema touch on the existing `Member` model is the inverse relation back-reference.
+- **Minimum surface** — no pagination, no `GET /api/award-names` endpoint, no Supabase storage integrations. Add when needed.
 - **Verifiable first** — every acceptance criterion in spec §3.2 maps 1:1 to a named test case in §7 below.
 
 ---
@@ -34,7 +34,6 @@ Add an `AwardName` reference table (text-slug PK, seeded with OSA-defined names)
 | Service unit tests with `jest.mock('@/lib/db/prisma')` | `apps/web/lib/members/member-service.test.ts`     | Yes         |
 | Route unit tests with mocked `withAuth`            | `apps/web/app/api/members/me/route.test.ts`           | Yes         |
 | Reference table with text-slug PK + seed via upsert | `apps/web/prisma/schema.prisma` (`Chapter`) + `seed.ts` | Yes      |
-| Supabase admin client (service-role)               | `apps/web/lib/auth/supabase-admin.ts`                 | Yes (re-import for Storage) |
 
 ### 2.2 Related Existing Code
 
@@ -42,7 +41,6 @@ Add an `AwardName` reference table (text-slug PK, seeded with OSA-defined names)
 |-------------------------------------------------------|---------------------------------------------------------------------------|-----------------|
 | `apps/web/lib/auth/with-auth.ts`                      | Admin guard for write routes                                              | Import only     |
 | `apps/web/lib/db/prisma.ts`                           | Shared Prisma client                                                      | Import only     |
-| `apps/web/lib/auth/supabase-admin.ts`                 | Service-role client for Storage uploads                                   | Import only     |
 | `apps/web/lib/members/member-service.ts`              | Reference implementation pattern                                          | Reference only  |
 | `apps/web/app/api/members/[id]/route.ts`              | Reference for dynamic param + error mapping                               | Reference only  |
 | `apps/web/prisma/schema.prisma`                       | Add `Award`, `AwardName`, `AwardCategory` enum; add `awards` back-relation on `Member` | Modify          |
@@ -61,55 +59,42 @@ Add an `AwardName` reference table (text-slug PK, seeded with OSA-defined names)
 ### 3.1 Component Diagram
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                            Next.js App Router                          │
-│                                                                        │
-│  /api/awards                  /api/awards/[id]        /api/awards/[id]/│
-│   GET (public)                  GET (public)              photo        │
-│   POST (admin)                  PUT (admin)               POST (admin) │
-│                                 DELETE (admin)                         │
-└────────┬───────────────────────────┬────────────────────────┬──────────┘
-         │                           │                        │
-         ▼                           ▼                        ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│                  lib/awards/award-service.ts                         │
-│                                                                      │
-│  listAwards · getAwardById · createAward · updateAward               │
-│  deleteAward · setAwardPhotoUrl · uploadAwardPhoto (storage)         │
-└────────┬──────────────────────────────────────────────┬──────────────┘
-         │                                              │
-         ▼                                              ▼
-┌─────────────────────────┐                ┌─────────────────────────────┐
-│  lib/db/prisma  (read)  │                │  lib/auth/supabase-admin    │
-│                         │                │  .storage.from('award-      │
-│  award · awardName ·    │                │  photos').upload(...)        │
-│  member (FK)            │                │                             │
-└─────────────────────────┘                └─────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│                   Next.js App Router                   │
+│                                                        │
+│  /api/awards                 /api/awards/[id]          │
+│   GET (public)                 GET (public)            │
+│   POST (admin)                 PATCH (admin)           │
+│                                DELETE (admin)          │
+└────────┬───────────────────────────┬───────────────────┘
+         │                           │
+         ▼                           ▼
+┌────────────────────────────────────────────────────────┐
+│             lib/awards/award-service.ts                │
+│                                                        │
+│  listAwards · getAwardById · createAward · updateAward │
+│  deleteAward                                           │
+└────────────────────────┬───────────────────────────────┘
+                         │
+                         ▼
+             ┌───────────────────────┐
+             │  lib/db/prisma (read) │
+             │                       │
+             │  award · awardName ·  │
+             │  member (FK)          │
+             └───────────────────────┘
 ```
 
 ### 3.2 Data Flow
 
 **Create award (admin):**
 ```
-POST /api/awards (JSON body)
+POST /api/awards (JSON body with optional photoUrl string)
   → withAuth({role:'admin'})
   → Zod CreateAwardSchema parse
   → award-service.createAward()
   → prisma.award.create()
   → 201 JSON { award }
-```
-
-**Photo upload (admin):**
-```
-POST /api/awards/:id/photo (multipart/form-data, field "file")
-  → withAuth({role:'admin'})
-  → service.getAwardById() (404 if missing)
-  → req.formData(), validate file presence + MIME + size
-  → service.uploadAwardPhoto(awardId, file)
-      → supabaseAdmin.storage.from('award-photos').upload(path, bytes, { contentType })
-      → supabaseAdmin.storage.from('award-photos').getPublicUrl(path)
-      → service.setAwardPhotoUrl(awardId, publicUrl)
-  → 200 JSON { award }
 ```
 
 **Public list with filters:**
@@ -138,6 +123,7 @@ export interface CreateAwardInput {
   recipientName?: string | null
   recipientMemberId?: string | null  // uuid
   citation?: string | null
+  photoUrl?: string | null
 }
 
 export type UpdateAwardInput = Partial<CreateAwardInput>
@@ -147,10 +133,6 @@ export function getAwardById(id: string): Promise<Award | null>
 export function createAward(input: CreateAwardInput): Promise<Award>
 export function updateAward(id: string, input: UpdateAwardInput): Promise<Award>
 export function deleteAward(id: string): Promise<void>
-export function uploadAwardPhoto(
-  awardId: string,
-  file: { bytes: ArrayBuffer; contentType: string; filename: string }
-): Promise<Award>
 ```
 
 ```typescript
@@ -160,7 +142,6 @@ GET  /api/awards/:id     → 200 { award: Award } | 404
 POST /api/awards         → 201 { award: Award }  (admin) | 400 | 403
 PATCH /api/awards/:id     → 200 { award: Award }  (admin) | 400 | 403 | 404
 DELETE /api/awards/:id   → 204                   (admin) | 403 | 404
-POST /api/awards/:id/photo → 200 { award: Award } (admin) | 400 | 403 | 404
 ```
 
 ---
@@ -172,14 +153,12 @@ POST /api/awards/:id/photo → 200 { award: Award } (admin) | 400 | 403 | 404
 | File Path                                                    | Purpose                                                       |
 |--------------------------------------------------------------|---------------------------------------------------------------|
 | `apps/web/lib/validation/award.schema.ts`                    | Zod schemas: Create/Update/Query                              |
-| `apps/web/lib/awards/award-service.ts`                       | CRUD + photo-upload service                                   |
-| `apps/web/lib/awards/award-service.test.ts`                  | Unit tests for service (Prisma + Storage mocked)              |
+| `apps/web/lib/awards/award-service.ts`                       | CRUD service                                                  |
+| `apps/web/lib/awards/award-service.test.ts`                  | Unit tests for service (Prisma mocked)                        |
 | `apps/web/app/api/awards/route.ts`                           | `GET` public · `POST` admin                                   |
 | `apps/web/app/api/awards/route.test.ts`                      | Route handler tests                                           |
 | `apps/web/app/api/awards/[id]/route.ts`                      | `GET` public · `PATCH`/`DELETE` admin                           |
 | `apps/web/app/api/awards/[id]/route.test.ts`                 | Route handler tests                                           |
-| `apps/web/app/api/awards/[id]/photo/route.ts`                | `POST` admin photo upload                                     |
-| `apps/web/app/api/awards/[id]/photo/route.test.ts`           | Route handler tests                                           |
 
 ### 4.2 Files to Modify
 
@@ -226,19 +205,19 @@ Step 4 — Public list/get route (TDD)
    └── Create: app/api/awards/[id]/route.test.ts (RED — GET, PATCH, DELETE)
    └── Create: app/api/awards/[id]/route.ts      (GREEN)
 
-Step 5 — Photo upload route (TDD)
-   └── Create: app/api/awards/[id]/photo/route.test.ts
-   └── Create: app/api/awards/[id]/photo/route.ts
-
-Step 6 — Full test run + lint
+Step 5 — Full test run + lint
 ```
 
 ### 5.2 Prisma Schema Additions
 
 ```prisma
 enum AwardCategory {
-  nomination
+  annualNominated
+  communityService
   competition
+  convention
+  specialRecognition
+  misc
 
   @@map("award_category")
 }
@@ -295,7 +274,14 @@ const awardNames = [
 ```typescript
 import { z } from 'zod'
 
-export const AwardCategoryEnum = z.enum(['nomination', 'competition'])
+export const AwardCategoryEnum = z.enum([
+  'annualNominated',
+  'communityService',
+  'competition',
+  'convention',
+  'specialRecognition',
+  'misc',
+])
 
 export const ListAwardsQuerySchema = z.object({
   year:     z.coerce.number().int().min(1900).max(2100).optional(),
@@ -309,6 +295,7 @@ export const CreateAwardSchema = z.object({
   recipientName:     z.string().min(1).max(200).optional().nullable(),
   recipientMemberId: z.string().uuid().optional().nullable(),
   citation:          z.string().max(2000).optional().nullable(),
+  photoUrl:          z.string().url().max(2000).optional().nullable(),
 }).refine(
   d => Boolean(d.recipientName) || Boolean(d.recipientMemberId),
   { message: 'Either recipientName or recipientMemberId is required' }
@@ -317,22 +304,14 @@ export const CreateAwardSchema = z.object({
 export const UpdateAwardSchema = CreateAwardSchema._def.schema.partial()
 ```
 
-### 5.5 Photo Upload Contract
-
-- **Request:** `Content-Type: multipart/form-data`, single field `file`.
-- **Allowed MIME types:** `image/png`, `image/jpeg`, `image/webp`.
-- **Max size:** 5 MB.
-- **Storage path:** `awards/{awardId}/{Date.now()}-{sanitizedFilename}` in bucket `award-photos`.
-- **Public URL:** retrieved via `getPublicUrl`; stored to `awards.photo_url`.
-
 ---
 
 ## 6. Testing Strategy
 
 ### 6.1 Test Levels
-- **Service unit tests** (Jest): mock `@/lib/db/prisma` and `@/lib/auth/supabase-admin` (only `storage.from(...)` chain).
+- **Service unit tests** (Jest): mock `@/lib/db/prisma`.
 - **Route handler unit tests** (Jest): mock `@/lib/auth/with-auth` and `@/lib/awards/award-service`.
-- **No new Playwright/E2E tests** in this spec (existing Playwright suite covers admin/member auth flows; the spec doesn't require E2E and the API tests live in NestJS, not the web app).
+- **No new Playwright/E2E tests** in this spec.
 
 ### 6.2 Run Command
 ```
@@ -364,13 +343,6 @@ pnpm --filter web test
 | AWD-11  | Single award read (public)          | route       | `GET /api/awards/:id` no auth → 200; missing id → 404                                          |
 | AWD-12  | Invalid award_name FK               | service     | `createAward` with unknown `awardName` → Prisma P2003 → 400 `{error:'Invalid awardName'}`     |
 | AWD-13  | Invalid recipient_member_id         | service     | `createAward` with unknown member id → P2003 → 400                                            |
-| AWD-14  | Photo upload happy path             | route       | `POST /:id/photo` with admin + valid file → uploads to Storage, writes URL, 200               |
-| AWD-15  | Photo upload — missing file         | route       | No `file` field → 400                                                                          |
-| AWD-16  | Photo upload — bad MIME             | route       | `text/plain` → 400                                                                             |
-| AWD-17  | Photo upload — too large            | route       | >5 MB → 400                                                                                    |
-| AWD-18  | Photo upload — non-existent award   | route       | `:id` not found → 404; storage never invoked                                                   |
-| AWD-19  | Photo upload — non-admin            | route       | `withAuth({role:'admin'})` rejects → 403; storage never invoked                                |
-| AWD-20  | Photo upload — storage error        | service     | Storage upload returns error → service throws; route returns 500                              |
 
 **Map to acceptance criteria (spec §3.1):**
 
@@ -382,8 +354,7 @@ pnpm --filter web test
 | `POST /api/awards` (admin) creates                              | AWD-03, AWD-03b                     |
 | `PATCH /api/awards/:id` (admin) updates                           | AWD-04, AWD-04b                     |
 | `DELETE /api/awards/:id` (admin) deletes; 204                   | AWD-05, AWD-05b                     |
-| `POST /api/awards/:id/photo` uploads + saves URL                | AWD-14                              |
-| Non-admin `POST /api/awards` returns 403                        | AWD-06, AWD-06b, AWD-19             |
+| Non-admin `POST /api/awards` returns 403                        | AWD-06, AWD-06b                     |
 | All tests passing                                               | full suite                          |
 
 ---
@@ -392,10 +363,9 @@ pnpm --filter web test
 
 1. **Member back-relation:** OK to add `awards Award[] @relation("AwardRecipient")` to the `Member` model, given `lib/db/prisma.ts` is read-only but `prisma/schema.prisma` is owned by this spec? (See §4.3 boundary note.)
 2. **Seed list of award names:** Spec doesn't enumerate them. Will seed 4 placeholder names (see §5.3). Replace with official list when provided.
-3. **Storage bucket provisioning:** Assume `award-photos` bucket exists (public read). If not, an infra step is needed; flag this as a deployment prerequisite, not a code change.
 
 ---
 
 ## Handoff to Implementer Agent (after approval)
 
-**Order of operations:** schema/seed → Zod → service (TDD) → route (TDD) → photo route (TDD) → full test run. Touch only the files listed in §4.1/§4.2. Every production line must be reachable from one of the test cases in §7.
+**Order of operations:** schema/seed → Zod → service (TDD) → route (TDD) → full test run. Touch only the files listed in §4.1/§4.2. Every production line must be reachable from one of the test cases in §7.

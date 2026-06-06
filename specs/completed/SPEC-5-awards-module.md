@@ -9,12 +9,12 @@
 ## 1. Overview
 
 ### 1.1 Summary
-Implement the awards data layer and API for OSA's annual recognition programme. Awards are publicly visible (no login required), but only admins can create, update, or delete records. Recipients may or may not be OSA members. Award photos are stored in Supabase Storage.
+Implement the awards data layer and API for OSA's annual recognition programme. Awards are publicly visible (no login required), but only admins can create, update, or delete records. Recipients may or may not be OSA members. Award photos are referenced by externally hosted URLs.
 
 ### 1.2 Goals
 - [ ] Public can browse all awards without authentication
 - [ ] Admin can create, update, and delete award records
-- [ ] Photo upload to Supabase Storage, URL stored in `awards.photo_url`
+- [ ] Optional photo reference via externally hosted URL (`photoUrl` in database)
 - [ ] Awards can reference a member record (optional) or store a standalone recipient name
 
 ### 1.3 Non-Goals (Out of Scope)
@@ -35,7 +35,7 @@ Implement the awards data layer and API for OSA's annual recognition programme. 
 | FR-03 | Admin can create an award record | Must Have | |
 | FR-04 | Admin can update an award record | Must Have | |
 | FR-05 | Admin can delete an award record | Must Have | |
-| FR-06 | Award photo uploaded to Supabase Storage; URL stored in DB | Should Have | |
+| FR-06 | Optional photo URL stored as text in DB | Should Have | |
 | FR-07 | `recipient_member_id` optionally links to a member record | Should Have | Nullable FK |
 
 ### 2.2 Non-Functional Requirements
@@ -56,7 +56,6 @@ Implement the awards data layer and API for OSA's annual recognition programme. 
 - [ ] `POST /api/awards` (admin) creates an award record
 - [ ] `PATCH /api/awards/:id` (admin) updates an award record
 - [ ] `DELETE /api/awards/:id` (admin) deletes an award record
-- [ ] `POST /api/awards/:id/photo` (admin) uploads photo to Supabase Storage and saves URL
 - [ ] Non-admin `POST /api/awards` returns 403
 - [ ] All tests passing
 
@@ -91,7 +90,6 @@ Implement the awards data layer and API for OSA's annual recognition programme. 
 - `lib/awards/award-service.ts` — CRUD logic
 - `app/api/awards/route.ts` — GET (public), POST (admin)
 - `app/api/awards/[id]/route.ts` — GET (public), PATCH/DELETE (admin)
-- `app/api/awards/[id]/photo/route.ts` — POST (admin)
 - `lib/validation/award.schema.ts` — Zod schemas
 
 ### 4.4 Files NOT to Modify

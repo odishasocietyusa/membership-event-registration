@@ -100,7 +100,7 @@
     "semantic_hash": "7a48d522e2206644a396ba7dd73c200e"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/middleware.ts": {
-    "mtime": 1778990167.64423,
+    "mtime": 1780778529.9337158,
     "ast_hash": "d9f421e9d3dcf450f12b4f8688e1590f",
     "semantic_hash": "d9f421e9d3dcf450f12b4f8688e1590f"
   },
@@ -145,8 +145,8 @@
     "semantic_hash": "b4b43ecf170a35ea90c9c5ddfde1f643"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/package.json": {
-    "mtime": 1780146999.507487,
-    "ast_hash": "74e192bcf9be27364f3a6821525355cf",
+    "mtime": 1780764284.9925869,
+    "ast_hash": "0248afe1616cb9dafdc7f3b4930f3a1d",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/sanity.config.ts": {
@@ -185,9 +185,9 @@
     "semantic_hash": "84a953073336d1c748137347def3a9bf"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/layout.tsx": {
-    "mtime": 1778990162.695349,
-    "ast_hash": "239153bff448e04f0a111a5bef17578b",
-    "semantic_hash": "239153bff448e04f0a111a5bef17578b"
+    "mtime": 1780778542.415887,
+    "ast_hash": "9462c11fc09a7769f07083389907a89b",
+    "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/page.tsx": {
     "mtime": 1778936948.737171,
@@ -350,8 +350,8 @@
     "semantic_hash": "519731320c45f29c76b7737e789345da"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/dashboard/page.tsx": {
-    "mtime": 1779663615.5248168,
-    "ast_hash": "90c7962c2a259def3d4311c8bafbde44",
+    "mtime": 1780181945.8143687,
+    "ast_hash": "680c574473c60bfa4b831e0064bb483e",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/obituary/page.tsx": {
@@ -370,8 +370,8 @@
     "semantic_hash": "1b10c8438b0d9b49952a6a87a288f9ab"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/register/page.tsx": {
-    "mtime": 1779663615.5269108,
-    "ast_hash": "7528d8c8b365b12b0494ae37dbb1a010",
+    "mtime": 1780775125.1134932,
+    "ast_hash": "7292c34124e5b8e6e4bb3c741d660f71",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/leadership-program/page.tsx": {
@@ -380,13 +380,13 @@
     "semantic_hash": "77e69f4f7252f62f22a915beb29772fc"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/profile/page.tsx": {
-    "mtime": 1779663615.5265527,
-    "ast_hash": "ca66534843a23730b3feccf8bbf8cb07",
+    "mtime": 1780181960.1718209,
+    "ast_hash": "d0fd56ca79f60edfdce96cd113a6192f",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/profile/ProfileClient.tsx": {
-    "mtime": 1779663615.5262542,
-    "ast_hash": "c3e118c7f2c535403c26ed4e835729bb",
+    "mtime": 1780756598.0537827,
+    "ast_hash": "99d1c56d9eb8d90278f61a99d36dfa35",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/news/page.tsx": {
@@ -415,14 +415,14 @@
     "semantic_hash": "dae9255f8e77e4a99e0e0dfb971de4ec"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/payments/upgrade-session/route.test.ts": {
-    "mtime": 1779673674.58771,
-    "ast_hash": "0417630db7f5f309d3b95818e1e67b6d",
+    "mtime": 1780182013.8553033,
+    "ast_hash": "632699cc65e6269a7e675e84f450cd10",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/payments/upgrade-session/route.ts": {
-    "mtime": 1778983240.624339,
-    "ast_hash": "c941bcd1b53cc39323679dd70f6af790",
-    "semantic_hash": "c941bcd1b53cc39323679dd70f6af790"
+    "mtime": 1780181912.3205652,
+    "ast_hash": "aa18cabc024ef0c9443dc3a8a7bfd653",
+    "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/payments/checkout-session/route.test.ts": {
     "mtime": 1778791548.2481432,
@@ -600,24 +600,24 @@
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/members/me/family/route.test.ts": {
-    "mtime": 1778800030.8755577,
-    "ast_hash": "296a7e2c53a1b110fd63c47271f94a37",
-    "semantic_hash": "296a7e2c53a1b110fd63c47271f94a37"
+    "mtime": 1780768196.6882865,
+    "ast_hash": "e0897a1bcbbd5431f4bb1a01cb40355c",
+    "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/members/me/family/route.ts": {
-    "mtime": 1778910285.7133212,
-    "ast_hash": "99f16918dac145f5005d6a9ff6fe4370",
-    "semantic_hash": "99f16918dac145f5005d6a9ff6fe4370"
+    "mtime": 1780768182.4499447,
+    "ast_hash": "a88feccc352f802af2eb0a6b57312c2b",
+    "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/members/me/family/[id]/route.test.ts": {
-    "mtime": 1778800032.4615078,
-    "ast_hash": "cb1033964989a5661ffa9d01ed95a59d",
-    "semantic_hash": "cb1033964989a5661ffa9d01ed95a59d"
+    "mtime": 1780768217.278713,
+    "ast_hash": "f101aaec6b865915f221ee010335a0e9",
+    "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/members/me/family/[id]/route.ts": {
-    "mtime": 1779133883.683637,
-    "ast_hash": "0f1e2f7d771963fdddc08d0331f3a5a3",
-    "semantic_hash": "0f1e2f7d771963fdddc08d0331f3a5a3"
+    "mtime": 1780768186.0611687,
+    "ast_hash": "7af6c0479acd87da7e9c41c8be6d7c1e",
+    "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/members/me/export/route.ts": {
     "mtime": 1778910285.7130787,
@@ -795,9 +795,9 @@
     "semantic_hash": "861f5334209266857307e3fdd0db4152"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/prisma/seed.ts": {
-    "mtime": 1779082362.004059,
-    "ast_hash": "8f84e0edc474b302deb377ac823ba5ca",
-    "semantic_hash": "8f84e0edc474b302deb377ac823ba5ca"
+    "mtime": 1780776959.6540568,
+    "ast_hash": "502cf2778b427ff986b896a440f10be3",
+    "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/sanity/schemas/announcement.ts": {
     "mtime": 1778733414.0118973,
@@ -855,9 +855,9 @@
     "semantic_hash": "3494a9b8b89ed8363bf8354354bea839"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/payments/stripe.ts": {
-    "mtime": 1778983218.1904085,
-    "ast_hash": "6a611a5268b3a43e40b6fa353390480c",
-    "semantic_hash": "6a611a5268b3a43e40b6fa353390480c"
+    "mtime": 1780181603.6860526,
+    "ast_hash": "f1394a846543898d2781a5e276b7ad46",
+    "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/payments/receipt.ts": {
     "mtime": 1778778895.5523078,
@@ -875,13 +875,13 @@
     "semantic_hash": "26d88c68e6cf997444c1672d8c74f0b6"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/payments/payment-service.ts": {
-    "mtime": 1779576850.646053,
-    "ast_hash": "365138116a6eb808c60e7efc722a4b48",
+    "mtime": 1780181595.1352537,
+    "ast_hash": "f0f76cb68ce170ce5df8cbebc58635bb",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/payments/payment-service.test.ts": {
-    "mtime": 1779672551.7153754,
-    "ast_hash": "7d2c954a8532d6807a3d7d04f822da37",
+    "mtime": 1780181887.3189878,
+    "ast_hash": "3f251731a479fef8d3bc762e64611ba6",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/auth/supabase-admin.ts": {
@@ -895,8 +895,8 @@
     "semantic_hash": "b36549fde5f0d2f5e66166001d4ec21c"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/auth/with-auth.test.ts": {
-    "mtime": 1779672524.353443,
-    "ast_hash": "841ec0c00c620182f6825ed7d3e627bc",
+    "mtime": 1780750190.0106518,
+    "ast_hash": "2609f5d5c7ceb0f92b361f01b11d46d3",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/auth/supabase-admin.test.ts": {
@@ -935,8 +935,8 @@
     "semantic_hash": "be2e00cd1a3d2bb6d57f39ccce9bf216"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/memberships/membership-service.ts": {
-    "mtime": 1779663615.5281796,
-    "ast_hash": "befcab1fa6fca87ee81ebc0af2207ab1",
+    "mtime": 1780181566.7387154,
+    "ast_hash": "a6cd066cae24fede1cb0f56a33ee6742",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/db/prisma.ts": {
@@ -955,8 +955,8 @@
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/members/member-service.test.ts": {
-    "mtime": 1779673567.2699175,
-    "ast_hash": "ea6a513a0e2b4fb506b44fe03ed83837",
+    "mtime": 1780181868.4538007,
+    "ast_hash": "42c2211cf2d93b621749ff5546fcddcf",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/messaging/resend.test.ts": {
@@ -1185,13 +1185,13 @@
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-5-awards-module/01-analysis.md": {
-    "mtime": 1778755765.5046444,
-    "ast_hash": "0cd060b1157d9332bae7064244bc6e8c",
+    "mtime": 1780778387.366532,
+    "ast_hash": "372eb631325e8655ea9d4f5c8dfcc37e",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-5-awards-module/02-design.md": {
-    "mtime": 1778759983.031321,
-    "ast_hash": "d0fd0cb7a7f385941205076054f36135",
+    "mtime": 1780779157.290984,
+    "ast_hash": "b0983c26d31e909c01eec50d6f264df7",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-20-nestjs-cleanup-and-test-expansion/01-analysis.md": {
@@ -1460,8 +1460,8 @@
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/specs/active/SPEC-5-awards-module.md": {
-    "mtime": 1778759920.3511379,
-    "ast_hash": "21ccbff72f173663704b654bd62f5233",
+    "mtime": 1780778414.5375657,
+    "ast_hash": "78f88edf92d2e16b2660abf3ce7c7993",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/specs/active/SPEC-15-navigation-bar.md": {
@@ -1565,8 +1565,8 @@
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/memberships/constants.ts": {
-    "mtime": 1779576742.5685956,
-    "ast_hash": "e8c42a09bc40997b7ff7d709da0c7d8c",
+    "mtime": 1780181544.3711,
+    "ast_hash": "a12ef3655ec119105c4a4895cffa0463",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/members/services/member-crud.ts": {
@@ -1580,8 +1580,8 @@
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/members/services/member-family.ts": {
-    "mtime": 1779663615.5278692,
-    "ast_hash": "b9ac51cc857ac23fb478558585562b9e",
+    "mtime": 1780768178.6864984,
+    "ast_hash": "f1cf19c601f81291a299d9e4fb063aff",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/members/services/member-chapters.ts": {
@@ -1709,9 +1709,144 @@
     "ast_hash": "b826cdd5c59ab586625bee14454a6d1e",
     "semantic_hash": ""
   },
-  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/active/SPEC-21-self-service-membership-upgrade.md": {
-    "mtime": 1779685530.2340994,
-    "ast_hash": "203cf1aaee6204f8d8a9030822415bd3",
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/package.json": {
+    "mtime": 1780756427.7743297,
+    "ast_hash": "e264201c47ef6b9be6b9b38f8ec7a5be",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/components/upgrade-section.tsx": {
+    "mtime": 1780181926.976142,
+    "ast_hash": "30b4e95a350e9e7ca9351d7017698be7",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/memberships/upgrade-options/route.test.ts": {
+    "mtime": 1780776966.5600646,
+    "ast_hash": "cd2fee05f13cc8485972b45bb4964870",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/memberships/upgrade-options/route.ts": {
+    "mtime": 1780181901.02026,
+    "ast_hash": "83a366ec6bf7e05421daa375139f1565",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/awards/route.test.ts": {
+    "mtime": 1780779199.125678,
+    "ast_hash": "9c3ce8a17dcb7c6bfbe79a8b83336fe2",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/awards/route.ts": {
+    "mtime": 1780779204.418766,
+    "ast_hash": "fc3fdb477101fedc2d7a97a14ca302be",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/awards/[id]/route.test.ts": {
+    "mtime": 1780779207.387994,
+    "ast_hash": "db92b97cfa7f139c6ae13deaf724025c",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/awards/[id]/route.ts": {
+    "mtime": 1780779227.3643785,
+    "ast_hash": "e6d91b31ab6ca1e1f5ac3c091d0096f5",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/members/check-email/route.test.ts": {
+    "mtime": 1780775106.41227,
+    "ast_hash": "b5b3b9103156b6e889781b4ca2fd9188",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/members/check-email/route.ts": {
+    "mtime": 1780775096.777424,
+    "ast_hash": "aeb9107252e7377528f3d4785e165bb0",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/members/me/spouse-link/route.test.ts": {
+    "mtime": 1780756296.9187899,
+    "ast_hash": "0957ee4785e24f003890c3861a4e8b49",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/members/me/email/route.test.ts": {
+    "mtime": 1780756286.8422425,
+    "ast_hash": "0523325e768c3f203b7ee4da8926257d",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/awards/award-service.ts": {
+    "mtime": 1780779191.7491257,
+    "ast_hash": "7cf96fbed21f33538d7e20d796b30e3e",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/awards/award-service.test.ts": {
+    "mtime": 1780779189.68494,
+    "ast_hash": "8d8b50701e6cb84c415b7d0d4280f120",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/lib/validation/award.schema.ts": {
+    "mtime": 1780779182.5844128,
+    "ast_hash": "0dafd8d84ecd573750eba9013fdb74ff",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/completed/SPEC-27-duplicate-email-and-auth-checks.md": {
+    "mtime": 1780777246.1418285,
+    "ast_hash": "dd776ffe3f913f82aeb0106e228f627c",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/completed/SPEC-25-profile-membership-label.md": {
+    "mtime": 1780181018.612841,
+    "ast_hash": "e9a34650f3cf9137b78cadfeba9a74be",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/completed/SPEC-21-self-service-membership-upgrade.md": {
+    "mtime": 1780182059.4240975,
+    "ast_hash": "5ce59579d57dc292815a8b04d44a7a00",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-5-awards-module/04-qa-report.md": {
+    "mtime": 1780779241.9066722,
+    "ast_hash": "7904e1008a06b65370dcdc94aa436c40",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-5-awards-module/03-implementation.md": {
+    "mtime": 1780779238.9190056,
+    "ast_hash": "8670fbb78520d649030d13fe010f4c0a",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-21/04-qa-report.md": {
+    "mtime": 1780777000.2525296,
+    "ast_hash": "ef41d587dedf706cf50f653a35fe044a",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-21/03-implementation.md": {
+    "mtime": 1780182050.6196964,
+    "ast_hash": "ce11f59a38a48a132eaf660ddab7ac5e",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-25/01-analysis.md": {
+    "mtime": 1780180918.8679333,
+    "ast_hash": "ded0916e6ed6c0854a248d336dbad699",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-25/04-qa-report.md": {
+    "mtime": 1780181010.2643166,
+    "ast_hash": "5f3636b29ebfc6ecf6effc689e98c579",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-25/02-design.md": {
+    "mtime": 1780180952.298231,
+    "ast_hash": "b40b2ca987e56e6a02a27b4414eec8c5",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/artifacts/SPEC-25/03-implementation.md": {
+    "mtime": 1780180976.9301815,
+    "ast_hash": "d92894b8b3200df286d0e9b0c5b208e7",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/active/SPEC-24-rolling-membership-expiry.md": {
+    "mtime": 1780180797.2279334,
+    "ast_hash": "33a30263146b14e5a3f9bd23a0de9672",
+    "semantic_hash": ""
+  },
+  "/Users/utkalnayak/Documents/code/membership-event-registration/specs/active/SPEC-26-expiry-reminder-notifications.md": {
+    "mtime": 1780181403.7148743,
+    "ast_hash": "5976046aa1d02ef6313d9301bd248734",
     "semantic_hash": ""
   }
 }

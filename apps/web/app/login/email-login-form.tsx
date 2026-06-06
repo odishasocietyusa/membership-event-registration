@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { z } from 'zod'
 import { createSupabaseBrowser } from '@/lib/auth/supabase-browser'
 
@@ -16,7 +15,6 @@ const ERROR_MESSAGES: Record<string, string> = {
 }
 
 export default function EmailLoginForm() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({})
@@ -47,7 +45,9 @@ export default function EmailLoginForm() {
       return
     }
 
-    // Check profile completeness to determine where to send the user
+    // Check profile completeness to determine where to send the user.
+    // Use window.location.href (hard navigation) so the Router Cache is bypassed
+    // and the root layout re-renders with the freshly authenticated session.
     const { data: { session } } = await supabase.auth.getSession()
     if (session) {
       const res = await fetch('/api/members/me', {
@@ -57,12 +57,12 @@ export default function EmailLoginForm() {
         const { member } = await res.json()
         const isRegistered = member?.address != null
         const isActive = member?.memberStatus === 'active'
-        router.push(!isRegistered || !isActive ? '/register' : '/dashboard')
+        window.location.href = !isRegistered || !isActive ? '/register' : '/dashboard'
         return
       }
     }
 
-    router.push('/register')
+    window.location.href = '/register'
   }
 
   return (
