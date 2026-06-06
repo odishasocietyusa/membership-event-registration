@@ -95,6 +95,19 @@ async function main() {
   }
 
   console.log(`Seeded ${membershipFees.length} membership fees.`)
+
+  console.log('Backfilling consecutiveSince for active members...')
+  const activeWithoutConsecutive = await prisma.member.findMany({
+    where: { memberStatus: 'active', consecutiveSince: null },
+    select: { id: true, joinDate: true },
+  })
+  for (const m of activeWithoutConsecutive) {
+    await prisma.member.update({
+      where: { id: m.id },
+      data: { consecutiveSince: m.joinDate ?? new Date() },
+    })
+  }
+  console.log(`Backfilled consecutiveSince for ${activeWithoutConsecutive.length} active members`)
 }
 
 main()
