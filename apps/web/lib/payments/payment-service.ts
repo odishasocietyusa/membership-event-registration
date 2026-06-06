@@ -2,21 +2,7 @@ import { prisma } from '@/lib/db/prisma'
 import type { MembershipType, PaymentType, PaymentStatus } from '@prisma/client'
 
 import { NO_EXPIRY_TYPES } from '../memberships/constants'
-
-// Calendar-correct month arithmetic — handles leap years and month-end clamping
-function addMonths(date: Date, months: number): Date {
-  const result = new Date(date)
-  result.setMonth(result.getMonth() + months)
-  return result
-}
-
-// Expiry durations in months for time-limited tiers
-const EXPIRY_MONTHS: Partial<Record<MembershipType, number>> = {
-  annualStudentNoVote: 12,
-  annualSingle:        12,
-  annualFamily:        12,
-  fiveYearFamily:      60,
-}
+import { computeExpiryDate } from '../memberships/expiry'
 
 export async function calculateCumulativePaid(memberId: string): Promise<number> {
   const member = await prisma.member.findUnique({
@@ -150,6 +136,7 @@ export async function getUpgradeOptions(memberId: string): Promise<UpgradeOption
 export async function applyUpgrade(
   memberId: string,
   membershipType: MembershipType,
+  paymentDate: Date = new Date(),
 ): Promise<void> {
   const member = await prisma.member.findUnique({
     where: { id: memberId },
@@ -162,7 +149,7 @@ export async function applyUpgrade(
   if (NO_EXPIRY_TYPES.has(membershipType)) {
     expiryDate = null
   } else if (membershipType === 'fiveYearFamily') {
-    expiryDate = addMonths(new Date(), 60)
+    expiryDate = computeExpiryDate(membershipType, paymentDate)
   }
   // Annual → annual upgrades: preserve current expiryDate (same billing cycle)
 
@@ -175,6 +162,7 @@ export async function applyUpgrade(
 export async function activateMembership(
   memberId: string,
   membershipType: MembershipType,
+  paymentDate: Date = new Date(),
 ): Promise<void> {
   const current = await prisma.member.findUnique({
     where: { id: memberId },
@@ -183,20 +171,16 @@ export async function activateMembership(
   const resetConsecutive =
     !current || current.memberStatus === 'expired' || current.consecutiveSince === null
 
-  let expiryDate: Date | null = null
-  if (!NO_EXPIRY_TYPES.has(membershipType)) {
-    const months = EXPIRY_MONTHS[membershipType] ?? 12
-    expiryDate = addMonths(new Date(), months)
-  }
+  const expiryDate = computeExpiryDate(membershipType, paymentDate)
 
   await prisma.member.update({
     where: { id: memberId },
     data: {
       memberStatus:   'active',
       membershipType,
-      joinDate:       new Date(),
+      joinDate:       paymentDate,
       expiryDate,
-      ...(resetConsecutive && { consecutiveSince: new Date() }),
+      ...(resetConsecutive && { consecutiveSince: paymentDate }),
     },
   })
 }
@@ -213,13 +197,14 @@ export interface RecordPaymentInput {
   isAdminInitiated?:      boolean
   isAnonymous?:           boolean
   currency?:              string
+  paymentDate?:           Date
 }
 
 export async function recordPayment(input: RecordPaymentInput): Promise<void> {
   const membershipType = input.membershipType
 
   await prisma.$transaction(async (tx) => {
-    await tx.paymentRecord.create({
+    const record = await tx.paymentRecord.create({
       data: {
         memberId:              input.memberId,
         stripeSessionId:       input.stripeSessionId,
@@ -236,10 +221,11 @@ export async function recordPayment(input: RecordPaymentInput): Promise<void> {
     })
 
     if (input.status === 'completed' && input.memberId && membershipType) {
+      const paymentDate = input.paymentDate ?? record.createdAt ?? new Date()
       if (input.paymentType === 'upgrade') {
-        await applyUpgrade(input.memberId, membershipType)
+        await applyUpgrade(input.memberId, membershipType, paymentDate)
       } else {
-        await activateMembership(input.memberId, membershipType)
+        await activateMembership(input.memberId, membershipType, paymentDate)
       }
     }
   })

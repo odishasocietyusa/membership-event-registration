@@ -350,12 +350,13 @@ export default function ProfileClient({
     }
 
     const payload: Record<string, unknown> = {
-      fullName:                 editForm.fullName.trim(),
-      // H-1 fix: send null to explicitly clear optional fields
-      dateOfBirth:              editForm.dateOfBirth || null,
-      highSchoolGraduationYear: editForm.highSchoolGraduationYear
+      fullName: editForm.fullName.trim(),
+    }
+    if (fm?.relation !== 'spouse') {
+      payload.dateOfBirth              = editForm.dateOfBirth || null
+      payload.highSchoolGraduationYear = editForm.highSchoolGraduationYear
         ? parseInt(editForm.highSchoolGraduationYear, 10)
-        : null,
+        : null
     }
     if (fm?.relation === 'spouse') payload.email = editForm.email.trim()
 
@@ -675,24 +676,31 @@ export default function ProfileClient({
                       onChange={(e) => setEditForm((prev) => ({ ...prev, fullName: e.target.value }))}
                     />
                   </div>
-                  <div>
-                    <label htmlFor={`edit_dob_${fm.id}`}>Date of birth</label>
-                    <input
-                      id={`edit_dob_${fm.id}`}
-                      type="date"
-                      value={editForm.dateOfBirth}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor={`edit_grad_${fm.id}`}>HS graduation year</label>
-                    <input
-                      id={`edit_grad_${fm.id}`}
-                      type="number"
-                      value={editForm.highSchoolGraduationYear}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, highSchoolGraduationYear: e.target.value }))}
-                    />
-                  </div>
+                  {fm.relation !== 'spouse' && (
+                    <div>
+                      <label htmlFor={`edit_dob_${fm.id}`}>Date of birth</label>
+                      <input
+                        id={`edit_dob_${fm.id}`}
+                        type="date"
+                        value={editForm.dateOfBirth}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
+                      />
+                    </div>
+                  )}
+                  {fm.relation === 'child' && (
+                    <>
+                      <div>
+                        <label htmlFor={`edit_grad_${fm.id}`}>HS graduation year (optional)</label>
+                        <input
+                          id={`edit_grad_${fm.id}`}
+                          type="number"
+                          value={editForm.highSchoolGraduationYear}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, highSchoolGraduationYear: e.target.value }))}
+                        />
+                      </div>
+                      <p><em>If your child has already graduated high school, consider registering them as an individual member under the Member&apos;s ward category.</em></p>
+                    </>
+                  )}
                   {fm.relation === 'spouse' && (
                     <div>
                       <label htmlFor={`edit_email_${fm.id}`}>Spouse email</label>
@@ -728,8 +736,8 @@ export default function ProfileClient({
                   <p>
                     <strong>{fm.fullName}</strong>
                     {' — '}{fm.relation}
-                    {fm.dateOfBirth && ` — Born ${formatDate(fm.dateOfBirth, '—')}`}
-                    {fm.highSchoolGraduationYear && ` — HS grad ${fm.highSchoolGraduationYear}`}
+                    {fm.relation !== 'spouse' && fm.dateOfBirth && ` — Born ${formatDate(fm.dateOfBirth, '—')}`}
+                    {fm.relation === 'child' && fm.highSchoolGraduationYear && ` — HS grad ${fm.highSchoolGraduationYear}`}
                     {fm.relation === 'spouse' && fm.email && ` — ${fm.email}`}
                   </p>
                   <button type="button" onClick={() => startEdit(fm)}>Edit</button>
@@ -774,25 +782,32 @@ export default function ProfileClient({
                 </select>
               </div>
 
-              <div>
-                <label htmlFor="add_dob">Date of birth (optional)</label>
-                <input
-                  id="add_dob"
-                  type="date"
-                  value={addForm.dateOfBirth}
-                  onChange={(e) => setAddForm((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
-                />
-              </div>
+              {addForm.relation !== 'spouse' && (
+                <div>
+                  <label htmlFor="add_dob">Date of birth (optional)</label>
+                  <input
+                    id="add_dob"
+                    type="date"
+                    value={addForm.dateOfBirth}
+                    onChange={(e) => setAddForm((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
+                  />
+                </div>
+              )}
 
-              <div>
-                <label htmlFor="add_grad">HS graduation year (optional)</label>
-                <input
-                  id="add_grad"
-                  type="number"
-                  value={addForm.highSchoolGraduationYear}
-                  onChange={(e) => setAddForm((prev) => ({ ...prev, highSchoolGraduationYear: e.target.value }))}
-                />
-              </div>
+              {addForm.relation === 'child' && (
+                <>
+                  <div>
+                    <label htmlFor="add_grad">HS graduation year (optional)</label>
+                    <input
+                      id="add_grad"
+                      type="number"
+                      value={addForm.highSchoolGraduationYear}
+                      onChange={(e) => setAddForm((prev) => ({ ...prev, highSchoolGraduationYear: e.target.value }))}
+                    />
+                  </div>
+                  <p><em>If your child has already graduated high school, consider registering them as an individual member under the Member&apos;s ward category.</em></p>
+                </>
+              )}
 
               {addForm.relation === 'spouse' && (
                 <div>

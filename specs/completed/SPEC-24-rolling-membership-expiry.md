@@ -1,7 +1,7 @@
 # Feature Specification: Rolling Membership Expiry
 
 > **Spec ID:** SPEC-24-rolling-membership-expiry
-> **Status:** Draft
+> **Status:** Completed
 > **Author:** Utkal Nayak
 > **Created:** 2026-05-30
 
@@ -13,10 +13,10 @@
 The OSA board has formally changed membership expiry policy. Annual and five-year memberships now expire on a rolling basis from the date of successful payment — 12 calendar months and 60 calendar months respectively — rather than aligning to a fixed fiscal year date (July 4). This spec supersedes the deferred July 4 fiscal-year expiry design and promotes the current placeholder logic in `payment-service.ts` to the official, production-grade implementation.
 
 ### 1.2 Goals
-- [ ] Replace approximate day-based expiry (`EXPIRY_DAYS`) with exact calendar-month arithmetic
-- [ ] Define and test a pure `computeExpiryDate(type, paymentDate)` utility function
-- [ ] Ensure SPEC-21 upgrade paths use the same rolling-month logic for `fiveYearFamily`
-- [ ] Remove all references to July 4 fiscal-year expiry from active code and specs
+- [x] Replace approximate day-based expiry (`EXPIRY_DAYS`) with exact calendar-month arithmetic
+- [x] Define and test a pure `computeExpiryDate(type, paymentDate)` utility function
+- [x] Ensure SPEC-21 upgrade paths use the same rolling-month logic for `fiveYearFamily`
+- [x] Remove all references to July 4 fiscal-year expiry from active code and specs
 
 ### 1.3 Non-Goals (Out of Scope)
 - Retroactive re-calculation of expiry dates for existing members
@@ -50,12 +50,12 @@ The OSA board has formally changed membership expiry policy. Annual and five-yea
 ## 3. Acceptance Criteria
 
 ### 3.1 Definition of Done
-- [ ] `computeExpiryDate` implemented and unit-tested
-- [ ] `EXPIRY_DAYS` constant removed; replaced by `EXPIRY_MONTHS`
-- [ ] `activateMembership` uses `computeExpiryDate(membershipType, paymentDate)` where `paymentDate` is the Stripe payment timestamp
-- [ ] SPEC-21 design doc updated: `fiveYearFamily` upgrade expiry uses `addMonths(paymentDate, 60)` not July 4 logic
-- [ ] Memory entry `project_july4_expiry_spec.md` marked superseded
-- [ ] All existing Playwright E2E tests pass
+- [x] `computeExpiryDate` implemented and unit-tested
+- [x] `EXPIRY_DAYS` constant removed; replaced by `EXPIRY_MONTHS`
+- [x] `activateMembership` uses `computeExpiryDate(membershipType, paymentDate)` where `paymentDate` is the Stripe payment timestamp
+- [x] SPEC-21 design doc updated: `fiveYearFamily` upgrade expiry uses `addMonths(paymentDate, 60)` not July 4 logic
+- [x] Memory entry `project_july4_expiry_spec.md` marked superseded
+- [x] All existing Playwright E2E tests pass
 
 ### 3.2 Test Scenarios
 
@@ -126,20 +126,18 @@ The OSA board has formally changed membership expiry policy. Annual and five-yea
 
 ## Agent Workflow Tracking
 
-> This section is updated by Claude Code agents during implementation
-
 ### Phase 1: Analysis
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-24/01-analysis.md`
 
 ### Phase 2: Design
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-24/02-design.md`
 
 ### Phase 3: Implementation
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-24/03-implementation.md`
 
 ### Phase 4: QA & Testing
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-24/04-qa-report.md`

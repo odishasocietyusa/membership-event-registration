@@ -24,15 +24,8 @@ export interface PaginatedMembershipList {
 }
 
 import { NO_EXPIRY_TYPES } from './constants'
+import { computeExpiryDate } from './expiry'
 export { NO_EXPIRY_TYPES } from './constants'
-
-// Days until expiry for each type (types not listed here are non-expiring)
-export const EXPIRY_DAYS: Partial<Record<MembershipType, number>> = {
-  annualStudentNoVote: 365,
-  annualSingle:        365,
-  annualFamily:        365,
-  fiveYearFamily:      365 * 5,
-}
 
 function serviceError(code: string, message: string): Error {
   return Object.assign(new Error(message), { code })
@@ -46,15 +39,6 @@ function toStatusView(m: Member): MembershipStatusView {
     joinDate:       m.joinDate,
     expiryDate:     m.expiryDate,
   }
-}
-
-function computeExpiry(type: MembershipType, from: Date): Date | null {
-  if (NO_EXPIRY_TYPES.has(type)) return null
-  const days = EXPIRY_DAYS[type]
-  if (!days) return null
-  const expiry = new Date(from)
-  expiry.setDate(expiry.getDate() + days)
-  return expiry
 }
 
 // ── Public queries ────────────────────────────────────────────────────────────
@@ -186,7 +170,7 @@ export async function approveMembership(
   if (member.memberStatus === 'active') throw serviceError('CONFLICT', 'Membership is already active')
 
   const now = new Date()
-  const expiryDate = computeExpiry(member.membershipType, now)
+  const expiryDate = computeExpiryDate(member.membershipType, now)
 
   console.log(`[membership] admin ${adminId} approved membership for member ${memberId}${note ? `: ${note}` : ''}`)
 

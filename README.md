@@ -178,6 +178,93 @@ curl http://localhost:3000/api/members/me \
   -H "Authorization: Bearer <token>"
 ```
 
+## 🧑‍🔬 Managing Test Users
+
+Test users span two systems — Supabase Auth (`auth.users`) and the app database (`Member`, `FamilyMember`). Both must be kept in sync.
+
+### Creating a test user
+
+The simplest path is the normal registration flow:
+
+1. Open `http://localhost:3000/register`
+2. Sign up with any email address
+3. Supabase sends a confirmation link — open **Mailpit** at `http://127.0.0.1:54324` to get it
+4. Click the link, then complete the registration wizard
+
+> **Tip:** If you need multiple test accounts quickly, use address sub-addressing — `you+spouse@gmail.com`, `you+child@gmail.com` — they all route to the same inbox in Mailpit.
+
+### Removing a test user
+
+Cleaning up a test account lets you reuse the same email address in a fresh state (useful when testing primary / spouse email association).
+
+**Option A — SQL (fastest):** Open Supabase Studio at `http://127.0.0.1:54323`, go to **SQL Editor**, and run:
+
+```sql
+-- Replace 'test@example.com' with the address you want to remove.
+-- Run the statements in this exact order — each step clears a foreign key
+-- that would otherwise block the next one.
+
+-- 1. Delete this member's own family members (family_members.primary_member_id → members.id)
+DELETE FROM family_members
+WHERE primary_member_id = (SELECT id FROM members WHERE email = 'test@example.com');
+
+-- 2. Unlink this user if they were linked as a spouse on someone else's account
+UPDATE family_members
+SET spouse_user_id = NULL, email = NULL, deleted_at = NOW()
+WHERE spouse_user_id = (SELECT id FROM auth.users WHERE email = 'test@example.com');
+
+-- 3. Detach payment records (member_id is nullable — rows are kept for audit purposes)
+UPDATE payment_records
+SET member_id = NULL
+WHERE member_id = (SELECT id FROM members WHERE email = 'test@example.com');
+
+-- 4. Detach any awards linked to this member
+UPDATE awards
+SET recipient_member_id = NULL
+WHERE recipient_member_id = (SELECT id FROM members WHERE email = 'test@example.com');
+
+-- 5. Delete any messages sent or received by this member
+DELETE FROM messages
+WHERE sender_member_id    = (SELECT id FROM members WHERE email = 'test@example.com')
+   OR recipient_member_id = (SELECT id FROM members WHERE email = 'test@example.com');
+
+-- 6. Unset this member as chapter president (if applicable)
+UPDATE chapters
+SET president_member_id = NULL
+WHERE president_member_id = (SELECT id FROM members WHERE email = 'test@example.com');
+
+-- 7. Delete the member row
+DELETE FROM members WHERE email = 'test@example.com';
+
+-- 8. Delete the Supabase auth user
+DELETE FROM auth.users WHERE email = 'test@example.com';
+```
+
+> Run in this exact order. The `members` row can only be deleted after all referencing rows in `family_members`, `messages`, `awards`, and `chapters` have been cleared or removed first.
+
+**Option B — UI tools (no SQL):**
+
+| What to delete | Where |
+|---|---|
+| `FamilyMember` rows (email / spouseUserId) | Prisma Studio → `FamilyMember` table |
+| `Member` row | Prisma Studio → `Member` table |
+| Auth user | Supabase Studio → Authentication → Users → ⋮ → Delete user |
+
+Open Prisma Studio with:
+```bash
+cd apps/web && npx prisma studio   # opens on http://localhost:5555
+```
+
+### Testing primary ↔ spouse email association
+
+1. Register **primary member** with email A — complete the registration wizard
+2. On the profile page, enter spouse name and spouse email B, then save
+3. Log out
+4. Register **spouse** with email B — after confirming, the dashboard will show the primary member's profile
+5. To reset and repeat, remove the test user for email A (which cascades the `FamilyMember` link) and the test user for email B separately using the steps above
+
+---
+
 ## 🔌 API Endpoints (summary)
 
 All endpoints live at `http://localhost:3000/api/...`.

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { z } from 'zod'
 import { createSupabaseBrowser } from '@/lib/auth/supabase-browser'
 
@@ -16,7 +15,6 @@ const schema = z
   })
 
 export default function ResetPasswordPage() {
-  const router = useRouter()
   const [ready, setReady] = useState(false)
   const [expired, setExpired] = useState(false)
   const [password, setPassword] = useState('')
@@ -26,33 +24,39 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const errorCode = params.get('error_code') ?? params.get('error')
+    const code = params.get('code')
+
+    // Supabase redirected back with an explicit error — show it immediately
+    if (errorCode) {
+      setExpired(true)
+      return
+    }
+
     const supabase = createSupabaseBrowser()
 
-    // Supabase processes the #access_token hash from the reset email and fires PASSWORD_RECOVERY
+    if (code) {
+      // PKCE flow: exchange the auth code for a recovery session
+      supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
+        if (exchangeError) setExpired(true)
+        else setReady(true)
+      })
+      return
+    }
+
+    // Implicit / hash-based flow: wait for Supabase to fire PASSWORD_RECOVERY
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setReady(true)
-      }
+      if (event === 'PASSWORD_RECOVERY') setReady(true)
     })
 
-    // If no recovery event arrives within 3 seconds, the link is invalid or expired
-    const timer = setTimeout(() => {
-      setExpired((prev) => {
-        if (!prev) return true
-        return prev
-      })
-    }, 3000)
+    const timer = setTimeout(() => setExpired(true), 3000)
 
     return () => {
       subscription.unsubscribe()
       clearTimeout(timer)
     }
   }, [])
-
-  // Once ready, clear the expired timer effect
-  useEffect(() => {
-    if (ready) setExpired(false)
-  }, [ready])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -81,7 +85,7 @@ export default function ResetPasswordPage() {
     }
 
     setSuccess(true)
-    setTimeout(() => router.push('/login'), 2000)
+    setTimeout(() => { window.location.href = '/login' }, 2000)
   }
 
   if (success) {

@@ -115,19 +115,10 @@ cancel_url:  `${BASE_URL}/dashboard`,
 
 All changes are in this single file. Read the file in full before editing.
 
-### 4.1 New helper: `nextJuly4FromDate(from: Date): Date`
+### 4.1 New helper: `nextJuly4FromDate(from: Date): Date` (Superseded by SPEC-24)
 
-Add as a private module-level function:
-
-```typescript
-function nextJuly4FromDate(from: Date): Date {
-  const year = from.getUTCFullYear()
-  const thisJuly4 = new Date(Date.UTC(year, 6, 4)) // month index 6 = July
-  return from <= thisJuly4
-    ? thisJuly4
-    : new Date(Date.UTC(year + 1, 6, 4))
-}
-```
+> [!WARNING]
+> This section is superseded by SPEC-24. The fixed July 4th fiscal year expiry model has been replaced by rolling month calculations (`addMonths` via `date-fns`). The helper `nextJuly4FromDate` was never implemented in production code and is obsolete.
 
 ### 4.2 New function: `applyUpgrade(memberId, membershipType)`
 
@@ -149,6 +140,8 @@ export async function applyUpgrade(
   if (NO_EXPIRY_TYPES.has(membershipType)) {
     expiryDate = null
   } else if (membershipType === 'fiveYearFamily') {
+    // NOTE: Superseded by SPEC-24 to use rolling 60-month expiry:
+    // expiryDate = computeExpiryDate(membershipType, paymentDate)
     const nextJuly4 = nextJuly4FromDate(new Date())
     expiryDate = new Date(Date.UTC(nextJuly4.getUTCFullYear() + 5, 6, 4))
   }
