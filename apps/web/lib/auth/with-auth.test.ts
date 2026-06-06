@@ -21,6 +21,7 @@ jest.mock('@/lib/db/prisma', () => ({
     },
     familyMember: {
       findFirst: jest.fn(),
+      update: jest.fn(),
     },
   },
 }))
@@ -32,6 +33,7 @@ const mockFindUnique = prisma.member.findUnique as jest.Mock
 const mockCreate = prisma.member.create as jest.Mock
 const mockUpdate = prisma.member.update as jest.Mock
 const mockFamilyFindFirst = prisma.familyMember.findFirst as jest.Mock
+const mockFamilyUpdate = prisma.familyMember.update as jest.Mock
 
 // Helper to create a Request with optional Authorization header
 function makeRequest(token?: string): Request {
@@ -322,5 +324,134 @@ describe('withAuth()', () => {
 
     expect(res.status).toBe(200)
     expect(handler).toHaveBeenCalledTimes(1)
+  })
+
+  // ─── SPEC-19: Spouse-Linking ───────────────────────────────────────────────
+
+  const primaryMember = {
+    ...baseMember,
+    id: 'mem-primary',
+    userId: 'uid-primary',
+    email: 'primary@test.com',
+    deletedAt: null,
+  }
+
+  const spouseFmBase = {
+    id: 'fm-1',
+    primaryMemberId: 'mem-primary',
+    fullName: 'Spouse Name',
+    relation: 'spouse',
+    email: 'spouse@test.com',
+    spouseUserId: null as string | null,
+    dateOfBirth: null,
+    highSchoolGraduationYear: null,
+    createdAt: new Date('2025-01-01T00:00:00Z'),
+    deletedAt: null,
+  }
+
+  describe('SPEC-19 spouse-linking', () => {
+    // SPEC19-01: first spouse login — writes spouseUserId, returns primary member, isSpouseSession true
+    it('first spouse login writes spouseUserId and returns primary member with isSpouseSession true', async () => {
+      mockGetUser.mockResolvedValueOnce({
+        data: { user: { id: 'uid-spouse', email: 'spouse@test.com' } },
+        error: null,
+      })
+      // userId lookup → null, email lookup → null, primaryMemberId lookup → primaryMember
+      mockFindUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(primaryMember)
+      mockFamilyFindFirst.mockResolvedValueOnce({ ...spouseFmBase, spouseUserId: null })
+      mockFamilyUpdate.mockResolvedValueOnce({ ...spouseFmBase, spouseUserId: 'uid-spouse' })
+      const handler = jest.fn().mockResolvedValueOnce(new Response('ok', { status: 200 }))
+
+      const res = await withAuth(handler)(makeRequest('spouse.token'))
+
+      expect(res.status).toBe(200)
+      expect(mockFamilyUpdate).toHaveBeenCalledWith({
+        where: { id: 'fm-1' },
+        data: { spouseUserId: 'uid-spouse' },
+      })
+      expect(handler).toHaveBeenCalledWith(
+        expect.anything(),
+        { user: primaryMember, isSpouseSession: true }
+      )
+      expect(mockCreate).not.toHaveBeenCalled()
+    })
+
+    // SPEC19-02: repeat spouse login — spouseUserId already set, no update, isSpouseSession true
+    it('repeat spouse login skips update and returns primary member with isSpouseSession true', async () => {
+      mockGetUser.mockResolvedValueOnce({
+        data: { user: { id: 'uid-spouse', email: 'spouse@test.com' } },
+        error: null,
+      })
+      mockFindUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(primaryMember)
+      mockFamilyFindFirst.mockResolvedValueOnce({ ...spouseFmBase, spouseUserId: 'uid-spouse' })
+      const handler = jest.fn().mockResolvedValueOnce(new Response('ok', { status: 200 }))
+
+      const res = await withAuth(handler)(makeRequest('spouse.token'))
+
+      expect(res.status).toBe(200)
+      expect(mockFamilyUpdate).not.toHaveBeenCalled()
+      expect(handler).toHaveBeenCalledWith(
+        expect.anything(),
+        { user: primaryMember, isSpouseSession: true }
+      )
+    })
+
+    // SPEC19-03: primary member is soft-deleted — falls through to JIT create, isSpouseSession false
+    it('falls through to JIT create when primary member is soft-deleted', async () => {
+      mockGetUser.mockResolvedValueOnce({
+        data: { user: { id: 'uid-spouse', email: 'spouse@test.com' } },
+        error: null,
+      })
+      const deletedPrimary = { ...primaryMember, deletedAt: new Date('2025-06-01T00:00:00Z') }
+      const jitMember = { ...baseMember, id: 'mem-new', userId: 'uid-spouse', email: 'spouse@test.com' }
+      mockFindUnique
+        .mockResolvedValueOnce(null)           // userId lookup
+        .mockResolvedValueOnce(null)           // email lookup
+        .mockResolvedValueOnce(deletedPrimary) // primaryMemberId lookup
+      mockFamilyFindFirst.mockResolvedValueOnce({ ...spouseFmBase, spouseUserId: null })
+      mockCreate.mockResolvedValueOnce(jitMember)
+      const handler = jest.fn().mockResolvedValueOnce(new Response('ok', { status: 200 }))
+
+      const res = await withAuth(handler)(makeRequest('spouse.token'))
+
+      expect(res.status).toBe(200)
+      expect(mockCreate).toHaveBeenCalledTimes(1)
+      expect(handler).toHaveBeenCalledWith(
+        expect.anything(),
+        { user: jitMember, isSpouseSession: false }
+      )
+    })
+
+    // SPEC19-04: P2002 race on spouseUserId write — falls through to JIT create, isSpouseSession false
+    it('falls through to JIT create on P2002 race when writing spouseUserId', async () => {
+      mockGetUser.mockResolvedValueOnce({
+        data: { user: { id: 'uid-spouse', email: 'spouse@test.com' } },
+        error: null,
+      })
+      const jitMember = { ...baseMember, id: 'mem-new', userId: 'uid-spouse', email: 'spouse@test.com' }
+      mockFindUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(primaryMember)
+      mockFamilyFindFirst.mockResolvedValueOnce({ ...spouseFmBase, spouseUserId: null })
+      mockFamilyUpdate.mockRejectedValueOnce(Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }))
+      mockCreate.mockResolvedValueOnce(jitMember)
+      const handler = jest.fn().mockResolvedValueOnce(new Response('ok', { status: 200 }))
+
+      const res = await withAuth(handler)(makeRequest('spouse.token'))
+
+      expect(res.status).toBe(200)
+      expect(mockCreate).toHaveBeenCalledTimes(1)
+      expect(handler).toHaveBeenCalledWith(
+        expect.anything(),
+        { user: jitMember, isSpouseSession: false }
+      )
+    })
   })
 })

@@ -51,8 +51,6 @@ interface EditFamilyForm {
   email: string
 }
 
-// FamilyMember rows include email + spouseUserId after migrations; cast until Prisma client regenerates.
-type FamilyMemberWithEmail = FamilyMember & { email?: string | null; spouseUserId?: string | null }
 
 const MEMBERSHIP_TYPE_LABELS: Record<string, string> = {
   annualStudentNoVote: 'Annual Student (no vote)',
@@ -77,7 +75,7 @@ export default function ProfileClient({
 }: ProfileClientProps) {
   const addr = (member.address as Record<string, string> | null) ?? {}
   const vis  = (member.profileVisibility as Record<string, boolean> | null) ?? {}
-  const initialSpouseEmail = (initialFamilyMembers as FamilyMemberWithEmail[])
+  const initialSpouseEmail = initialFamilyMembers
     .find((fm) => fm.relation === 'spouse' && !fm.deletedAt)?.email ?? ''
 
   const [form, setForm] = useState<ProfileForm>({
@@ -103,9 +101,7 @@ export default function ProfileClient({
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [chapterName, setChapterName] = useState(initialChapterName)
 
-  const [familyMembers, setFamilyMembers] = useState<FamilyMemberWithEmail[]>(
-    initialFamilyMembers as FamilyMemberWithEmail[]
-  )
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(initialFamilyMembers)
   const [addingFamily,  setAddingFamily]  = useState(false)
   const [addForm,       setAddForm]       = useState<AddFamilyForm>({
     fullName: '', relation: 'child', dateOfBirth: '', highSchoolGraduationYear: '', email: '',
@@ -189,7 +185,7 @@ export default function ProfileClient({
 
       // Update spouse email on the FamilyMember row if spouse name is set and link is not active
       if (form.spouseName.trim()) {
-        const spouseFm = familyMembers.find((fm) => fm.relation === 'spouse' && !fm.deletedAt) as FamilyMemberWithEmail | undefined
+        const spouseFm = familyMembers.find((fm) => fm.relation === 'spouse' && !fm.deletedAt)
         const isLinked = !!(spouseFm?.spouseUserId)
         if (spouseFm && !isLinked) {
           await fetch(`/api/members/me/family/${spouseFm.id}`, {
@@ -290,7 +286,7 @@ export default function ProfileClient({
         return
       }
       const { familyMember } = await res.json()
-      setFamilyMembers((prev) => [...prev, familyMember as FamilyMemberWithEmail])
+      setFamilyMembers((prev) => [...prev, familyMember as FamilyMember])
       setAddForm({ fullName: '', relation: 'child', dateOfBirth: '', highSchoolGraduationYear: '', email: '' })
       setAddingFamily(false)
     } catch {
@@ -315,7 +311,7 @@ export default function ProfileClient({
     }
   }
 
-  function startEdit(fm: FamilyMemberWithEmail) {
+  function startEdit(fm: FamilyMember) {
     setEditingId(fm.id)
     setEditError(null)
     setEditForm({
@@ -366,7 +362,7 @@ export default function ProfileClient({
         return
       }
       const { familyMember: updated } = await res.json()
-      setFamilyMembers((prev) => prev.map((m) => (m.id === id ? (updated as FamilyMemberWithEmail) : m)))
+      setFamilyMembers((prev) => prev.map((m) => (m.id === id ? updated as FamilyMember : m)))
       setEditingId(null)
     } catch {
       setEditError('Network error. Please try again.')
@@ -477,7 +473,7 @@ export default function ProfileClient({
           </div>
 
           {form.spouseName.trim() && (() => {
-            const activeSpouseFm = familyMembers.find((fm) => fm.relation === 'spouse' && !fm.deletedAt) as FamilyMemberWithEmail | undefined
+            const activeSpouseFm = familyMembers.find((fm) => fm.relation === 'spouse' && !fm.deletedAt)
             const spouseIsLinked = !!(activeSpouseFm?.spouseUserId)
             return (
               <div>
@@ -690,7 +686,7 @@ export default function ProfileClient({
                   {fm.relation === 'spouse' && (
                     <div>
                       <label htmlFor={`edit_email_${fm.id}`}>Spouse email</label>
-                      {(fm as FamilyMemberWithEmail).spouseUserId ? (
+                      {fm.spouseUserId ? (
                         <input
                           id={`edit_email_${fm.id}`}
                           type="email"
