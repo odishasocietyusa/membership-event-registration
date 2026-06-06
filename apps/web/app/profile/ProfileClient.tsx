@@ -185,14 +185,24 @@ export default function ProfileClient({
 
       // Update spouse email on the FamilyMember row if spouse name is set and link is not active
       if (form.spouseName.trim()) {
+        const pendingEmail = form.spouseEmail.trim()
+        if (pendingEmail && pendingEmail.toLowerCase() === member.email.toLowerCase()) {
+          setSaveError('Spouse email cannot be the same as your own login email.')
+          return
+        }
         const spouseFm = familyMembers.find((fm) => fm.relation === 'spouse' && !fm.deletedAt)
         const isLinked = !!(spouseFm?.spouseUserId)
         if (spouseFm && !isLinked) {
-          await fetch(`/api/members/me/family/${spouseFm.id}`, {
+          const emailRes = await fetch(`/api/members/me/family/${spouseFm.id}`, {
             method:  'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body:    JSON.stringify({ email: form.spouseEmail.trim() || null }),
-          }).catch(() => { /* non-critical */ })
+            body:    JSON.stringify({ email: pendingEmail || null }),
+          }).catch(() => null)
+          if (emailRes && !emailRes.ok) {
+            const body = await emailRes.json().catch(() => ({}))
+            setSaveError((body as { error?: string }).error ?? 'Spouse email could not be saved.')
+            return
+          }
         }
       }
 

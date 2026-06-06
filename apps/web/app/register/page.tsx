@@ -241,6 +241,11 @@ export default function RegisterPage() {
 
   function handleFamilyNext() {
     setErrors({})
+    const spouseEmail = formData.family.spouseEmail.trim()
+    if (spouseEmail && sessionEmail && spouseEmail.toLowerCase() === sessionEmail.toLowerCase()) {
+      setErrors({ spouseEmail: 'Spouse email cannot be the same as your own login email.' })
+      return
+    }
     const result = FamilyInfoSchema.safeParse(formData.family)
     if (!result.success) {
       setErrors(flattenZodErrors(result as Parameters<typeof flattenZodErrors>[0]))
@@ -310,7 +315,6 @@ export default function RegisterPage() {
     }
 
     // If spouse email was provided, find the spouse FamilyMember and set its email.
-    // Non-critical: failure is silently ignored — email can be set on /profile.
     const spouseEmail = formData.family.spouseEmail.trim()
     if (spouseEmail && formData.family.spouseName.trim()) {
       const familyRes = await fetch('/api/members/me/family', {
@@ -321,14 +325,19 @@ export default function RegisterPage() {
         const spouse = (familyMembers as { id: string; relation: string }[])
           .find((fm) => fm.relation === 'spouse')
         if (spouse) {
-          await fetch(`/api/members/me/family/${spouse.id}`, {
+          const emailRes = await fetch(`/api/members/me/family/${spouse.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${session.access_token}`,
             },
             body: JSON.stringify({ email: spouseEmail }),
-          }).catch(() => { /* non-critical */ })
+          }).catch(() => null)
+          if (emailRes && !emailRes.ok) {
+            const body = await emailRes.json().catch(() => ({}))
+            setErrors({ form: (body as { error?: string }).error ?? 'Spouse email could not be saved. Go back and use a different email, or leave it blank and update it later on your profile.' })
+            return
+          }
         }
       }
     }
@@ -580,6 +589,7 @@ export default function RegisterPage() {
                 <input id="spouseEmail" type="email"
                   value={formData.family.spouseEmail}
                   onChange={(e) => setFormData((prev) => ({ ...prev, family: { ...prev.family, spouseEmail: e.target.value } }))} />
+                {errors.spouseEmail && <p role="alert">{errors.spouseEmail}</p>}
               </div>
             )}
             <fieldset>
