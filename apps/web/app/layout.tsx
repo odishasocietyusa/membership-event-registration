@@ -17,8 +17,8 @@ export default async function RootLayout({
   try {
     const result = await getCurrentMember()
     user = result?.member ?? null
-  } catch {
-    // Nav renders as unauthenticated if session lookup fails
+  } catch (err) {
+    console.error('[layout] getCurrentMember failed:', err)
   }
 
   return (
