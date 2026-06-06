@@ -182,4 +182,32 @@ describe('POST /api/members/me/family', () => {
     expect(res.status).toBe(400)
     expect(mockAddFamilyMember).not.toHaveBeenCalled()
   })
+
+  // MEM-20a: POST spouse email already registered as primary member returns 409 with message
+  it('MEM-20a: returns 409 with service message when spouse email is already a primary member', async () => {
+    const conflictMessage = 'This email is already registered as a primary member and cannot be linked as a spouse.'
+    mockAddFamilyMember.mockRejectedValueOnce(
+      Object.assign(new Error(conflictMessage), { code: 'CONFLICT' })
+    )
+
+    const res = await POST(makeRequest('POST', { fullName: 'Spouse Name', relation: 'spouse', email: 'taken@test.com' }))
+
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toBe(conflictMessage)
+  })
+
+  // MEM-20b: POST spouse email already linked as spouse for another member returns 409 with message
+  it('MEM-20b: returns 409 with service message when spouse email is already linked to another member', async () => {
+    const conflictMessage = 'This email is already linked as a spouse for another member.'
+    mockAddFamilyMember.mockRejectedValueOnce(
+      Object.assign(new Error(conflictMessage), { code: 'CONFLICT' })
+    )
+
+    const res = await POST(makeRequest('POST', { fullName: 'Spouse Name', relation: 'spouse', email: 'other-spouse@test.com' }))
+
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toBe(conflictMessage)
+  })
 })

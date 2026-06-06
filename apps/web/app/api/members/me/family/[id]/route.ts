@@ -14,7 +14,7 @@ function jsonResponse(status: number, body: unknown): Response {
 function serviceErrorToResponse(err: unknown): Response {
   const code = (err as { code?: string }).code
   if (code === 'NOT_FOUND') return jsonResponse(404, { error: 'Not found' })
-  if (code === 'CONFLICT')  return jsonResponse(409, { error: 'Conflict' })
+  if (code === 'CONFLICT')  return jsonResponse(409, { error: (err as Error).message || 'Conflict' })
   if (code === 'FORBIDDEN') return jsonResponse(403, { error: 'Forbidden' })
   console.error(err)
   return jsonResponse(500, { error: 'Internal server error' })

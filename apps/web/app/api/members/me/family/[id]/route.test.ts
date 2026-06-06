@@ -42,20 +42,23 @@ jest.mock('@/lib/members/member-service', () => ({
   addFamilyMember: jest.fn(),
   listFamilyMembers: jest.fn(),
   softDeleteFamilyMember: jest.fn(),
+  updateFamilyMember: jest.fn(),
   createChapter: jest.fn(),
   updateChapter: jest.fn(),
   listChapters: jest.fn(),
 }))
 
-import { DELETE } from '@/app/api/members/me/family/[id]/route'
+import { DELETE, PUT } from '@/app/api/members/me/family/[id]/route'
 import * as service from '@/lib/members/member-service'
 
 const mockSoftDeleteFamilyMember = service.softDeleteFamilyMember as jest.Mock
+const mockUpdateFamilyMember = service.updateFamilyMember as jest.Mock
 
-function makeRequest(method: string): Request {
+function makeRequest(method: string, body?: unknown): Request {
   return new Request('http://localhost:3000/api/members/me/family/fm-1', {
     method,
-    headers: { Authorization: 'Bearer valid.token' },
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid.token' },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
   })
 }
 
@@ -113,5 +116,57 @@ describe('DELETE /api/members/me/family/[id]', () => {
     const res = await DELETE(makeRequest('DELETE'), makeParams('fm-deleted'))
 
     expect(res.status).toBe(404)
+  })
+})
+
+describe('PUT /api/members/me/family/[id]', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  // MEM-25: PUT valid update returns 200
+  it('MEM-25: returns 200 with updated family member', async () => {
+    const updated = { id: 'fm-1', primaryMemberId: 'mem-1', fullName: 'New Name', relation: 'spouse', deletedAt: null }
+    mockUpdateFamilyMember.mockResolvedValueOnce(updated)
+
+    const res = await PUT(makeRequest('PUT', { fullName: 'New Name' }), makeParams('fm-1'))
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.familyMember.fullName).toBe('New Name')
+    expect(mockUpdateFamilyMember).toHaveBeenCalledWith('fm-1', 'mem-1', expect.objectContaining({ fullName: 'New Name' }))
+  })
+
+  // MEM-26: PUT invalid body returns 400
+  it('MEM-26: returns 400 for invalid body', async () => {
+    const res = await PUT(makeRequest('PUT', { dateOfBirth: 'not-a-date' }), makeParams('fm-1'))
+
+    expect(res.status).toBe(400)
+    expect(mockUpdateFamilyMember).not.toHaveBeenCalled()
+  })
+
+  // MEM-27: PUT on another member's record returns 403
+  it('MEM-27: returns 403 when service throws FORBIDDEN', async () => {
+    mockUpdateFamilyMember.mockRejectedValueOnce(
+      Object.assign(new Error('Forbidden'), { code: 'FORBIDDEN' })
+    )
+
+    const res = await PUT(makeRequest('PUT', { fullName: 'Hacked' }), makeParams('fm-other'))
+
+    expect(res.status).toBe(403)
+  })
+
+  // MEM-28: PUT with duplicate spouse email returns 409 with message
+  it('MEM-28: returns 409 with service message when spouse email is already registered', async () => {
+    const conflictMessage = 'This email is already registered as a primary member and cannot be linked as a spouse.'
+    mockUpdateFamilyMember.mockRejectedValueOnce(
+      Object.assign(new Error(conflictMessage), { code: 'CONFLICT' })
+    )
+
+    const res = await PUT(makeRequest('PUT', { email: 'taken@test.com' }), makeParams('fm-1'))
+
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toBe(conflictMessage)
   })
 })

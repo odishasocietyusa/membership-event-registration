@@ -14,6 +14,10 @@ export async function addFamilyMember(
     throw Object.assign(new Error('Member not found'), { code: 'NOT_FOUND' })
   }
 
+  if (data.relation === 'spouse' && data.email) {
+    await validateSpouseEmail(data.email, primaryMemberId)
+  }
+
   return prisma.familyMember.create({
     data: {
       primaryMemberId,
@@ -79,6 +83,15 @@ export async function updateFamilyMember(
 
   if (familyMember.primaryMemberId !== requestingMemberId) {
     throw Object.assign(new Error('Forbidden'), { code: 'FORBIDDEN' })
+  }
+
+  if (
+    familyMember.relation === 'spouse' &&
+    data.email !== undefined &&
+    data.email !== null &&
+    data.email !== familyMember.email
+  ) {
+    await validateSpouseEmail(data.email, familyMember.primaryMemberId)
   }
 
   const updateData: Record<string, unknown> = {}
