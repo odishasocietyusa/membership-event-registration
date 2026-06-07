@@ -71,6 +71,7 @@ export default async function NavBar({ user }: NavBarProps) {
           <details>
             <summary>Programs</summary>
             <ul>
+              <li><Link href="/services">Services</Link></li>
               {programs.map((p) => (
                 <li key={p._id}><Link href={`/programs/${p.slug}`}>{p.title}</Link></li>
               ))}
@@ -114,6 +115,7 @@ export default async function NavBar({ user }: NavBarProps) {
                 <li><Link href="/admin/members">Manage Members</Link></li>
                 <li><Link href="/admin/payments">Manage Payments</Link></li>
                 <li><Link href="/admin/events">Manage Events</Link></li>
+                <li><Link href="/admin/services">Manage Services</Link></li>
                 <li><Link href="/admin/reports">Reports</Link></li>
               </ul>
             </details>

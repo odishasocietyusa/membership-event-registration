@@ -65,6 +65,8 @@ export default async function DashboardPage() {
         <p><strong>Email:</strong> {user.email}</p>
         <p><strong>Chapter:</strong> {chapter}</p>
         <p><a href="/profile">Edit Profile</a></p>
+        <p><a href="/services">Services Directory</a></p>
+        <p><a href="/services/register">Register as a Service Provider</a></p>
       </fieldset>
 
       <fieldset>

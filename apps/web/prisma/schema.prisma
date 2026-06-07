@@ -22,6 +22,14 @@ enum Role {
   @@map("role")
 }
 
+enum ProviderStatus {
+  pending
+  active
+  inactive
+
+  @@map("provider_status")
+}
+
 enum MembershipType {
   annualStudentNoVote @map("annual-student-no-vote")
   annualSingle        @map("annual-single")
@@ -140,8 +148,10 @@ model Member {
   awards           Award[]        @relation("AwardRecipient")
   sentMessages     Message[]      @relation("SentMessages")
   receivedMessages Message[]      @relation("ReceivedMessages")
-  expiryNotices    ExpiryNotice[]
-  obituaryComments ObituaryComment[]
+  expiryNotices        ExpiryNotice[]
+  obituaryComments     ObituaryComment[]
+  serviceProvider      ServiceProvider?
+  serviceContactsSent  ServiceContactLog[]
 
   @@map("members")
 }
@@ -302,4 +312,45 @@ model ExpiryNotice {
 
   @@unique([memberId, noticeType, expiryDate])
   @@map("expiry_notices")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SERVICES DIRECTORY
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ServiceProvider {
+  id              String   @id @default(uuid()) @db.Uuid
+  memberId        String   @unique @map("member_id") @db.Uuid
+  email           String   @unique                          // routing only — never exposed in API responses
+  fullName        String   @map("full_name")
+  displayName     String?  @map("display_name")             // preferred name or business/org name
+  bio             String   @db.Text
+  specializations String[]
+  onlineClasses   Boolean  @default(false) @map("online_classes")
+  phone           String?
+  websiteUrl      String?  @map("website_url")
+  photoUrl        String?  @map("photo_url")               // external URL only — no hosted uploads
+  status          ProviderStatus @default(pending)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  member      Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  contactLogs ServiceContactLog[]
+
+  @@map("service_providers")
+}
+
+model ServiceContactLog {
+  id                String   @id @default(uuid()) @db.Uuid
+  serviceProviderId String   @map("service_provider_id") @db.Uuid
+  senderMemberId    String   @map("sender_member_id") @db.Uuid
+  subject           String
+  body              String   @db.Text
+  sentAt            DateTime @default(now()) @map("sent_at") @db.Timestamptz
+
+  provider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+  sender   Member          @relation(fields: [senderMemberId], references: [id])
+
+  @@index([senderMemberId, sentAt])
+  @@map("service_contact_logs")
 }
