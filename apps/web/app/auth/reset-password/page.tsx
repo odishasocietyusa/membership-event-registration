@@ -26,9 +26,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const errorCode = params.get('error_code') ?? params.get('error')
-    const code = params.get('code')
 
-    // Supabase redirected back with an explicit error — show it immediately
     if (errorCode) {
       setExpired(true)
       return
@@ -36,21 +34,28 @@ export default function ResetPasswordPage() {
 
     const supabase = createSupabaseBrowser()
 
-    if (code) {
-      // PKCE flow: exchange the auth code for a recovery session
-      supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
-        if (exchangeError) setExpired(true)
-        else setReady(true)
-      })
-      return
-    }
+    // The server-side /api/auth/callback route exchanges the PKCE code and sets
+    // the recovery session in cookies before redirecting here. We just need to
+    // detect that session — either via the auth state event or getSession().
+    let settled = false
 
-    // Implicit / hash-based flow: wait for Supabase to fire PASSWORD_RECOVERY
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true)
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        settled = true
+        setReady(true)
+      }
     })
 
-    const timer = setTimeout(() => setExpired(true), 3000)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!settled && session) {
+        settled = true
+        setReady(true)
+      }
+    })
+
+    const timer = setTimeout(() => {
+      if (!settled) setExpired(true)
+    }, 5000)
 
     return () => {
       subscription.unsubscribe()

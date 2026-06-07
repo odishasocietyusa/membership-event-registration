@@ -35,7 +35,13 @@ export async function GET(request: Request) {
 
     const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error && session) {
-      const redirectPath = await resolvePostLoginPath(session.access_token)
+      // Allow an explicit next param for flows like password recovery.
+      // Guard against open-redirect: only allow same-origin relative paths.
+      const next = searchParams.get('next')
+      const redirectPath =
+        next && next.startsWith('/') && !next.startsWith('//')
+          ? next
+          : await resolvePostLoginPath(session.access_token)
       const response = NextResponse.redirect(`${baseUrl}${redirectPath}`)
       pendingCookies.forEach(({ name, value, options }) => {
         response.cookies.set(name, value, options)

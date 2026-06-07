@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
     const supabase = createSupabaseBrowser()
     // Always show the same message regardless of whether the email exists — prevents enumeration
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo: `${window.location.origin}/api/auth/callback?next=/auth/reset-password`,
     })
     setLoading(false)
     setSubmitted(true)
