@@ -26,6 +26,44 @@ test.describe('Dashboard (authenticated)', () => {
   })
 })
 
+test.describe('Navigation bar (authenticated member, SPEC-15 redesign)', () => {
+  test('shows authenticated-only menu items', async ({ page }) => {
+    await page.goto('/dashboard')
+    const nav = page.locator('nav')
+
+    // Members — items gated behind isAuthed
+    await expect(nav.locator('a[href="/membership"]')).toHaveText('Membership Types')
+    await expect(nav.locator('a[href="/members/search"]')).toHaveText('Member Directory')
+    await expect(nav.locator('a[href="/profile"]', { hasText: 'Member Profile' })).toHaveCount(1)
+    await expect(nav.locator('a[href="/obituary"]')).toHaveCount(1)
+
+    // "Upgrade Membership" links into /dashboard per design §1
+    await expect(nav.locator('a[href="/dashboard"]', { hasText: 'Upgrade Membership' })).toHaveCount(1)
+
+    // Events — full item now visible
+    await expect(nav.locator('a[href="/events"]')).toHaveText('Events')
+
+    // Chapters — Chapter Executives now visible (BOG Documents stays domain-restricted)
+    await expect(nav.locator('a[href="/chapters/executives"]')).toHaveCount(1)
+  })
+
+  test('utility bar shows Dashboard, name, and Sign Out — not Sign In/Register', async ({ page }) => {
+    await page.goto('/dashboard')
+    const nav = page.locator('nav')
+
+    await expect(nav.locator('span a[href="/dashboard"]')).toHaveCount(1)
+    await expect(nav.locator('span a[href="/profile"]')).toHaveCount(1)
+    await expect(nav.locator('form[action="/api/auth/signout"]')).toHaveCount(1)
+    await expect(nav.locator('a[href="/login"]')).toHaveCount(0)
+    await expect(nav.locator('a[href="/register"]')).toHaveCount(0)
+  })
+
+  test('Admin dropdown is hidden for a non-admin member', async ({ page }) => {
+    await page.goto('/dashboard')
+    await expect(page.locator('nav summary', { hasText: 'Admin' })).toHaveCount(0)
+  })
+})
+
 test.describe('Authenticated API routes', () => {
   test('GET /api/auth/me returns the logged-in member', async ({ request }) => {
     const token = getAccessToken()

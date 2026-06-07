@@ -44,6 +44,13 @@ export interface SanityStaticPage {
   last_updated?: string
 }
 
+export interface SanityProgramLink {
+  _id: string
+  title: string
+  slug: string
+  sort_order: number
+}
+
 export interface SanityLeadershipProgram {
   _id: string
   program_name: string
@@ -62,6 +69,23 @@ export interface SanityMediaGallery {
   description?: string
   photoCount: number
   coverPhoto?: SanityImage
+}
+
+export interface SanityObituary {
+  _id: string
+  name: string
+  slug: string
+  date_of_passing: string
+  year: number
+  state?: string
+  chapter?: string
+  biography?: string
+  photo?: SanityImage
+  member_id?: string
+}
+
+export interface SanityObituarySlug {
+  slug: string
 }
 
 // Shared

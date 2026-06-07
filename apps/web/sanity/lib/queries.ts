@@ -40,6 +40,18 @@ export const ALL_EVENT_SLUGS_QUERY = groq`
   *[_type == "event"] { "slug": slug.current }
 `
 
+// Soonest-first upcoming events for homepage widget
+export const UPCOMING_EVENTS_QUERY = groq`
+  *[_type == "event" && start_date >= now()] | order(start_date asc) [0...$limit] {
+    _id,
+    title,
+    "slug": slug.current,
+    start_date,
+    location,
+    is_convention
+  }
+`
+
 // ---------------------------------------------------------------------------
 // News Posts
 // ---------------------------------------------------------------------------
@@ -73,6 +85,17 @@ export const NEWS_POST_BY_SLUG_QUERY = groq`
 
 export const ALL_NEWS_SLUGS_QUERY = groq`
   *[_type == "news_post"] { "slug": slug.current }
+`
+
+// Latest N news posts for homepage widget
+export const NEWS_LATEST_QUERY = groq`
+  *[_type == "news_post"] | order(published_at desc) [0...$limit] {
+    _id,
+    title,
+    "slug": slug.current,
+    published_at,
+    author_name
+  }
 `
 
 // ---------------------------------------------------------------------------
@@ -130,6 +153,16 @@ export const STATIC_PAGE_BY_SLUG_QUERY = groq`
   }
 `
 
+// Programs nav menu — minimal fields for listing, ordered for display
+export const PROGRAMS_BY_SECTION_QUERY = groq`
+  *[_type == "static_page" && section == "programs"] | order(sort_order asc) {
+    _id,
+    title,
+    "slug": slug.current,
+    sort_order
+  }
+`
+
 // Legacy alias kept for backward compat with /about/page.tsx
 export const ABOUT_PAGE_QUERY = groq`
   *[_type == "static_page" && slug.current == "about-us"][0] {
@@ -156,6 +189,46 @@ export const ALL_GALLERIES_QUERY = groq`
     "photoCount": count(photos),
     "coverPhoto": photos[0]
   }
+`
+
+// ---------------------------------------------------------------------------
+// Obituaries
+// ---------------------------------------------------------------------------
+
+export const ALL_OBITUARIES_QUERY = groq`
+  *[_type == "obituary"
+    && ($name == "" || name match $name + "*")
+    && ($state == "" || state == $state)
+    && ($year == 0  || year == $year)
+  ] | order(date_of_passing desc) {
+    _id,
+    name,
+    "slug": slug.current,
+    date_of_passing,
+    year,
+    state,
+    chapter,
+    photo
+  }
+`
+
+export const OBITUARY_BY_SLUG_QUERY = groq`
+  *[_type == "obituary" && slug.current == $slug][0] {
+    _id,
+    name,
+    "slug": slug.current,
+    date_of_passing,
+    year,
+    state,
+    chapter,
+    biography,
+    photo,
+    member_id
+  }
+`
+
+export const ALL_OBITUARY_SLUGS_QUERY = groq`
+  *[_type == "obituary"] { "slug": slug.current }
 `
 
 // ---------------------------------------------------------------------------

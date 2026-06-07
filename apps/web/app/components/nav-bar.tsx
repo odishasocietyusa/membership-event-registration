@@ -1,34 +1,36 @@
 import Link from 'next/link'
 import type { MemberRow } from '@/lib/auth/with-auth'
+import { sanityFetch } from '@/sanity/lib/client'
+import { PROGRAMS_BY_SECTION_QUERY } from '@/sanity/lib/queries'
+import type { SanityProgramLink } from '@/types/sanity'
 
 interface NavBarProps {
   user: MemberRow | null
 }
 
-export default function NavBar({ user }: NavBarProps) {
+export default async function NavBar({ user }: NavBarProps) {
   const isAuthed   = user !== null && user.memberStatus !== 'suspended'
   const isOsaDomain = isAuthed && (user?.email?.endsWith('@odishasociety.org') ?? false)
   const isAdmin    = isAuthed && user?.role === 'admin'
   const displayName = user?.fullName ?? user?.email ?? null
+
+  const programs = (await sanityFetch<SanityProgramLink[]>(PROGRAMS_BY_SECTION_QUERY, {}, false)) ?? []
 
   return (
     <nav>
       <strong><Link href="/">OSA Community Platform</Link></strong>
       <hr />
       <ul>
-        <li><Link href="/">Home</Link></li>
-
         <li>
           <details>
             <summary>About Us</summary>
             <ul>
-              <li><Link href="/about/vision-mission">Vision &amp; Mission</Link></li>
+              <li><Link href="/about/vision-mission">Mission &amp; Vision</Link></li>
               <li><Link href="/constitution">Constitution &amp; Bylaws</Link></li>
-              <li><Link href="/about/member-rights">Member Rights &amp; Privileges</Link></li>
-              <li><Link href="/about/administration">OSA Administration</Link></li>
-              <li><Link href="/about/committees">OSA Committees</Link></li>
+              <li><Link href="/about/policy-documents">Policy Documents</Link></li>
+              <li><Link href="/about/forms">Forms</Link></li>
+              <li><Link href="/about/administration">Administration</Link></li>
               <li><Link href="/leadership-program">Past Leadership</Link></li>
-              <li><Link href="/about/contact">Contact Us</Link></li>
             </ul>
           </details>
         </li>
@@ -38,16 +40,40 @@ export default function NavBar({ user }: NavBarProps) {
             <summary>Members</summary>
             <ul>
               <li><Link href="/members/benefits">Member Benefits</Link></li>
+              <li><Link href="/about/member-rights">Statement of Member Rights &amp; Privileges</Link></li>
               {isAuthed && (
                 <>
-                  <li><Link href="/members/policy">Policy Documents &amp; Forms</Link></li>
-                  <li><Link href="/dashboard">Member Dashboard</Link></li>
-                  <li><Link href="/profile">My Profile</Link></li>
-                  <li><Link href="/members/search">Member Search</Link></li>
-                  <li><Link href="/members/bog-minutes">BOG Meeting Minutes</Link></li>
+                  <li><Link href="/membership">Membership Types</Link></li>
+                  <li><Link href="/members/search">Member Directory</Link></li>
+                  <li><Link href="/dashboard">Upgrade Membership</Link></li>
+                  <li><Link href="/profile">Member Profile</Link></li>
                   <li><Link href="/obituary">Obituary</Link></li>
                 </>
               )}
+            </ul>
+          </details>
+        </li>
+
+        <li>
+          <details>
+            <summary>Events</summary>
+            <ul>
+              {isAuthed && (
+                <li><Link href="/events">Events</Link></li>
+              )}
+              <li><Link href="/activities/convention">Annual Convention</Link></li>
+              <li><Link href="/activities/awards">Awards</Link></li>
+            </ul>
+          </details>
+        </li>
+
+        <li>
+          <details>
+            <summary>Programs</summary>
+            <ul>
+              {programs.map((p) => (
+                <li key={p._id}><Link href={`/programs/${p.slug}`}>{p.title}</Link></li>
+              ))}
             </ul>
           </details>
         </li>
@@ -69,31 +95,6 @@ export default function NavBar({ user }: NavBarProps) {
 
         <li>
           <details>
-            <summary>Activities</summary>
-            <ul>
-              {isAuthed && (
-                <li><Link href="/events">Events</Link></li>
-              )}
-              <li><Link href="/activities/convention">Annual Convention</Link></li>
-              <li><Link href="/activities/awards">Awards</Link></li>
-              <li><Link href="/activities/odia-learning">Odia Learning</Link></li>
-              <li><Link href="/activities/odissi-music">Odissi Music</Link></li>
-              <li><Link href="/activities/odisha-development">Odisha Development</Link></li>
-              <li><Link href="/activities/library">OSA Public Library</Link></li>
-              <li><Link href="/activities/higher-education">OSA Higher Education</Link></li>
-              <li><Link href="/activities/networking">Professional Networking</Link></li>
-              <li><Link href="/activities/health-wellness">Health &amp; Wellness</Link></li>
-              <li><Link href="/activities/drama-festival">Drama Festival</Link></li>
-              <li><Link href="/activities/sampark-dori">Sampark Dori</Link></li>
-              <li><Link href="/activities/nilachakra">Nilachakra (Kids)</Link></li>
-              <li><Link href="/activities/womens-forum">Women&apos;s Forum</Link></li>
-              <li><Link href="/activities/classified">Classified</Link></li>
-            </ul>
-          </details>
-        </li>
-
-        <li>
-          <details>
             <summary>Publications</summary>
             <ul>
               <li><Link href="/publications/urmi">Urmi — Souvenir</Link></li>
@@ -104,18 +105,31 @@ export default function NavBar({ user }: NavBarProps) {
             </ul>
           </details>
         </li>
+
+        {isAdmin && (
+          <li>
+            <details>
+              <summary>Admin</summary>
+              <ul>
+                <li><Link href="/admin/members">Manage Members</Link></li>
+                <li><Link href="/admin/payments">Manage Payments</Link></li>
+                <li><Link href="/admin/events">Manage Events</Link></li>
+                <li><Link href="/admin/reports">Reports</Link></li>
+              </ul>
+            </details>
+          </li>
+        )}
+
+        <li><Link href="/donate">Donate</Link></li>
       </ul>
 
       <hr />
 
       <span>
-        {isAdmin && (
-          <><Link href="/admin">Admin Panel</Link>{' | '}</>
-        )}
-        <Link href="/donate">Donate</Link>
-        {' | '}
         {isAuthed ? (
           <>
+            <Link href="/dashboard">Dashboard</Link>
+            {' | '}
             <Link href="/profile">{displayName}</Link>
             {' | '}
             <form method="POST" action="/api/auth/signout">
