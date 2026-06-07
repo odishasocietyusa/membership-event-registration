@@ -493,82 +493,19 @@ Sanity Studio is embedded in the application at `/studio`. Only users with a San
 | News posts | Sanity Studio → News | Volunteer editors |
 | Announcements | Sanity Studio → Announcements | Volunteer editors |
 | Leadership programme | Sanity Studio → Leadership | Volunteer editors |
-| Static pages (About, Members, Activities, Chapters, Publications, Donate) | Sanity Studio → Static Pages | Admin / volunteer editors — see slug reference below |
+| Static pages (About, Members, Events, Programs, Chapters, Publications, Admin, Donate, Home) | Sanity Studio → Static Pages | Admin / volunteer editors — see [`docs/content-author-guide.md`](./content-author-guide.md) for the full slug reference and the content-driven vs. code-driven distinction |
 | Constitution, bylaws | `apps/web/content/*.mdx` files | Developer (requires code deploy) |
 | Chapters | Platform API / Supabase Studio | Admin |
 | Awards | Platform API (SPEC-5, planned) | Admin |
 
-### Static page slug reference
+### Two kinds of menus — know which one you're editing
 
-Each static page in the website fetches its content from Sanity by a fixed slug. To publish content for a page, create a **Static Page** document in Sanity Studio (`/studio`) and set the **Slug** field to exactly the value in the table below.
+Since the **SPEC-15 navigation redesign** (2026-06-07), the site has two fundamentally different ways a page ends up under a menu — admins should understand this distinction before granting editor access or fielding "why isn't my page showing up" questions:
 
-> The slug must match exactly (case-sensitive, hyphens not underscores). If no Sanity document exists for a slug, the page shows "Coming soon" — it will not error.
+1. **Content-driven (Programs menu only)** — the menu itself is generated live from Sanity: any `static_page` document with `section: "programs"` automatically appears in the Programs dropdown, ordered by its `sort_order`, linking to `/programs/<slug>`. **No code change is ever needed** to add, remove, reorder, or relabel a Programs entry — it's a pure content-authoring operation.
+2. **Code-driven (every other menu)** — About Us, Members, Events, Chapters, Publications, Admin, Donate, and the Home page sections are all hardcoded in `apps/web/app/components/nav-bar.tsx` (and `app/page.tsx` for the home page). The menu structure, labels, and target routes are fixed in code. A content author can only fill in the **content** of those fixed pages — by creating a `static_page` doc whose `slug` exactly matches the value the page is hard-wired to look up. Adding a brand-new item to one of these menus requires a developer (a small spec/code change), not a Studio operation.
 
-#### About Us
-
-| Page | Sanity slug |
-|---|---|
-| Vision & Mission | `about-vision-mission` |
-| Member Rights & Privileges | `about-member-rights` |
-| OSA Administration | `about-administration` |
-| OSA Committees | `about-committees` |
-| Contact Us | `about-contact` |
-
-#### Members
-
-| Page | Sanity slug | Auth required? |
-|---|---|---|
-| Member Benefits | `members-benefits` | No |
-| Policy Documents & Forms | `members-policy` | Yes — logged-in members only |
-| Member Search | `members-search` | Yes — logged-in members only |
-| BOG Meeting Minutes | `members-bog-minutes` | Yes — logged-in members only |
-| Obituary | `obituary` | Yes — logged-in members only |
-
-#### Chapters
-
-| Page | Sanity slug | Auth required? |
-|---|---|---|
-| Chapter Details | `chapters` | No |
-| Chapter Executives | `chapters-executives` | Yes — logged-in members only |
-| BOG Documents | `chapters-bog-documents` | Yes — @odishasociety.org email only |
-
-#### Activities
-
-| Page | Sanity slug |
-|---|---|
-| Annual Convention | `activities-convention` |
-| Awards | `activities-awards` |
-| Odia Learning | `activities-odia-learning` |
-| Odissi Music | `activities-odissi-music` |
-| Odisha Development | `activities-odisha-development` |
-| OSA Public Library | `activities-library` |
-| OSA Higher Education | `activities-higher-education` |
-| Professional Networking | `activities-networking` |
-| Health & Wellness | `activities-health-wellness` |
-| Drama Festival | `activities-drama-festival` |
-| Sampark Dori | `activities-sampark-dori` |
-| Nilachakra (Kids) | `activities-nilachakra` |
-| Women's Forum | `activities-womens-forum` |
-| Classified | `activities-classified` |
-
-#### Publications & Utility
-
-| Page | Sanity slug |
-|---|---|
-| Urmi — Souvenir | `publications-urmi` |
-| Utkarsa — Newsletter | `publications-utkarsa` |
-| Donate | `donate` |
-| About OSA (landing) | `about-us` |
-
-#### How to publish a page for the first time
-
-1. Go to `https://<your-domain>/studio` and sign in with your Sanity account
-2. Click **Static Pages** in the left sidebar → **New Static Page**
-3. Fill in the **Title** (shown as the page heading on the website)
-4. Set the **Slug** field to the exact value from the table above — disable auto-generate if it differs
-5. Write the **Body** content using the rich text editor
-6. Click **Publish**
-7. The live page updates within 60 seconds
+The full slug reference table and step-by-step authoring instructions for both cases live in **[`docs/content-author-guide.md`](./content-author-guide.md)** — that's the canonical doc to hand to volunteer editors. It is kept in sync with `apps/web/app/components/nav-bar.tsx`; if the nav is ever restructured again, update both.
 
 ---
 
