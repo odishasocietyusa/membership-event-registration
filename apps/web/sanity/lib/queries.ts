@@ -200,7 +200,7 @@ export const ALL_OBITUARIES_QUERY = groq`
     && ($name == "" || name match $name + "*")
     && ($state == "" || state == $state)
     && ($year == 0  || year == $year)
-  ] | order(date_of_passing desc) {
+  ] | order(date_of_passing desc) [$from...$to] {
     _id,
     name,
     "slug": slug.current,
@@ -210,6 +210,14 @@ export const ALL_OBITUARIES_QUERY = groq`
     chapter,
     photo
   }
+`
+
+export const OBITUARIES_COUNT_QUERY = groq`
+  count(*[_type == "obituary"
+    && ($name == "" || name match $name + "*")
+    && ($state == "" || state == $state)
+    && ($year == 0  || year == $year)
+  ])
 `
 
 export const OBITUARY_BY_SLUG_QUERY = groq`
