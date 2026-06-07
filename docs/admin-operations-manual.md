@@ -22,6 +22,8 @@ This manual covers day-to-day administration of the live platform. It assumes th
 10. [Resend and Email Operations](#10-resend-and-email-operations)
 11. [Database Operations](#11-database-operations)
 12. [Monitoring and Troubleshooting](#12-monitoring-and-troubleshooting)
+13. [Local Development Setup](#13-local-development-setup)
+14. [Deployment to Vercel and Environment Variables](#14-deployment-to-vercel-and-environment-variables)
 
 ---
 
@@ -704,4 +706,128 @@ All four rows should show `rowsecurity = true`. If any show `false`, apply the p
 
 ---
 
-*Last updated: 2026-05-17 · Maintainer: platform admin*
+## 13. Local Development Setup
+
+This is the canonical reference for running the project on a developer machine. (`README.md` links here instead of duplicating these steps — keep this section in sync if the setup flow changes.)
+
+### Prerequisites
+
+| Tool | Required version | Purpose |
+|---|---|---|
+| Node.js | v20+ | Runtime |
+| pnpm | v11+ | Package manager (monorepo workspaces) |
+| Docker Desktop | latest | Runs the local Supabase stack |
+| Supabase CLI | v2.0+ | Local Postgres + Auth + Studio + Mailpit |
+| Stripe CLI | latest (optional) | Webhook testing |
+
+```bash
+# Verify all tools
+echo "Node:     $(node --version)"
+echo "pnpm:     $(pnpm --version)"
+echo "Docker:   $(docker --version)"
+echo "Supabase: $(supabase --version)"
+```
+
+### Initial setup (once)
+
+```bash
+git clone <repo-url>
+cd membership-event-registration
+pnpm install
+
+# Start local Supabase (PostgreSQL + Auth + Studio + Mailpit)
+supabase start
+
+# Configure environment — fill in the values printed by `supabase status`
+cp apps/web/.env.example apps/web/.env.local
+
+# Push schema and seed reference data
+cd apps/web
+npx prisma db push
+npx prisma db seed
+cd ../..
+```
+
+### Running and verifying
+
+```bash
+pnpm dev   # starts Next.js on http://localhost:3000
+```
+
+| Service | URL |
+|---|---|
+| Frontend + API | http://localhost:3000 |
+| Supabase Studio | http://127.0.0.1:54323 |
+| Mailpit (email) | http://127.0.0.1:54324 |
+
+```bash
+curl http://localhost:3000
+curl http://localhost:3000/api/memberships/types
+
+cd apps/web && npx prisma studio   # visual DB browser on :5555
+```
+
+### `.env` vs `.env.local` vs `.env.example` — what each file is for
+
+The `apps/web/` directory contains three env-related files that are easy to confuse:
+
+| File | Loaded by | Committed to git? | Purpose |
+|---|---|---|---|
+| `.env.example` | Nothing at runtime — it's a template | ✅ Yes (placeholder values only, no secrets) | Lists every variable the app needs. New developers `cp` it to `.env.local` and fill in real values. |
+| `.env.local` | Next.js, at dev/build/runtime (`pnpm dev`, `pnpm build`, `pnpm start`) | ❌ No — gitignored | Your real local secrets and connection strings: Supabase keys, Sanity tokens, Stripe test keys, Resend keys, etc. |
+| `.env` | **The Prisma CLI only** (`prisma db push`, `prisma migrate`, `prisma db seed`, `prisma studio`) | ❌ No — gitignored | Must contain `DATABASE_URL` and `DIRECT_URL`. Prisma's CLI loader reads `.env`, not `.env.local`, so these two values are duplicated here. |
+
+> **Why this matters:** if you change your database connection string, update it in **both** `.env.local` (so the running app connects correctly) and `.env` (so `prisma db push` / `prisma studio` / `prisma db seed` connect to the same database). Forgetting `.env` is a common cause of "my migration ran but the app still shows old data."
+
+---
+
+## 14. Deployment to Vercel and Environment Variables
+
+> For the full first-time environment provisioning runbook — creating Supabase cloud projects, configuring Auth, Stripe, Sanity, and storage buckets — see [`deployment-manual.md`](./deployment-manual.md). This section is the canonical reference for **Vercel-specific operations**: connecting the repo, the environment variable list, triggering deploys, and rolling back. (`deployment-manual.md` links here for the variable table instead of duplicating it.)
+
+### Connecting the repository
+
+1. Go to `vercel.com` → **Add New Project**
+2. Import the repository from GitHub
+3. Set **Root Directory** to `apps/web`
+4. Framework preset: **Next.js** (auto-detected)
+
+### Environment variables reference
+
+Set these in **Vercel → Project → Settings → Environment Variables**. Scope each one to **Preview** (staging) and/or **Production** as appropriate — staging and production point at separate Supabase/Stripe/Sanity/Resend projects (see `deployment-manual.md` Environment Overview).
+
+| Variable | Where to find | Expose to client? |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → Project URL | ✅ Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API → anon key | ✅ Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → service_role key | ❌ Server only |
+| `DATABASE_URL` | Supabase → Settings → Database → Connection string → Pooling (port 6543) + `?pgbouncer=true` | ❌ Server only |
+| `DIRECT_URL` | Supabase → Settings → Database → Connection string → Direct (port 5432) | ❌ Server only |
+| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Sanity manage → Project settings | ✅ Yes |
+| `NEXT_PUBLIC_SANITY_DATASET` | Sanity manage → Datasets | ✅ Yes |
+| `SANITY_API_TOKEN` | Sanity manage → API → Tokens | ❌ Server only |
+| `STRIPE_SECRET_KEY` | Stripe dashboard → Developers → API keys | ❌ Server only |
+| `STRIPE_WEBHOOK_SECRET` | Stripe dashboard → Developers → Webhooks → signing secret | ❌ Server only |
+| `RESEND_API_KEY` | Resend dashboard → API keys | ❌ Server only |
+| `RESEND_FROM_EMAIL` | Your verified sender domain, e.g. `noreply@odishasociety.org` | ❌ Server only |
+| `RESEND_ORG_NAME` | Full legal org name, e.g. `The Odisha Society of the Americas` | ❌ Server only |
+| `RESEND_ORG_EIN` | IRS EIN number, e.g. `12-3456789` (used on charity receipts) | ❌ Server only |
+| `ADMIN_NOTIFICATION_EMAIL` | Email address that receives membership expiry alerts | ❌ Server only |
+| `NEXT_PUBLIC_SITE_URL` | Full site URL, e.g. `https://odishasociety.org` (no trailing slash) | ✅ Yes |
+| `CRON_SECRET` | Generate with `openssl rand -base64 32` — store in password manager | ❌ Server only |
+
+> **Never** set `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, or `SANITY_API_TOKEN` as `NEXT_PUBLIC_` variables — that exposes them to every visitor's browser. Variables marked "✅ Yes" are safe for client exposure by design (anon/public keys); everything else must stay server-only.
+
+### Triggering a deployment
+
+Push to the `main` branch → Vercel auto-deploys to **Production**. Pushing any other branch creates a **Preview** deployment (used for staging).
+
+### Rolling back a deployment
+
+Go to **Project → Deployments**, find the last good deployment, and click **Promote to Production**.
+
+> Database schema changes are **not** auto-rolled-back by Prisma — see [§11 Database Operations](#11-database-operations) for manually reverting a schema change.
+
+---
+
+*Last updated: 2026-06-07 · Maintainer: platform admin*

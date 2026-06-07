@@ -62,11 +62,10 @@ export async function searchMembers(input: MemberSearchInput): Promise<MemberSea
 
   const results: MemberSearchResult[] = rows.map((row) => {
     const addr = row.address as Record<string, string> | null
-    const { firstName: fn, lastName: ln } = parseName(row.fullName)
     return {
       memberId:       row.id,
-      firstName:      fn,
-      lastName:       ln,
+      name:           row.fullName ?? null,
+      spouseName:     row.familyMembers[0]?.fullName ?? null,
       city:           addr?.city           ?? null,
       state:          addr?.state          ?? null,
       chapterId:      row.chapterId        ?? null,

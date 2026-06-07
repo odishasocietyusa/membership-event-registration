@@ -189,29 +189,9 @@ Go to **`sanity.io/manage` → your project → API → CORS Origins → Add COR
 4. Framework preset: **Next.js** (auto-detected)
 
 ### 7b. Set environment variables
-In Vercel → Project → Settings → Environment Variables, add all variables from the table below. Set the **Environment** scope (Staging = Preview, Production = Production).
+In Vercel → Project → Settings → Environment Variables, add each variable and set its **Environment** scope (Staging = Preview, Production = Production).
 
-| Variable | Where to find | Expose to client? |
-|----------|--------------|-------------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → Project URL | ✅ Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API → anon key | ✅ Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → service_role key | ❌ Server only |
-| `DATABASE_URL` | Supabase → Settings → Database → Connection string → Pooling (port 6543) + `?pgbouncer=true` | ❌ Server only |
-| `DIRECT_URL` | Supabase → Settings → Database → Connection string → Direct (port 5432) | ❌ Server only |
-| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Sanity manage → Project settings | ✅ Yes |
-| `NEXT_PUBLIC_SANITY_DATASET` | Sanity manage → Datasets | ✅ Yes |
-| `SANITY_API_TOKEN` | Sanity manage → API → Tokens | ❌ Server only |
-| `STRIPE_SECRET_KEY` | Stripe dashboard → Developers → API keys | ❌ Server only |
-| `STRIPE_WEBHOOK_SECRET` | Stripe dashboard → Developers → Webhooks → signing secret | ❌ Server only |
-| `RESEND_API_KEY` | Resend dashboard → API keys | ❌ Server only |
-| `RESEND_FROM_EMAIL` | Your verified sender domain, e.g. `noreply@odishasociety.org` | ❌ Server only |
-| `RESEND_ORG_NAME` | Full legal org name, e.g. `The Odisha Society of the Americas` | ❌ Server only |
-| `RESEND_ORG_EIN` | IRS EIN number, e.g. `12-3456789` (used on charity receipts) | ❌ Server only |
-| `ADMIN_NOTIFICATION_EMAIL` | Email address that receives membership expiry alerts | ❌ Server only |
-| `NEXT_PUBLIC_SITE_URL` | Full site URL, e.g. `https://odishasociety.org` (no trailing slash) | ✅ Yes |
-| `CRON_SECRET` | Generate with `openssl rand -base64 32` — store in password manager | ❌ Server only |
-
-> **Never** set `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, or `SANITY_API_TOKEN` as `NEXT_PUBLIC_` variables.
+The full variable list — where to find each value and whether it's safe to expose to the client — is maintained as a single source of truth in the **[Admin Operations Manual — §14 Deployment to Vercel and Environment Variables](./admin-operations-manual.md#14-deployment-to-vercel-and-environment-variables)**. Use that table when provisioning a new environment so it doesn't drift out of sync with this runbook.
 
 ### 7c. Trigger deployment
 Push to `main` branch → Vercel auto-deploys to production. Any other branch creates a Preview deployment (staging).

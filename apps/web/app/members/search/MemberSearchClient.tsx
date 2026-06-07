@@ -246,8 +246,8 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
               <table>
                 <thead>
                   <tr>
-                    <th>Last Name</th>
-                    <th>First Name</th>
+                    <th>Name</th>
+                    <th>Spouse</th>
                     <th>City</th>
                     <th>State</th>
                     <th>Chapter</th>
@@ -260,8 +260,8 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
                 <tbody>
                   {results.map((m) => (
                     <tr key={m.memberId}>
-                      <td>{m.lastName       ?? '—'}</td>
-                      <td>{m.firstName      ?? '—'}</td>
+                      <td>{m.name           ?? '—'}</td>
+                      <td>{m.spouseName     ?? '-NA-'}</td>
                       <td>{m.city           ?? '—'}</td>
                       <td>{m.state          ?? '—'}</td>
                       <td>{chapterDisplayName(m.chapterId)}</td>
@@ -271,10 +271,7 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
                       <td>
                         <button
                           type="button"
-                          onClick={() => openOverlay(
-                            m.memberId,
-                            [m.firstName, m.lastName].filter(Boolean).join(' ') || 'this member'
-                          )}
+                          onClick={() => openOverlay(m.memberId, m.name || 'this member')}
                         >
                           Send Message
                         </button>

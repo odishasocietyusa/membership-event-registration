@@ -4,6 +4,10 @@
 
 A full-stack platform for managing memberships, event registrations, and community content — built as a single Next.js application with Supabase Auth, Prisma ORM, Stripe payments, and Sanity CMS.
 
+> 📌 **Running this in production? Start here:**
+> - **[Admin Operations Manual](./docs/admin-operations-manual.md)** — day-to-day platform administration: members, memberships, payments, content, cron jobs, deployment, and troubleshooting
+> - **[Content Author Guide](./docs/content-author-guide.md)** — for volunteer editors publishing content via Sanity Studio
+
 ## 🏗️ Tech Stack
 
 - **Framework**: Next.js 15.1.4 (App Router) + Tailwind CSS + React 19
@@ -30,120 +34,18 @@ osa-community-platform/
 └── specs/            # Feature specs and SDD workflow
 ```
 
-## 💻 Local Developer Setup
+## 💻 Local Developer Setup & How to Run
 
-Complete these steps **once** before running the project for the first time.
+Full step-by-step instructions (tool prerequisites, initial setup, running the dev server, and the `.env` / `.env.local` / `.env.example` distinction) live in the **[Admin Operations Manual — §13 Local Development Setup](./docs/admin-operations-manual.md#13-local-development-setup)**, which is the single source of truth for this so it doesn't drift out of sync in two places.
 
----
-
-### 1. Node.js (v20 or higher)
-
+Quick start:
 ```bash
-node --version   # must be >= 20.0.0
-
-# Install via nvm (recommended)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-source ~/.zshrc
-nvm install 22 && nvm use 22
-```
-
----
-
-### 2. pnpm (v11 or higher)
-
-```bash
-pnpm --version   # must be >= 11.0.0
-npm install -g pnpm@latest
-```
-
----
-
-### 3. Docker Desktop
-
-Required to run Supabase locally.
-
-```bash
-docker --version
-# Install from https://www.docker.com/products/docker-desktop/
-# Open Docker Desktop and wait for "Engine running" before continuing.
-```
-
----
-
-### 4. Supabase CLI
-
-```bash
-supabase --version   # must be >= 2.0.0
-brew install supabase/tap/supabase   # macOS
-supabase login
-```
-
----
-
-### 5. Stripe CLI (optional — for webhook testing)
-
-```bash
-brew install stripe/stripe-cli/stripe
-stripe login
-```
-
----
-
-### Verify All Tools
-
-```bash
-echo "Node:     $(node --version)"
-echo "pnpm:     $(pnpm --version)"
-echo "Docker:   $(docker --version)"
-echo "Supabase: $(supabase --version)"
-```
-
----
-
-## 🚀 How to Run
-
-### Initial Setup
-
-```bash
-# 1. Clone and install
-git clone <repo-url>
-cd membership-event-registration
+git clone <repo-url> && cd membership-event-registration
 pnpm install
-
-# 2. Start local Supabase (PostgreSQL + Auth + Studio + Mailpit)
 supabase start
-
-# 3. Configure environment
-cp apps/web/.env.example apps/web/.env.local
-# Fill in the values printed by: supabase status
-
-# 4. Push schema and seed data
-cd apps/web
-npx prisma db push
-npx prisma db seed
-cd ../..
-```
-
-### Start Development
-
-```bash
-pnpm dev                   # starts Next.js on http://localhost:3000
-```
-
-**Services available at:**
-| Service | URL |
-|---------|-----|
-| Frontend + API | http://localhost:3000 |
-| Supabase Studio | http://127.0.0.1:54323 |
-| Mailpit (email) | http://127.0.0.1:54324 |
-
-### Verify Installation
-
-```bash
-curl http://localhost:3000               # Next.js responds
-curl http://localhost:3000/api/memberships/types  # returns membership fee tiers
-
-cd apps/web && npx prisma studio         # visual DB browser on :5555
+cp apps/web/.env.example apps/web/.env.local   # fill in values from `supabase status`
+cd apps/web && npx prisma db push && npx prisma db seed && cd ../..
+pnpm dev   # http://localhost:3000
 ```
 
 ## 🧪 Testing
@@ -353,6 +255,8 @@ supabase stop --all && docker system prune -f
 ## 📖 Documentation
 
 - **Architecture**: `docs/osa-architecture.md`
+- **Admin Operations**: `docs/admin-operations-manual.md`
+- **Content Author Guide**: `docs/content-author-guide.md`
 - **Feature Specs**: `specs/active/`
 - **SDD Workflow**: `specs/README.md`
 

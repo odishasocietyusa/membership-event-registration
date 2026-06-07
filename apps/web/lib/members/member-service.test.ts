@@ -291,7 +291,7 @@ describe('member-service', () => {
 
   describe('searchMembers', () => {
     it('matches members whose spouse fullName contains the search term, but not children/other relations', async () => {
-      mockMember.findMany.mockResolvedValueOnce([baseMember])
+      mockMember.findMany.mockResolvedValueOnce([{ ...baseMember, familyMembers: [{ fullName: baseFamilyMember.fullName }] }] as never)
       mockMember.count.mockResolvedValueOnce(1)
 
       await searchMembers({ name: 'Spouse', page: 1 })
@@ -313,14 +313,24 @@ describe('member-service', () => {
       })
     })
 
-    it('returns a member found only via spouse fullName match', async () => {
-      mockMember.findMany.mockResolvedValueOnce([baseMember])
+    it('returns a member found via spouse fullName match, with spouseName populated', async () => {
+      mockMember.findMany.mockResolvedValueOnce([{ ...baseMember, familyMembers: [{ fullName: baseFamilyMember.fullName }] }] as never)
       mockMember.count.mockResolvedValueOnce(1)
 
       const result = await searchMembers({ name: 'Name', page: 1 })
 
       expect(result.results).toHaveLength(1)
       expect(result.results[0].memberId).toBe('mem-1')
+      expect(result.results[0].spouseName).toBe('Spouse Name')
+    })
+
+    it('returns -NA- equivalent (null) spouseName when member has no spouse on file', async () => {
+      mockMember.findMany.mockResolvedValueOnce([{ ...baseMember, familyMembers: [] }] as never)
+      mockMember.count.mockResolvedValueOnce(1)
+
+      const result = await searchMembers({ name: 'Name', page: 1 })
+
+      expect(result.results[0].spouseName).toBeNull()
     })
   })
 })
