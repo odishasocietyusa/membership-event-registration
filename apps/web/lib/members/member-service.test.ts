@@ -41,6 +41,7 @@ import {
   softDeleteFamilyMember,
   exportMemberData,
   listMembers,
+  searchMembers,
 } from '@/lib/members/member-service'
 
 const mockMember = prisma.member as jest.Mocked<typeof prisma.member>
@@ -285,6 +286,41 @@ describe('member-service', () => {
       expect(mockMember.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ take: 100 })
       )
+    })
+  })
+
+  describe('searchMembers', () => {
+    it('matches members whose spouse fullName contains the search term, but not children/other relations', async () => {
+      mockMember.findMany.mockResolvedValueOnce([baseMember])
+      mockMember.count.mockResolvedValueOnce(1)
+
+      await searchMembers({ name: 'Spouse', page: 1 })
+
+      const { where } = mockMember.findMany.mock.calls[0][0] as { where: { AND: unknown[] } }
+      const nameCondition = where.AND[1] as { OR: unknown[] }
+
+      expect(nameCondition.OR).toContainEqual({
+        fullName: { contains: 'Spouse', mode: 'insensitive' },
+      })
+      expect(nameCondition.OR).toContainEqual({
+        familyMembers: {
+          some: {
+            relation: 'spouse',
+            deletedAt: null,
+            fullName: { contains: 'Spouse', mode: 'insensitive' },
+          },
+        },
+      })
+    })
+
+    it('returns a member found only via spouse fullName match', async () => {
+      mockMember.findMany.mockResolvedValueOnce([baseMember])
+      mockMember.count.mockResolvedValueOnce(1)
+
+      const result = await searchMembers({ name: 'Name', page: 1 })
+
+      expect(result.results).toHaveLength(1)
+      expect(result.results[0].memberId).toBe('mem-1')
     })
   })
 })

@@ -24,14 +24,13 @@ const MEMBER_STATUS_LABELS: Record<string, string> = {
   suspended: 'Suspended',
 }
 
-const PAGE_SIZE = 100
+const PAGE_SIZE = 25
 
 export default function MemberSearchClient({ senderName }: { senderName: string }) {
-  const [firstName, setFirstName] = useState('')
-  const [lastName,  setLastName]  = useState('')
-  const [city,      setCity]      = useState('')
-  const [country,   setCountry]   = useState<'USA' | 'Canada'>('USA')
-  const [state,     setState]     = useState('')
+  const [name,    setName]    = useState('')
+  const [city,    setCity]    = useState('')
+  const [country, setCountry] = useState<'USA' | 'Canada'>('USA')
+  const [state,   setState]   = useState('')
 
   const [results,   setResults]   = useState<MemberSearchResult[]>([])
   const [total,     setTotal]     = useState(0)
@@ -58,13 +57,11 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
   }
 
   function validate(): string | null {
-    const trimFirst = firstName.trim()
-    const trimLast  = lastName.trim()
-    const trimCity  = city.trim()
-    if (trimFirst && trimFirst.length < 3) return 'First name must be at least 3 characters'
-    if (trimLast  && trimLast.length  < 3) return 'Last name must be at least 3 characters'
-    if (trimCity  && trimCity.length  < 3) return 'City must be at least 3 characters'
-    if (!trimFirst && !trimLast && !trimCity && !state) {
+    const trimName = name.trim()
+    const trimCity = city.trim()
+    if (trimName && trimName.length < 3) return 'Name must be at least 3 characters'
+    if (trimCity && trimCity.length < 3) return 'City must be at least 3 characters'
+    if (!trimName && !trimCity && !state) {
       return 'Please enter at least a name, city, or select a state'
     }
     return null
@@ -78,11 +75,10 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
     setError(null)
 
     const params = new URLSearchParams({ page: String(targetPage) })
-    if (firstName.trim()) params.set('firstName', firstName.trim())
-    if (lastName.trim())  params.set('lastName',  lastName.trim())
-    if (city.trim())      params.set('city',       city.trim())
-    if (state)            params.set('state',      state)
-    if (country)          params.set('country',    country)
+    if (name.trim()) params.set('name',    name.trim())
+    if (city.trim()) params.set('city',    city.trim())
+    if (state)       params.set('state',   state)
+    if (country)     params.set('country', country)
 
     try {
       const supabase = createSupabaseBrowser()
@@ -177,22 +173,13 @@ export default function MemberSearchClient({ senderName }: { senderName: string 
           <legend>Search Members</legend>
 
           <div>
-            <label htmlFor="firstName">First Name</label>
+            <label htmlFor="name">Name</label>
             <input
-              id="firstName"
+              id="name"
               type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="lastName">Last Name</label>
-            <input
-              id="lastName"
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Full name, partial name, first name, or last name"
             />
           </div>
 

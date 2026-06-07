@@ -3,21 +3,20 @@ import type { Prisma } from '@prisma/client'
 import type { MemberSearchResult, MemberSearchResponse } from '@/lib/validation/member.schema'
 import type { MemberSearchInput } from '../member-service'
 
-const SEARCH_PAGE_SIZE = 100
+const SEARCH_PAGE_SIZE = 25
 const SEARCH_RESULT_CAP = 1000
 
-function parseName(fullName: string | null): { firstName: string | null; lastName: string | null } {
-  if (!fullName?.trim()) return { firstName: null, lastName: null }
-  const parts = fullName.trim().split(/\s+/)
-  if (parts.length === 1) return { firstName: parts[0], lastName: null }
+function nameMatch(term: string): Prisma.MemberWhereInput {
   return {
-    firstName: parts.slice(0, -1).join(' '),
-    lastName:  parts[parts.length - 1],
+    OR: [
+      { fullName: { contains: term, mode: 'insensitive' } },
+      { familyMembers: { some: { relation: 'spouse', deletedAt: null, fullName: { contains: term, mode: 'insensitive' } } } },
+    ],
   }
 }
 
 export async function searchMembers(input: MemberSearchInput): Promise<MemberSearchResponse> {
-  const { firstName, lastName, city, state, country, page } = input
+  const { name, city, state, country, page } = input
   const skip = (page - 1) * SEARCH_PAGE_SIZE
 
   if (skip >= SEARCH_RESULT_CAP) {
@@ -26,8 +25,7 @@ export async function searchMembers(input: MemberSearchInput): Promise<MemberSea
 
   const AND: Prisma.MemberWhereInput[] = [
     { deletedAt: null },
-    ...(firstName ? [{ fullName: { contains: firstName, mode: 'insensitive' as const } }] : []),
-    ...(lastName  ? [{ fullName: { contains: lastName,  mode: 'insensitive' as const } }] : []),
+    ...(name ? [nameMatch(name)] : []),
     ...(city      ? [{ address: { path: ['city'],    string_contains: city,    mode: 'insensitive' as const } } as Prisma.MemberWhereInput] : []),
     ...(state     ? [{ address: { path: ['state'],   string_contains: state,   mode: 'insensitive' as const } } as Prisma.MemberWhereInput] : []),
     ...(country   ? [{ address: { path: ['country'], string_contains: country, mode: 'insensitive' as const } } as Prisma.MemberWhereInput] : []),
@@ -47,6 +45,11 @@ export async function searchMembers(input: MemberSearchInput): Promise<MemberSea
         joinDate:       true,
         membershipType: true,
         memberStatus:   true,
+        familyMembers: {
+          where:  { relation: 'spouse', deletedAt: null },
+          select: { fullName: true },
+          take:   1,
+        },
       },
       orderBy: [{ fullName: 'asc' }],
       skip,

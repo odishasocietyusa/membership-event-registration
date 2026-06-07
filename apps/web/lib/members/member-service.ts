@@ -71,12 +71,11 @@ export interface CreateChapterInput {
 }
 
 export interface MemberSearchInput {
-  firstName?: string
-  lastName?:  string
-  city?:      string
-  state?:     string
-  country?:   string
-  page:       number
+  name?:    string
+  city?:    string
+  state?:   string
+  country?: string
+  page:     number
 }
 
 // ── Re-exports ───────────────────────────────────────────────────────────────

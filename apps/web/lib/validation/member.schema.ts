@@ -134,16 +134,15 @@ export type CreateProfileInput = z.infer<typeof CreateProfileSchema>
 // ── Member search query (GET /api/members/search) ─────────────────────────────
 
 export const MemberSearchQuerySchema = z.object({
-  firstName: z.string().min(3, 'Minimum 3 characters').max(100).optional(),
-  lastName:  z.string().min(3, 'Minimum 3 characters').max(100).optional(),
+  name:      z.string().min(3, 'Minimum 3 characters').max(100).optional(),
   city:      z.string().min(3, 'Minimum 3 characters').max(100).optional(),
   state:     z.string().max(10).optional(),
   country:   z.enum(['USA', 'Canada']).optional(),
   page:      z.coerce.number().int().min(1).default(1),
 }).refine(
-  ({ firstName, lastName, city, state }) =>
-    !!(firstName || lastName || city || state),
-  { message: 'At least one of first name, last name, city, or state must be provided' }
+  ({ name, city, state }) =>
+    !!(name || city || state),
+  { message: 'At least one of name, city, or state must be provided' }
 )
 export type MemberSearchQuery = z.infer<typeof MemberSearchQuerySchema>
 
@@ -151,8 +150,8 @@ export type MemberSearchQuery = z.infer<typeof MemberSearchQuerySchema>
 
 export const MemberSearchResultSchema = z.object({
   memberId:       z.string(),
-  firstName:      z.string().nullable(),
-  lastName:       z.string().nullable(),
+  name:           z.string().nullable(),
+  spouseName:     z.string().nullable(),
   city:           z.string().nullable(),
   state:          z.string().nullable(),
   chapterId:      z.string().nullable(),
