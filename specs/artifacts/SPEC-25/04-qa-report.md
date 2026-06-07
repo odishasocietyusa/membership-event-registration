@@ -3,7 +3,7 @@
 **Spec:** Profile Page Membership Label & Expiry Display  
 **QA:** Claude Code  
 **Date:** 2026-05-30  
-**Status:** Complete — Pending Manual Verification
+**Status:** Complete — Verified
 
 ---
 
@@ -35,10 +35,12 @@
 
 The following must be verified by the human operator in a running dev environment:
 
-- [ ] Log in as an **annual member** (e.g., `annualSingle`) with a set `expiryDate` → confirm "Valid through: [date]" appears in the Membership fieldset
-- [ ] Log in as a **life member** → confirm no "Valid through" or "Expiry date" row appears
-- [ ] Log in as a **patron or benefactor** member → confirm no expiry row appears
-- [ ] Verify the rest of the profile page (save, edit family, spouse link) is unaffected
+- [x] Log in as an **annual member** (e.g., `annualSingle`) with a set `expiryDate` → confirm "Valid through: [date]" appears in the Membership fieldset
+- [x] Log in as a **life member** → confirm no "Valid through" or "Expiry date" row appears
+- [x] Log in as a **patron or benefactor** member → confirm no expiry row appears
+- [x] Verify the rest of the profile page (save, edit family, spouse link) is unaffected
+
+**Verified by:** Utkal Nayak on deployed version — 2026-06-06
 
 ---
 

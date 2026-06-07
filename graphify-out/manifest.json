@@ -235,14 +235,14 @@
     "semantic_hash": "f654328350f48c8728d396b6aae6ea50"
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/auth/forgot-password/page.tsx": {
-    "mtime": 1778795497.1203701,
-    "ast_hash": "7675af1806dadb5a5c4f6004e6af380e",
-    "semantic_hash": "7675af1806dadb5a5c4f6004e6af380e"
+    "mtime": 1780791051.5740106,
+    "ast_hash": "39b9a4ddc1a950d22524f06b238c9bdd",
+    "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/auth/reset-password/page.tsx": {
-    "mtime": 1778795514.0351346,
-    "ast_hash": "8d2389628dfca1b714f71f4b045b84d3",
-    "semantic_hash": "8d2389628dfca1b714f71f4b045b84d3"
+    "mtime": 1780791073.2831104,
+    "ast_hash": "413a4093f8f2b5348d3ab1c4193315fd",
+    "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/chapters/page.tsx": {
     "mtime": 1778992661.1383977,
@@ -495,8 +495,8 @@
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/auth/callback/route.ts": {
-    "mtime": 1779663615.524312,
-    "ast_hash": "36c5ca26063cf3dcde7d3c77e7a4aa02",
+    "mtime": 1780791061.7641153,
+    "ast_hash": "8a0daa72da6eadfd83aba022dc6630ea",
     "semantic_hash": ""
   },
   "/Users/utkalnayak/Documents/code/membership-event-registration/apps/web/app/api/chapters/route.test.ts": {

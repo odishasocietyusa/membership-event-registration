@@ -4,82 +4,101 @@ import { Resend } from 'resend'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: Request): Promise<Response> {
-  const resend = new Resend(process.env.RESEND_API_KEY)
-  const FROM = process.env.RESEND_FROM_EMAIL ?? 'noreply@osa-americas.org'
-  const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL ?? ''
+const CHECKPOINTS = [
+  { days: 180, noticeType: 'six_month',   label: 'approximately 6 months' },
+  { days: 90,  noticeType: 'three_month', label: 'approximately 3 months' },
+  { days: 30,  noticeType: 'one_month',   label: 'approximately 1 month'  },
+  { days: 7,   noticeType: 'one_week',    label: 'approximately 1 week'   },
+] as const
 
+function utcDayOffset(baseMs: number, days: number): Date {
+  return new Date(baseMs + days * 86_400_000)
+}
+
+export async function GET(req: Request): Promise<Response> {
   const authHeader = req.headers.get('Authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 })
   }
 
+  const resend = new Resend(process.env.RESEND_API_KEY)
+  const FROM = process.env.RESEND_FROM_EMAIL ?? 'noreply@odishasociety.org'
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://odishasociety.org'
+
   await expireOverdueMemberships()
 
   const now = new Date()
-  const in30Days = new Date(now)
-  in30Days.setDate(in30Days.getDate() + 30)
+  const todayMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
 
-  const expiringMembers = await prisma.member.findMany({
-    where: {
-      memberStatus: 'active',
-      expiryDate: {
-        gte: now,
-        lte: in30Days,
+  let emailsSent = 0
+  let processed = 0
+
+  for (const checkpoint of CHECKPOINTS) {
+    const windowStart = utcDayOffset(todayMs, checkpoint.days)
+    const windowEnd   = utcDayOffset(todayMs, checkpoint.days + 2)
+
+    const members = await prisma.member.findMany({
+      where: {
+        memberStatus: 'active',
+        expiryDate: { gte: windowStart, lt: windowEnd },
       },
-    },
-    select: { id: true, email: true, fullName: true, expiryDate: true },
-  })
-
-  let sent = 0
-
-  for (const member of expiringMembers) {
-    if (!member.expiryDate) continue
-
-    const daysLeft = Math.ceil(
-      (member.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-    )
-
-    const shouldNotify = daysLeft <= 7 || daysLeft <= 30
-    if (!shouldNotify) continue
-
-    const windowLabel = daysLeft <= 7 ? '7 days' : '30 days'
-    const expiryStr = member.expiryDate.toLocaleDateString('en-US', { dateStyle: 'long' })
-
-    await resend.emails.send({
-      from: FROM,
-      to: member.email,
-      subject: `Your OSA membership expires in ${windowLabel}`,
-      text: [
-        `Dear ${member.fullName ?? 'Member'},`,
-        '',
-        `Your OSA membership is set to expire on ${expiryStr}.`,
-        `Please renew your membership to continue enjoying member benefits.`,
-        '',
-        `Visit your membership dashboard to renew.`,
-      ].join('\n'),
+      select: { id: true, email: true, fullName: true, expiryDate: true },
     })
 
-    sent++
-  }
+    processed += members.length
 
-  // Admin notification for all members expiring within 30 days
-  if (ADMIN_EMAIL && expiringMembers.length > 0) {
-    type ExpiringMember = { fullName: string | null; email: string; expiryDate: Date | null }
-    const list = (expiringMembers as ExpiringMember[])
-      .map((m) => `  - ${m.fullName ?? m.email} (expires ${m.expiryDate?.toLocaleDateString('en-US')})`)
-      .join('\n')
+    for (const member of members) {
+      if (!member.expiryDate) continue
 
-    await resend.emails.send({
-      from: FROM,
-      to: ADMIN_EMAIL,
-      subject: `OSA: ${expiringMembers.length} membership(s) expiring within 30 days`,
-      text: `The following memberships are expiring within the next 30 days:\n\n${list}`,
-    })
+      const existing = await prisma.expiryNotice.findUnique({
+        where: {
+          memberId_noticeType_expiryDate: {
+            memberId:   member.id,
+            noticeType: checkpoint.noticeType,
+            expiryDate: member.expiryDate,
+          },
+        },
+      })
+      if (existing) continue
+
+      const expiryStr = member.expiryDate.toLocaleDateString('en-US', { dateStyle: 'long' })
+
+      await resend.emails.send({
+        from: FROM,
+        to: member.email,
+        subject: `Your OSA membership expires in ${checkpoint.label}`,
+        text: [
+          `Dear ${member.fullName ?? 'Member'},`,
+          '',
+          `Your OSA membership is set to expire on ${expiryStr}.`,
+          '',
+          `Renew or upgrade your membership at: ${SITE_URL}/membership`,
+          '',
+          'If you have already renewed, please disregard this notice.',
+          '',
+          '—',
+          'Odisha Society of the Americas',
+        ].join('\n'),
+      })
+
+      emailsSent++
+
+      try {
+        await prisma.expiryNotice.create({
+          data: {
+            memberId:   member.id,
+            noticeType: checkpoint.noticeType,
+            expiryDate: member.expiryDate,
+          },
+        })
+      } catch (err) {
+        console.error(`[expiry-reminders] Failed to record ExpiryNotice for member ${member.id}:`, err)
+      }
+    }
   }
 
   return new Response(
-    JSON.stringify({ processed: expiringMembers.length, emailsSent: sent }),
+    JSON.stringify({ processed, emailsSent }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   )
 }

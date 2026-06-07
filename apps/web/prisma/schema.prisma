@@ -133,13 +133,14 @@ model Member {
   deletedAt          DateTime?           @map("deleted_at") @db.Timestamptz
 
   // Relations
-  chapter        Chapter?       @relation("MemberChapter", fields: [chapterId], references: [id])
-  presidentOf      Chapter[]       @relation("ChapterPresident")
-  familyMembers    FamilyMember[]  @relation("PrimaryMember")
+  chapter          Chapter?       @relation("MemberChapter", fields: [chapterId], references: [id])
+  presidentOf      Chapter[]      @relation("ChapterPresident")
+  familyMembers    FamilyMember[] @relation("PrimaryMember")
   paymentRecords   PaymentRecord[]
-  awards           Award[]         @relation("AwardRecipient")
-  sentMessages     Message[]       @relation("SentMessages")
-  receivedMessages Message[]       @relation("ReceivedMessages")
+  awards           Award[]        @relation("AwardRecipient")
+  sentMessages     Message[]      @relation("SentMessages")
+  receivedMessages Message[]      @relation("ReceivedMessages")
+  expiryNotices    ExpiryNotice[]
 
   @@map("members")
 }
@@ -261,4 +262,21 @@ model Message {
   @@index([senderMemberId,    sentAt(sort: Desc)])
   @@index([recipientMemberId, sentAt(sort: Desc)])
   @@map("messages")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPIRY NOTICES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ExpiryNotice {
+  id         String   @id @default(cuid())
+  memberId   String   @map("member_id") @db.Uuid
+  noticeType String   @map("notice_type")
+  expiryDate DateTime @map("expiry_date") @db.Date
+  sentAt     DateTime @default(now()) @map("sent_at")
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, noticeType, expiryDate])
+  @@map("expiry_notices")
 }

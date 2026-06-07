@@ -1,7 +1,7 @@
 # Feature Specification: Self-Service Membership Upgrade
 
 > **Spec ID:** SPEC-21-self-service-membership-upgrade
-> **Status:** Implementation Complete — Pending DB Push & Manual Verification
+> **Status:** Completed
 > **Author:** Utkal Nayak
 > **Created:** 2026-05-25
 
@@ -224,5 +224,5 @@ Spouse membership is automatically reflected — `FamilyMember` has no independe
 - **Artifact:** `specs/artifacts/SPEC-21/03-implementation.md`
 
 ### Phase 4: QA & Testing
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-21/04-qa-report.md`

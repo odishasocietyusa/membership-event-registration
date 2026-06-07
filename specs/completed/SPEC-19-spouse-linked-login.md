@@ -1,7 +1,7 @@
 # Feature Specification: Spouse Linked Login
 
 > **Spec ID:** SPEC-19-spouse-linked-login
-> **Status:** Implementation Complete — Pending Manual Verification
+> **Status:** Completed
 > **Author:** Utkal Nayak
 > **Created:** 2026-05-18
 
