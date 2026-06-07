@@ -141,6 +141,7 @@ model Member {
   sentMessages     Message[]      @relation("SentMessages")
   receivedMessages Message[]      @relation("ReceivedMessages")
   expiryNotices    ExpiryNotice[]
+  obituaryComments ObituaryComment[]
 
   @@map("members")
 }
@@ -262,6 +263,28 @@ model Message {
   @@index([senderMemberId,    sentAt(sort: Desc)])
   @@index([recipientMemberId, sentAt(sort: Desc)])
   @@map("messages")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPIRY NOTICES
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OBITUARY COMMENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ObituaryComment {
+  id           String   @id @default(uuid()) @db.Uuid
+  obituarySlug String   @map("obituary_slug")
+  memberId     String   @map("member_id") @db.Uuid
+  body         String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  member       Member   @relation(fields: [memberId], references: [id])
+
+  @@index([obituarySlug])
+  @@index([memberId])
+  @@map("obituary_comments")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
