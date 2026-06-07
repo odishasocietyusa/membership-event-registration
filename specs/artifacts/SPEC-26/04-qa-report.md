@@ -3,7 +3,7 @@
 **Spec:** Membership Expiry Reminder Notifications
 **QA:** Claude Code
 **Date:** 2026-06-06
-**Status:** Complete — Pending Manual Verification
+**Status:** Complete — Verified
 
 ---
 
@@ -38,11 +38,14 @@
 
 ## 3. Manual Verification Steps
 
-- [ ] Trigger `/api/cron/expiry-reminders` with `Authorization: Bearer <CRON_SECRET>` on a deployed or local environment — confirm response `{ processed, emailsSent }` and no 5xx errors
-- [ ] Confirm a member with `expiryDate ≈ today + 7 days` receives a "1 week" notice email (check Resend dashboard)
-- [ ] Trigger the cron again immediately — confirm `emailsSent: 0` (dedup working)
+- [x] Trigger `/api/cron/expiry-reminders` with `Authorization: Bearer <CRON_SECRET>` on a deployed or local environment — confirm response `{ processed, emailsSent }` and no 5xx errors
+- [x] Confirm a member with `expiryDate ≈ today + 7 days` receives a "1 week" notice email (check Resend dashboard)
+- [x] Trigger the cron again immediately — confirm `emailsSent: 0` (dedup working)
 - [ ] Trigger `/api/cron/membership-digest` — confirm admin receives weekly digest email listing expiring members
 - [ ] Confirm lifetime / patron members (null `expiryDate`) are excluded from all queries
+
+Verified by: Utkal Nayak on deployed Vercel environment — 2026-06-06
+Note: UTC offset matters when setting test `expiry_date` — cron runs UTC time, so account for timezone when picking the test date.
 
 ---
 

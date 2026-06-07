@@ -4,6 +4,7 @@ import { announcement } from './announcement'
 import { leadershipProgram } from './leadership-program'
 import { staticPage } from './static-page'
 import { mediaGallery } from './media-gallery'
+import { obituary } from './obituary'
 
 export const schemaTypes = [
   event,
@@ -12,4 +13,5 @@ export const schemaTypes = [
   leadershipProgram,
   staticPage,
   mediaGallery,
+  obituary,
 ]
