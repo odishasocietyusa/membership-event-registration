@@ -5,6 +5,7 @@
 A full-stack platform for managing memberships, event registrations, and community content — built as a single Next.js application with Supabase Auth, Prisma ORM, Stripe payments, and Sanity CMS.
 
 > 📌 **Running this in production? Start here:**
+> - **[Demo Functionality Guide](./docs/demo-functionality-guide.md)** — bulleted feature checklist for Admins demoing the platform to stakeholders
 > - **[Admin Operations Manual](./docs/admin-operations-manual.md)** — day-to-day platform administration: members, memberships, payments, content, cron jobs, deployment, and troubleshooting
 > - **[Content Author Guide](./docs/content-author-guide.md)** — for volunteer editors publishing content via Sanity Studio
 
