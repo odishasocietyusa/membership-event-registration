@@ -4,8 +4,7 @@ import { groq } from 'next-sanity'
 // Events
 // ---------------------------------------------------------------------------
 
-export const ALL_EVENTS_QUERY = groq`
-  *[_type == "event"] | order(start_date desc) {
+const EVENT_FIELDS = groq`
     _id,
     title,
     "slug": slug.current,
@@ -16,23 +15,29 @@ export const ALL_EVENTS_QUERY = groq`
     flyer,
     registration_link,
     chapter,
-    is_convention
+    is_convention,
+    accessLevel,
+    registrationFee,
+    registrationCapacity,
+    guestCountEnabled,
+    onlineLink
+`
+
+export const ALL_EVENTS_QUERY = groq`
+  *[_type == "event"] | order(start_date desc) {
+    ${EVENT_FIELDS}
   }
 `
 
 export const EVENT_BY_SLUG_QUERY = groq`
   *[_type == "event" && slug.current == $slug][0] {
-    _id,
-    title,
-    "slug": slug.current,
-    start_date,
-    end_date,
-    location,
-    description,
-    flyer,
-    registration_link,
-    chapter,
-    is_convention
+    ${EVENT_FIELDS}
+  }
+`
+
+export const EVENT_BY_ID_QUERY = groq`
+  *[_type == "event" && _id == $sanityId][0] {
+    ${EVENT_FIELDS}
   }
 `
 

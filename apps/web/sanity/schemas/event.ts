@@ -71,6 +71,49 @@ export const event = defineType({
       type: 'boolean',
       initialValue: false,
     }),
+    defineField({
+      name: 'accessLevel',
+      title: 'Access Level',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Members Only', value: 'membersOnly' },
+          { title: 'Open to All', value: 'openToAll' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'membersOnly',
+      description:
+        'membersOnly: only authenticated active members can register. openToAll: anyone with name + email can register.',
+    }),
+    defineField({
+      name: 'registrationFee',
+      title: 'Registration Fee (USD)',
+      type: 'number',
+      description:
+        'Set to 0 for free. Leave blank to hide registration UI and use the legacy Registration Link field instead.',
+      validation: (Rule) => Rule.min(0).precision(2),
+    }),
+    defineField({
+      name: 'registrationCapacity',
+      title: 'Registration Capacity',
+      type: 'number',
+      description: 'Maximum confirmed registrations. Leave blank for unlimited.',
+      validation: (Rule) => Rule.integer().min(1),
+    }),
+    defineField({
+      name: 'guestCountEnabled',
+      title: 'Allow Guest Count',
+      type: 'boolean',
+      initialValue: false,
+      description: 'When enabled, registrants can specify how many additional guests are joining them.',
+    }),
+    defineField({
+      name: 'onlineLink',
+      title: 'Online Meeting Link',
+      type: 'url',
+      description: 'Zoom/Teams/Meet link. Shown on the event detail page and in confirmation emails.',
+    }),
   ],
   orderings: [
     {

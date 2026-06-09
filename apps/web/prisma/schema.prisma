@@ -92,8 +92,17 @@ enum PaymentType {
   membership
   upgrade
   donation
+  event_registration
 
   @@map("payment_type")
+}
+
+enum EventRegistrationStatus {
+  pending
+  confirmed
+  cancelled
+
+  @@map("event_registration_status")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -152,6 +161,7 @@ model Member {
   obituaryComments     ObituaryComment[]
   serviceProvider      ServiceProvider?
   serviceContactsSent  ServiceContactLog[]
+  eventRegistrations   EventRegistration[]
 
   @@map("members")
 }
@@ -353,4 +363,33 @@ model ServiceContactLog {
 
   @@index([senderMemberId, sentAt])
   @@map("service_contact_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EVENT REGISTRATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model EventRegistration {
+  id              String                  @id @default(uuid()) @db.Uuid
+  sanityEventId   String                  @map("sanity_event_id")
+  // Member registrant (null for non-member/guest)
+  memberId        String?                 @map("member_id") @db.Uuid
+  // Guest registrant (null for member)
+  guestEmail      String?                 @map("guest_email")
+  guestName       String?                 @map("guest_name")
+  // 0 = registrant only; N = N additional attendees beyond registrant
+  guestCount      Int                     @default(0) @map("guest_count")
+  status          EventRegistrationStatus @default(pending)
+  stripeSessionId String?                 @unique @map("stripe_session_id")
+  cancelledAt     DateTime?               @map("cancelled_at") @db.Timestamptz
+  createdAt       DateTime                @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime                @updatedAt @map("updated_at") @db.Timestamptz
+
+  member          Member?                 @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // Postgres allows multiple NULLs in unique constraints — both work without partial indexes.
+  @@unique([sanityEventId, memberId])
+  @@unique([sanityEventId, guestEmail])
+  @@index([sanityEventId, status])
+  @@map("event_registrations")
 }

@@ -10,6 +10,12 @@ export interface SanityEvent {
   registration_link?: string
   chapter?: string
   is_convention: boolean
+  // Registration fields (optional — absent on legacy events without registration UI)
+  accessLevel?: 'membersOnly' | 'openToAll'
+  registrationFee?: number | null
+  registrationCapacity?: number | null
+  guestCountEnabled?: boolean
+  onlineLink?: string | null
 }
 
 export interface SanityNewsPost {

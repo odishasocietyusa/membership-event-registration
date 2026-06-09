@@ -114,6 +114,75 @@ export async function createDonationSession(
   return session.url!
 }
 
+export async function createEventRegistrationSession(
+  memberId: string,
+  memberEmail: string,
+  sanityEventId: string,
+  eventTitle: string,
+  slug: string,
+  feeAmountDollars: number,
+  guestCount: number = 0,
+): Promise<string> {
+  const session = await stripe.checkout.sessions.create({
+    customer_email: memberEmail,
+    payment_method_types: ['card'],
+    line_items: [{
+      price_data: {
+        currency: 'usd',
+        product_data: { name: `OSA Event Registration — ${eventTitle}` },
+        unit_amount: Math.round(feeAmountDollars * 100),
+      },
+      quantity: 1,
+    }],
+    mode: 'payment',
+    success_url: `${BASE_URL}/events/${slug}/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url:  `${BASE_URL}/events/${slug}`,
+    metadata: {
+      paymentType:  'event_registration',
+      memberId,
+      sanityEventId,
+      slug,
+      guestCount:   String(guestCount),
+    },
+  })
+  return session.url!
+}
+
+export async function createEventRegistrationGuestSession(
+  guestEmail: string,
+  guestName: string,
+  sanityEventId: string,
+  eventTitle: string,
+  slug: string,
+  feeAmountDollars: number,
+  guestCount: number = 0,
+): Promise<string> {
+  const session = await stripe.checkout.sessions.create({
+    customer_email: guestEmail,
+    payment_method_types: ['card'],
+    line_items: [{
+      price_data: {
+        currency: 'usd',
+        product_data: { name: `OSA Event Registration — ${eventTitle}` },
+        unit_amount: Math.round(feeAmountDollars * 100),
+      },
+      quantity: 1,
+    }],
+    mode: 'payment',
+    success_url: `${BASE_URL}/events/${slug}/success?session_id={CHECKOUT_SESSION_ID}&guest=1`,
+    cancel_url:  `${BASE_URL}/events/${slug}`,
+    metadata: {
+      paymentType:  'event_registration',
+      sanityEventId,
+      slug,
+      guestEmail,
+      guestName,
+      guestCount:   String(guestCount),
+    },
+  })
+  return session.url!
+}
+
 export async function issueRefund(
   stripePaymentIntentId: string,
   refundAmountCents: number,

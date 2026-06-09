@@ -37,6 +37,6 @@ export const ListPaymentsQuerySchema = z.object({
   limit:       z.coerce.number().int().min(1).max(100).default(20),
   memberId:    z.string().uuid().optional(),
   status:      z.enum(['pending', 'completed', 'failed', 'refunded']).optional(),
-  paymentType: z.enum(['membership', 'upgrade', 'donation']).optional(),
+  paymentType: z.enum(['membership', 'upgrade', 'donation', 'event_registration']).optional(),
 })
 export type ListPaymentsQueryInput = z.infer<typeof ListPaymentsQuerySchema>
