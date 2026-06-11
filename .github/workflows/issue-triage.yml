@@ -2,7 +2,7 @@ name: SDD Issue Triage
 
 on:
   issues:
-    types: [opened]
+    types: [opened, reopened]
 
 permissions:
   contents: write
