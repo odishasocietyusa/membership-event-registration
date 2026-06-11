@@ -1,0 +1,138 @@
+name: SDD QA Phase
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  qa:
+    # Only run when a PR is approved (not on comment-only or change-request reviews)
+    if: github.event.review.state == 'approved'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve spec ID and linked issue
+        id: resolve
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const branchMatch = branch.match(/^spec\/(\d+)-(.+)$/);
+            const specId = branchMatch ? `SPEC-${branchMatch[1]}-${branchMatch[2]}` : '';
+            core.setOutput('spec_id', specId);
+            core.setOutput('branch', branch);
+
+            const body = context.payload.pull_request.body || '';
+            const issueMatch = body.match(/[Cc]loses?\s+#(\d+)/);
+            const issueNumber = issueMatch ? parseInt(issueMatch[1], 10) : null;
+            core.setOutput('issue_number', issueNumber ? String(issueNumber) : '');
+
+            if (!specId || !issueNumber) {
+              core.setOutput('should_run', 'false');
+              core.info('PR is not part of the SDD pipeline (no spec/N-slug branch or no "Closes #N" in body) — skipping QA.');
+              return;
+            }
+
+            const issue = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+            });
+            const labels = issue.data.labels.map(l => l.name);
+            const shouldRun = labels.includes('sdd/implementation');
+            core.setOutput('should_run', String(shouldRun));
+            if (!shouldRun) {
+              core.info(`Issue #${issueNumber} does not have the 'sdd/implementation' label — skipping QA.`);
+            }
+
+      - name: Checkout PR head
+        if: steps.resolve.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        if: steps.resolve.outputs.should_run == 'true'
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        if: steps.resolve.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        if: steps.resolve.outputs.should_run == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Claude Phase 4 QA
+        if: steps.resolve.outputs.should_run == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: '--allowed-tools Read,Write,Bash(pnpm:*),Bash(npx:*),Bash(find:*),Bash(grep:*),Bash(gh pr review:*),Bash(gh pr comment:*),Bash(gh issue comment:*)'
+          prompt: |
+            You are the QA agent in the SDD pipeline.
+
+            SPEC ID: ${{ steps.resolve.outputs.spec_id }}
+            ISSUE: #${{ steps.resolve.outputs.issue_number }}
+            PR: #${{ github.event.pull_request.number }}
+            IMPLEMENTATION ARTIFACT: specs/artifacts/${{ steps.resolve.outputs.spec_id }}/03-implementation.md
+            TEMPLATE: specs/templates/04-qa-report.template.md
+
+            INSTRUCTIONS:
+            1. Read AGENTS.md.
+            2. Read specs/artifacts/${{ steps.resolve.outputs.spec_id }}/03-implementation.md (log of all changes made).
+            3. Read the original spec for ${{ steps.resolve.outputs.spec_id }} (in specs/active/ or specs/completed/) for acceptance criteria.
+            4. Run automated tests:
+               - Jest unit tests: pnpm --filter=web test
+               - Playwright E2E tests (if relevant to this change and the environment supports it): pnpm --filter=web test:e2e
+            5. Review every file listed in 03-implementation.md for:
+               - Code quality (TypeScript types, no `any`, naming conventions)
+               - Security (input validation, auth checks, no hardcoded secrets)
+               - Performance (N+1 queries, unnecessary re-renders)
+            6. Verify every acceptance criterion from the original spec is met.
+            7. Write specs/artifacts/${{ steps.resolve.outputs.spec_id }}/04-qa-report.md following the template, including test results, code quality findings (Critical/Major/Minor), acceptance criteria pass/fail, and a verdict.
+            8. Post the QA report as a review comment on PR #${{ github.event.pull_request.number }}:
+               gh pr review ${{ github.event.pull_request.number }} --comment --body "<QA report summary>"
+            9. Post a comment on issue #${{ steps.resolve.outputs.issue_number }}:
+               "Phase 4 QA complete. Review the QA report on PR #${{ github.event.pull_request.number }}. If satisfied, have an approved collaborator comment `/approve-implementation` on this issue to finalize and archive the spec."
+
+            If critical issues are found (failing tests, security holes, unmet acceptance criteria):
+            - Set the report verdict to NOT APPROVED
+            - Request changes on the PR: gh pr review ${{ github.event.pull_request.number }} --request-changes --body "<reasons>"
+
+            Do NOT push commits or modify production code. Only write the QA report artifact under specs/.
+
+      - name: Write 04-qa-report.md back to the PR branch
+        if: steps.resolve.outputs.should_run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add specs/artifacts/${{ steps.resolve.outputs.spec_id }}/04-qa-report.md
+          if git diff --cached --quiet; then
+            echo "No QA report changes to commit"
+          else
+            git commit -m "docs(${{ steps.resolve.outputs.spec_id }}): add phase 4 QA report"
+            git push origin HEAD:${{ steps.resolve.outputs.branch }}
+          fi
+
+      - name: Label issue as sdd/qa
+        if: steps.resolve.outputs.should_run == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt('${{ steps.resolve.outputs.issue_number }}', 10),
+              labels: ['sdd/qa'],
+            });

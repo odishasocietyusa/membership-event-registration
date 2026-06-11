@@ -1,0 +1,435 @@
+name: SDD Automation Pipeline
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  # -------------------------------------------------------------- #
+  # Parse the slash command, authorize the commenter, locate the    #
+  # spec, and determine whether the command is valid for the        #
+  # issue's current SDD phase.                                       #
+  # -------------------------------------------------------------- #
+  detect-command:
+    if: |
+      github.event.issue.pull_request == null &&
+      (
+        startsWith(github.event.comment.body, '/start-sdd') ||
+        startsWith(github.event.comment.body, '/approve-analysis') ||
+        startsWith(github.event.comment.body, '/approve-design') ||
+        startsWith(github.event.comment.body, '/approve-implementation')
+      )
+    runs-on: ubuntu-latest
+    outputs:
+      command: ${{ steps.parse.outputs.command }}
+      spec_id: ${{ steps.find-spec.outputs.spec_id }}
+      spec_file: ${{ steps.find-spec.outputs.spec_file }}
+      current_phase: ${{ steps.find-spec.outputs.current_phase }}
+      phase_match: ${{ steps.phase-check.outputs.phase_match }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Parse slash command
+        id: parse
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.comment.body.trim();
+            const validCommands = ['/start-sdd', '/approve-analysis', '/approve-design', '/approve-implementation'];
+            let command = '';
+            for (const cmd of validCommands) {
+              if (body.startsWith(cmd)) {
+                command = cmd.slice(1);
+                break;
+              }
+            }
+            core.setOutput('command', command);
+            core.info(`Detected command: ${command}`);
+
+      - name: Check commenter permission
+        id: permission-check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commenter = context.payload.comment.user.login;
+            let permLevel = 'none';
+            try {
+              const resp = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: commenter,
+              });
+              permLevel = resp.data.permission; // 'admin' | 'write' | 'read' | 'none'
+            } catch (e) {
+              permLevel = 'none'; // 404 = not a collaborator
+            }
+            const authorized = permLevel === 'admin' || permLevel === 'write';
+            if (!authorized) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                body: `@${commenter} Only approved repository collaborators (write or admin access) can trigger SDD pipeline commands. Your current permission level is \`${permLevel}\`.`,
+              });
+              core.setFailed(`Unauthorized: ${commenter} has permission level '${permLevel}'`);
+            }
+
+      - name: Find spec associated with this issue
+        id: find-spec
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const issueNumber = context.payload.issue.number;
+            const dir = 'specs/active';
+
+            let specFile = null;
+            let specId = null;
+            if (fs.existsSync(dir)) {
+              for (const f of fs.readdirSync(dir)) {
+                if (!f.endsWith('.md')) continue;
+                const full = path.join(dir, f);
+                const content = fs.readFileSync(full, 'utf8');
+                if (content.includes(`#${issueNumber}`)) {
+                  specFile = full;
+                  specId = f.replace(/\.md$/, '');
+                  break;
+                }
+              }
+            }
+
+            if (!specFile) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `Could not find a spec file in \`specs/active/\` referencing issue #${issueNumber}. Make sure the issue-triage workflow has run, or create the spec file manually with \`#${issueNumber}\` referenced in its body.`,
+              });
+              core.setFailed(`No spec found for issue #${issueNumber}`);
+              return;
+            }
+
+            const labels = context.payload.issue.labels.map(l => l.name);
+            let currentPhase = 'triage';
+            if (labels.includes('sdd/analysis')) currentPhase = 'analysis';
+            else if (labels.includes('sdd/design')) currentPhase = 'design';
+            else if (labels.includes('sdd/implementation')) currentPhase = 'implementation';
+            else if (labels.includes('sdd/qa')) currentPhase = 'qa';
+            else if (labels.includes('sdd/complete')) currentPhase = 'complete';
+
+            core.setOutput('spec_id', specId);
+            core.setOutput('spec_file', specFile);
+            core.setOutput('current_phase', currentPhase);
+
+      - name: Check phase match
+        id: phase-check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const command = '${{ steps.parse.outputs.command }}';
+            const currentPhase = '${{ steps.find-spec.outputs.current_phase }}';
+            const expectedPhase = {
+              'start-sdd': 'triage',
+              'approve-analysis': 'analysis',
+              'approve-design': 'design',
+              'approve-implementation': 'qa',
+            }[command];
+            const match = expectedPhase === currentPhase;
+            core.setOutput('phase_match', String(match));
+            if (!match) {
+              core.info(`Command '${command}' expects phase '${expectedPhase}' but issue is in phase '${currentPhase}'`);
+            }
+
+  # -------------------------------------------------------------- #
+  # /start-sdd -> Phase 1: Analysis                                  #
+  # -------------------------------------------------------------- #
+  phase-1-analysis:
+    needs: detect-command
+    if: needs.detect-command.outputs.command == 'start-sdd' && needs.detect-command.outputs.phase_match == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Transition label to sdd/analysis
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              name: 'sdd/triage',
+            }).catch(() => {});
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: ['sdd/analysis'],
+            });
+
+      - name: Run Claude Phase 1 Analysis
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: '--allowed-tools Read,Write,Bash(find:*),Bash(gh issue comment:*)'
+          prompt: |
+            You are the Analyst agent in the SDD pipeline for this repository.
+
+            SPEC ID: ${{ needs.detect-command.outputs.spec_id }}
+            ISSUE: #${{ github.event.issue.number }}
+            SPEC FILE: ${{ needs.detect-command.outputs.spec_file }}
+            TEMPLATE: specs/templates/01-analysis.template.md
+
+            INSTRUCTIONS:
+            1. Read AGENTS.md and specs/README.md to understand the SDD workflow.
+            2. Read the spec file at ${{ needs.detect-command.outputs.spec_file }}.
+            3. Read the analysis template at specs/templates/01-analysis.template.md.
+            4. Create directory specs/artifacts/${{ needs.detect-command.outputs.spec_id }}/ if it does not exist, and write a complete 01-analysis.md following the template structure exactly. Include: requirements breakdown, edge cases, scope validation, risk assessment, and open questions for the user.
+            5. Update the "Phase 1: Analysis" section of ${{ needs.detect-command.outputs.spec_file }}, setting its Status to "Complete — Pending Human Approval".
+            6. Post a single comment on issue #${{ github.event.issue.number }} summarizing:
+               - Key requirements extracted (bullet list)
+               - Top risks identified
+               - Any blocking questions that need answers before design can begin
+               - End with: "Phase 1 Analysis complete. Review specs/artifacts/${{ needs.detect-command.outputs.spec_id }}/01-analysis.md, then have an approved collaborator comment `/approve-analysis` to proceed to Phase 2 Design."
+
+            Post the comment using: gh issue comment ${{ github.event.issue.number }} --body "<comment text>"
+
+            Do NOT write any production code. Only touch files under specs/.
+
+      - name: Commit artifact changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add specs/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs(${{ needs.detect-command.outputs.spec_id }}): add phase 1 analysis artifact"
+            git push origin HEAD:${{ github.event.repository.default_branch }}
+          fi
+
+  # -------------------------------------------------------------- #
+  # /approve-analysis -> Phase 2: Design                             #
+  # -------------------------------------------------------------- #
+  phase-2-design:
+    needs: detect-command
+    if: needs.detect-command.outputs.command == 'approve-analysis' && needs.detect-command.outputs.phase_match == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Transition label to sdd/design
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              name: 'sdd/analysis',
+            }).catch(() => {});
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: ['sdd/design'],
+            });
+
+      - name: Run Claude Phase 2 Design
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: '--allowed-tools Read,Write,Bash(find:*),Bash(grep:*),Bash(gh issue comment:*)'
+          prompt: |
+            You are the Architect agent in the SDD pipeline.
+
+            SPEC ID: ${{ needs.detect-command.outputs.spec_id }}
+            ISSUE: #${{ github.event.issue.number }}
+            SPEC FILE: ${{ needs.detect-command.outputs.spec_file }}
+            ANALYSIS ARTIFACT: specs/artifacts/${{ needs.detect-command.outputs.spec_id }}/01-analysis.md
+            TEMPLATE: specs/templates/02-design.template.md
+
+            INSTRUCTIONS:
+            1. Read AGENTS.md and specs/README.md.
+            2. Read specs/artifacts/${{ needs.detect-command.outputs.spec_id }}/01-analysis.md (the approved analysis).
+            3. Read specs/templates/02-design.template.md.
+            4. Explore the codebase to understand existing patterns: read CLAUDE.md for the stack overview, find similar existing features under apps/web/app/ and apps/web/lib/, and review relevant prior spec artifacts under specs/artifacts/ for conventions.
+            5. Write specs/artifacts/${{ needs.detect-command.outputs.spec_id }}/02-design.md following the template, including:
+               - Component diagram and data flow
+               - Complete file ownership map (new files, modified files, files NOT to touch)
+               - Cross-team contracts (shared interfaces frozen before implementation)
+               - Numbered implementation sequence
+               - Test strategy with specific RED test cases for every acceptance criterion
+               - File ownership split into Group A (backend) and Group B (frontend) for parallel implementation
+            6. Post a single comment on issue #${{ github.event.issue.number }} summarizing:
+               - Architecture decision highlights
+               - File count (new/modified)
+               - Implementation sequence overview
+               - End with: "Phase 2 Design complete. Review specs/artifacts/${{ needs.detect-command.outputs.spec_id }}/02-design.md, then have an approved collaborator comment `/approve-design` to begin implementation."
+            7. Update the "Phase 2: Design" section of ${{ needs.detect-command.outputs.spec_file }}, setting its Status to "Complete — Pending Human Approval".
+
+            Post the comment using: gh issue comment ${{ github.event.issue.number }} --body "<comment text>"
+
+            Do NOT write any production code. Only touch files under specs/.
+
+      - name: Commit artifact changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add specs/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs(${{ needs.detect-command.outputs.spec_id }}): add phase 2 design artifact"
+            git push origin HEAD:${{ github.event.repository.default_branch }}
+          fi
+
+  # -------------------------------------------------------------- #
+  # /approve-design -> Phase 3: Implementation                       #
+  # -------------------------------------------------------------- #
+  phase-3-implementation:
+    needs: detect-command
+    if: needs.detect-command.outputs.command == 'approve-design' && needs.detect-command.outputs.phase_match == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Transition label to sdd/implementation
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              name: 'sdd/design',
+            }).catch(() => {});
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: ['sdd/implementation'],
+            });
+
+      - name: Compute branch name
+        id: branch
+        run: |
+          SPEC_ID="${{ needs.detect-command.outputs.spec_id }}"
+          # SPEC-30-foo-bar -> spec/30-foo-bar
+          BRANCH=$(echo "$SPEC_ID" | sed -E 's/^SPEC-([0-9]+)-/spec\/\1-/' | tr '[:upper:]' '[:lower:]')
+          echo "branch_name=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Run Claude Phase 3 Implementation
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: '--allowed-tools Read,Write,Edit,Bash(git:*),Bash(pnpm:*),Bash(npx:*),Bash(find:*),Bash(grep:*),Bash(gh pr create:*),Bash(gh issue comment:*)'
+          prompt: |
+            You are the Implementer agent in the SDD pipeline.
+
+            SPEC ID: ${{ needs.detect-command.outputs.spec_id }}
+            ISSUE: #${{ github.event.issue.number }}
+            BRANCH: ${{ steps.branch.outputs.branch_name }}
+            SPEC FILE: ${{ needs.detect-command.outputs.spec_file }}
+            DESIGN ARTIFACT: specs/artifacts/${{ needs.detect-command.outputs.spec_id }}/02-design.md
+            TEMPLATE: specs/templates/03-implementation.template.md
+
+            INSTRUCTIONS:
+            1. Read AGENTS.md — especially the TDD RED-GREEN-REFACTOR rules.
+            2. Read specs/artifacts/${{ needs.detect-command.outputs.spec_id }}/02-design.md completely.
+            3. Create and switch to the implementation branch: git checkout -B ${{ steps.branch.outputs.branch_name }}
+            4. Follow the implementation sequence in 02-design.md exactly:
+               - For each task: write the failing test (RED), run it to confirm it fails, write the minimum code to pass (GREEN), run again, then refactor (REFACTOR).
+               - Touch ONLY the files listed in the File Ownership Map.
+               - Do NOT modify files listed under "Files NOT to Touch".
+            5. Write specs/artifacts/${{ needs.detect-command.outputs.spec_id }}/03-implementation.md logging every file created/modified, every test written with its RED/GREEN status, and any deviations from the design (with rationale).
+            6. Stage and commit all changes on branch ${{ steps.branch.outputs.branch_name }}. Use commit messages formatted as: feat(${{ needs.detect-command.outputs.spec_id }}): <short description>
+            7. Push the branch: git push -u origin ${{ steps.branch.outputs.branch_name }}
+            8. Open a PR against the default branch:
+               gh pr create --base main --head ${{ steps.branch.outputs.branch_name }} --title "[${{ needs.detect-command.outputs.spec_id }}] ${{ github.event.issue.title }}" --body "Closes #${{ github.event.issue.number }}
+
+               ## Summary
+               <bullet points summarizing 03-implementation.md>"
+            9. Post a comment on issue #${{ github.event.issue.number }}:
+               "Phase 3 Implementation complete. PR opened for review. Once the PR is approved, the QA phase runs automatically. After reviewing the QA report, have an approved collaborator comment `/approve-implementation` to finalize and archive this spec."
+
+            NEVER commit directly to the default branch. ALWAYS work on branch ${{ steps.branch.outputs.branch_name }}.
+
+  # -------------------------------------------------------------- #
+  # Command was valid but issue is in the wrong phase                #
+  # -------------------------------------------------------------- #
+  wrong-phase-feedback:
+    needs: detect-command
+    if: needs.detect-command.outputs.phase_match == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post wrong-phase message
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: `Command \`/${{ needs.detect-command.outputs.command }}\` is not valid while this issue is in the \`${{ needs.detect-command.outputs.current_phase }}\` phase. Check the most recent SDD status comment for the next expected command.`,
+            });
+
+  # -------------------------------------------------------------- #
+  # /approve-implementation -> Finalize: archive spec, close loop    #
+  # -------------------------------------------------------------- #
+  phase-finalize:
+    needs: detect-command
+    if: needs.detect-command.outputs.command == 'approve-implementation' && needs.detect-command.outputs.phase_match == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Archive spec and finalize labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const specId = '${{ needs.detect-command.outputs.spec_id }}';
+            const specFile = '${{ needs.detect-command.outputs.spec_file }}';
+            const issueNumber = context.payload.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            for (const label of ['sdd/implementation', 'sdd/qa']) {
+              await github.rest.issues.removeLabel({ owner, repo, issue_number: issueNumber, name: label }).catch(() => {});
+            }
+            await github.rest.issues.addLabels({ owner, repo, issue_number: issueNumber, labels: ['sdd/complete'] });
+
+            const { data: fileData } = await github.rest.repos.getContent({ owner, repo, path: specFile });
+            const completedPath = specFile.replace('specs/active/', 'specs/completed/');
+            await github.rest.repos.createOrUpdateFileContents({
+              owner, repo, path: completedPath,
+              message: `chore: archive ${specId} to completed`,
+              content: fileData.content,
+            });
+            await github.rest.repos.deleteFile({
+              owner, repo, path: specFile,
+              message: `chore: remove ${specId} from active (archived)`,
+              sha: fileData.sha,
+            });
+
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: issueNumber,
+              body: `SDD pipeline complete for **${specId}**. Spec archived to \`specs/completed/\`. This issue can now be closed.`,
+            });
