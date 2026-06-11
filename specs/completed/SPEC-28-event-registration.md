@@ -1,7 +1,7 @@
 # Feature Specification: Event Registration
 
 > **Spec ID:** SPEC-28-event-registration
-> **Status:** In Design
+> **Status:** Completed
 > **Author:** Utkal Nayak
 > **Created:** 2026-06-07
 > **Last Updated:** 2026-06-07 (v2 — incorporates user clarifications)
@@ -238,5 +238,5 @@ enum EventRegistrationStatus {
 - **Artifact:** `specs/artifacts/SPEC-28-event-registration/03-implementation.md`
 
 ### Phase 4: QA & Testing
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-28-event-registration/04-qa-report.md`

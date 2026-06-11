@@ -47,6 +47,22 @@ curl -X PUT https://<your-domain>/api/members/<member-id>/role \
 3. Click the row → edit the `role` field → change from `member` to `admin`
 4. Save
 
+**Via SQL Editor — cloud (Supabase Dashboard → SQL Editor):**
+```sql
+UPDATE members SET role = 'admin' WHERE email = 'your@email.com';
+
+-- Verify
+SELECT email, role, member_status FROM members WHERE email = 'your@email.com';
+```
+
+**Via SQL Editor — local development (http://127.0.0.1:54323 → SQL Editor):**
+```sql
+UPDATE members SET role = 'admin' WHERE email = 'your@email.com';
+
+-- Verify
+SELECT email, role, member_status FROM members WHERE email = 'your@email.com';
+```
+
 > The role change takes effect immediately on the next API request. No restart needed.
 
 ### Revoking admin access
