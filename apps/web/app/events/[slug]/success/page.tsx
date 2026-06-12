@@ -1,3 +1,4 @@
+import Link                    from 'next/link'
 import { sanityFetch }        from '@/sanity/lib/client'
 import { EVENT_BY_SLUG_QUERY } from '@/sanity/lib/queries'
 import type { SanityEvent }   from '@/types/sanity'
@@ -27,9 +28,9 @@ export default async function EventSuccessPage({
       <p>You are registered for <strong>{event?.title ?? 'this event'}</strong>.</p>
       <p>A confirmation email has been sent to you.</p>
       <p>
-        <a href={`/events/${slug}`}>Back to event</a>
+        <Link href={`/events/${slug}`}>Back to event</Link>
         {' · '}
-        <a href="/events">All events</a>
+        <Link href="/events">All events</Link>
       </p>
     </main>
   )
