@@ -259,3 +259,34 @@ export const ALL_LEADERSHIP_QUERY = groq`
     notes
   }
 `
+
+// ---------------------------------------------------------------------------
+// Past Conventions
+// ---------------------------------------------------------------------------
+
+export const PAST_CONVENTION_BY_YEAR_QUERY = groq`
+  *[_type == "past_convention" && year == $year][0] {
+    _id,
+    year,
+    convention_number,
+    city,
+    state,
+    dates_text,
+    venue_name,
+    theme,
+    host_chapter,
+    overview,
+    core_team,
+    convention_guests,
+    donors,
+    award_winners,
+    youtube_link,
+    photo_album_link
+  }
+`
+
+export const ALL_CONVENTION_YEARS_QUERY = groq`
+  *[_type == "past_convention"] | order(year desc) {
+    year
+  }
+`

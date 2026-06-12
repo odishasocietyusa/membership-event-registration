@@ -101,6 +101,32 @@ export interface SanityImage {
   hotspot?: { x: number; y: number; height: number; width: number }
 }
 
+export interface SanityPastConvention {
+  _id: string
+  year: number
+  convention_number: string
+  city: string
+  state: string
+  dates_text?: string
+  venue_name?: string
+  theme?: string
+  host_chapter?: string
+  overview?: PortableTextBlock[]
+  core_team?: Array<{ name: string; role: string }>
+  convention_guests?: Array<{ name: string; role: string }>
+  donors?: Array<{
+    tier_name: string
+    entries: Array<{ name: string; organization?: string }>
+  }>
+  award_winners?: Array<{ award_name: string; recipient_name: string }>
+  youtube_link?: string
+  photo_album_link?: string
+}
+
+export interface SanityConventionYear {
+  year: number
+}
+
 export type PortableTextBlock = {
   _type: 'block'
   _key: string

@@ -62,6 +62,7 @@ export default async function NavBar({ user }: NavBarProps) {
                 <li><Link href="/events">Events</Link></li>
               )}
               <li><Link href="/activities/convention">Annual Convention</Link></li>
+              <li><Link href="/activities/convention/past">Past Conventions</Link></li>
               <li><Link href="/activities/awards">Awards</Link></li>
             </ul>
           </details>

@@ -24,6 +24,7 @@ This manual covers day-to-day administration of the live platform. It assumes th
 12. [Monitoring and Troubleshooting](#12-monitoring-and-troubleshooting)
 13. [Local Development Setup](#13-local-development-setup)
 14. [Deployment to Vercel and Environment Variables](#14-deployment-to-vercel-and-environment-variables)
+15. [SDD GitHub Issue Pipeline (Semi-Autonomous Feature Development)](#15-sdd-github-issue-pipeline-semi-autonomous-feature-development)
 
 ---
 
@@ -846,4 +847,54 @@ Go to **Project → Deployments**, find the last good deployment, and click **Pr
 
 ---
 
-*Last updated: 2026-06-07 · Maintainer: platform admin*
+## 15. SDD GitHub Issue Pipeline (Semi-Autonomous Feature Development)
+
+New feature/bug/chore requests filed as GitHub issues are walked through the 4-phase Spec-Driven Development (SDD) workflow — Analysis → Design → Implementation → QA — by Claude Code GitHub Actions. Each phase produces a reviewable artifact under `specs/artifacts/SPEC-N-slug/`, and the agent **stops after every phase** until an approved collaborator issues the next slash command. Nothing is merged to `main` without a human-reviewed pull request.
+
+### Who can run pipeline commands
+
+Every slash command checks the commenter's live GitHub permission via `repos.getCollaboratorPermissionLevel`. Only collaborators with **write** or **admin** access are authorized — there is no separate allowlist to maintain. If an unauthorized user comments a pipeline command, the bot replies with their current permission level and the command is ignored. To grant access, add the person as a repository collaborator (or org team member) with at least **Write** access in **Settings → Collaborators**.
+
+### Pipeline state machine
+
+Each issue carries exactly one `sdd/*` label representing its current phase:
+
+```
+sdd/triage → sdd/analysis → sdd/design → sdd/implementation → sdd/qa → sdd/complete
+```
+
+### Step-by-step walkthrough
+
+| Step | Trigger | What happens | Resulting label |
+|---|---|---|---|
+| 1. Triage (automatic) | Issue opened (or reopened, if not already triaged) | Bot scans `specs/active/`, `specs/artifacts/`, `specs/completed/` for the highest `SPEC-N`, creates a draft `specs/active/SPEC-N-slug.md` from the issue, and posts a comment with classification, summary, open questions, and complexity estimate | `sdd/triage` |
+| 2. Answer open questions | Maintainer/issue author replies in the issue thread | Clarify anything the triage comment flagged before analysis starts (recommended, not enforced) | — |
+| 3. `/start-sdd` | Approved collaborator comments `/start-sdd` | Phase 1 (Analyst): writes `specs/artifacts/SPEC-N-slug/01-analysis.md` (requirements, edge cases, risks, open questions) and posts a summary comment | `sdd/analysis` |
+| 4. `/approve-analysis` | Approved collaborator comments `/approve-analysis` | Phase 2 (Architect): reads `01-analysis.md`, explores the codebase for existing patterns, writes `02-design.md` (component/data-flow design, file ownership map, test strategy, implementation sequence) | `sdd/design` |
+| 5. `/approve-design` | Approved collaborator comments `/approve-design` | Phase 3 (Implementer): creates branch `spec/N-slug`, implements the design via TDD (RED → GREEN → REFACTOR), writes `03-implementation.md`, pushes the branch, and opens a PR titled `[SPEC-N-slug] <issue title>` with `Closes #N` in the body | `sdd/implementation` |
+| 6. Approve the PR (automatic QA) | Any reviewer approves the PR (`pull_request_review: submitted`, state `approved`) | Phase 4 (QA): runs Jest/Playwright, reviews every changed file for code quality/security/performance, verifies acceptance criteria, writes `04-qa-report.md`, and posts the report as a PR review comment. If critical issues are found, the bot requests changes on the PR instead | `sdd/qa` |
+| 7. `/approve-implementation` | Approved collaborator comments `/approve-implementation` on the issue | Finalize: moves `specs/active/SPEC-N-slug.md` → `specs/completed/`, removes `sdd/implementation`/`sdd/qa` labels, and posts a completion comment. Manually close the issue afterward | `sdd/complete` |
+
+### Command quick reference
+
+| Command | Where to comment | Required current label | Result |
+|---|---|---|---|
+| `/start-sdd` | Issue | `sdd/triage` | Begins Phase 1 Analysis |
+| `/approve-analysis` | Issue | `sdd/analysis` | Begins Phase 2 Design |
+| `/approve-design` | Issue | `sdd/design` | Begins Phase 3 Implementation (opens PR) |
+| *(PR approval — not a slash command)* | Pull request | issue has `sdd/implementation` | Runs Phase 4 QA |
+| `/approve-implementation` | Issue | `sdd/qa` | Archives spec, marks `sdd/complete` |
+
+### Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Bot replies "Only approved repository collaborators... can trigger SDD pipeline commands" | Commenter has less than Write access | Add them as a collaborator with Write/Admin access |
+| Bot replies "Command `/X` is not valid while this issue is in the `Y` phase" | Command sent out of order, or a previous step is still pending | Check the issue's current `sdd/*` label and the most recent status comment for the next expected command |
+| Bot replies "Could not find a spec file in `specs/active/` referencing issue #N" | The triage workflow hasn't run yet, or the spec file's `#N` reference is missing | Re-open the issue to re-trigger triage, or manually ensure `specs/active/SPEC-N-slug.md` contains `#N` |
+| Phase 1/2 artifact commit fails to push | `REPO_PAT` secret missing or expired | Regenerate a fine-grained Personal Access Token with `contents: write` on this repo and update the `REPO_PAT` secret in **Settings → Secrets and variables → Actions** |
+| Issue stuck on `sdd/analysis` with no `01-analysis.md` | Phase 1 ran but the artifact commit/push failed (e.g. auth error) | After fixing the underlying cause, manually reset the label to `sdd/triage` (`gh issue edit N --remove-label sdd/analysis --add-label sdd/triage`) and re-run `/start-sdd` |
+
+---
+
+*Last updated: 2026-06-12 · Maintainer: platform admin*

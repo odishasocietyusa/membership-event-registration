@@ -91,15 +91,15 @@ _Extracted from issue body — to be refined in Phase 1 Analysis_
 ## Agent Workflow Tracking
 
 ### Phase 1: Analysis
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-30-past-conventions-page-under-convention-m/01-analysis.md`
 
 ### Phase 2: Design
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-30-past-conventions-page-under-convention-m/02-design.md`
 
 ### Phase 3: Implementation
-- **Status:** Not Started
+- **Status:** Complete
 - **Artifact:** `specs/artifacts/SPEC-30-past-conventions-page-under-convention-m/03-implementation.md`
 
 ### Phase 4: QA & Testing
