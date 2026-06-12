@@ -1,14 +1,18 @@
+import Link from 'next/link'
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div>
       <nav>
         <strong>Admin</strong>
         {' | '}
-        <a href="/admin">Members</a>
+        <Link href="/admin">Members</Link>
         {' | '}
-        <a href="/admin/payments">Payments</a>
+        <Link href="/admin/payments">Payments</Link>
         {' | '}
-        <a href="/dashboard">My Dashboard</a>
+        <Link href="/admin/events">Events</Link>
+        {' | '}
+        <Link href="/dashboard">My Dashboard</Link>
       </nav>
       <hr />
       {children}
