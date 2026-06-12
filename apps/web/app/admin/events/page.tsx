@@ -32,7 +32,7 @@ export default async function AdminEventsPage() {
             <th>Date</th>
             <th>Access</th>
             <th>Fee</th>
-            <th>Confirmed</th>
+            <th>Registered</th>
             <th>Capacity</th>
             <th></th>
           </tr>

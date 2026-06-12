@@ -3,7 +3,10 @@ import { revalidatePath }        from 'next/cache'
 import Link                      from 'next/link'
 import { getCurrentMember }      from '@/lib/auth/get-current-member'
 import { createSupabaseServer }  from '@/lib/auth/supabase-server'
+import { sanityFetch }           from '@/sanity/lib/client'
+import { EVENT_BY_ID_QUERY }     from '@/sanity/lib/queries'
 import { formatDate }            from '@/lib/utils/date'
+import type { SanityEvent }      from '@/types/sanity'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +32,8 @@ export default async function AdminEventRegistrantsPage({ params }: PageProps) {
   if (!result || result.member.role !== 'admin') redirect('/dashboard')
 
   const { sanityId } = await params
+
+  const event = await sanityFetch<SanityEvent>(EVENT_BY_ID_QUERY, { sanityId })
 
   const supabase = await createSupabaseServer()
   const { data: { session } } = await supabase.auth.getSession()
@@ -64,7 +69,7 @@ export default async function AdminEventRegistrantsPage({ params }: PageProps) {
   return (
     <main>
       <p><Link href="/admin/events">← Back to events</Link></p>
-      <h1>Registrants — {confirmedCount} confirmed / {total} total</h1>
+      <h1>{event?.title ?? sanityId} — Registrants ({confirmedCount} confirmed / {total} total)</h1>
       <table border={1} cellPadding={6}>
         <thead>
           <tr>
