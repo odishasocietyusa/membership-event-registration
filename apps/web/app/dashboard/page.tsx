@@ -7,6 +7,8 @@ import { chapterDisplayName } from '@/lib/constants/address-options'
 import { formatDate } from '@/lib/utils/date'
 import { NO_EXPIRY_TYPES } from '@/lib/memberships/constants'
 import { UpgradeSection } from '@/app/components/upgrade-section'
+import { getExpertiseProfileByMemberId } from '@/lib/expertise/expertise-profile-service'
+import { ELIGIBLE_MEMBERSHIP_TYPES } from '@/lib/expertise/constants'
 
 function membershipTypeLabel(type: string): string {
   const labels: Record<string, string> = {
@@ -49,6 +51,10 @@ export default async function DashboardPage() {
   const neverExpires = membershipType ? (NO_EXPIRY_TYPES as Set<string>).has(membershipType) : false
   const chapter: string = chapterDisplayName(user.chapterId)
 
+  const isExpertiseEligible =
+    !!user.membershipType && (ELIGIBLE_MEMBERSHIP_TYPES as readonly string[]).includes(user.membershipType)
+  const expertiseProfile = isExpertiseEligible ? await getExpertiseProfileByMemberId(user.id) : null
+
   return (
     <main>
       <h1>Dashboard</h1>
@@ -67,6 +73,15 @@ export default async function DashboardPage() {
         <p><a href="/profile">Edit Profile</a></p>
         <p><a href="/services">Services Directory</a></p>
         <p><a href="/services/register">Register as a Service Provider</a></p>
+        {isExpertiseEligible && (
+          <p>
+            {expertiseProfile ? (
+              <a href={`/membership/expertise/${expertiseProfile.id}/edit`}>Edit my Expertise Entry</a>
+            ) : (
+              <a href="/membership/expertise/register">Register your Expertise</a>
+            )}
+          </p>
+        )}
       </fieldset>
 
       <fieldset>

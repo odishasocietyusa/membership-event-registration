@@ -44,6 +44,7 @@ export default async function NavBar({ user }: NavBarProps) {
               {isAuthed && (
                 <>
                   <li><Link href="/membership">Membership Types</Link></li>
+                  <li><Link href="/membership/expertise">Expertise Directory</Link></li>
                   <li><Link href="/members/search">Member Directory</Link></li>
                   <li><Link href="/dashboard">Upgrade Membership</Link></li>
                   <li><Link href="/profile">Member Profile</Link></li>

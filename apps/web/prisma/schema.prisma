@@ -162,6 +162,7 @@ model Member {
   serviceProvider      ServiceProvider?
   serviceContactsSent  ServiceContactLog[]
   eventRegistrations   EventRegistration[]
+  expertiseProfile     ExpertiseProfile?
 
   @@map("members")
 }
@@ -392,4 +393,24 @@ model EventRegistration {
   @@unique([sanityEventId, guestEmail])
   @@index([sanityEventId, status])
   @@map("event_registrations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPERTISE DIRECTORY (SPEC-29)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ExpertiseProfile {
+  id           String   @id @default(uuid()) @db.Uuid
+  memberId     String   @unique @map("member_id") @db.Uuid
+  fullName     String   @map("full_name")
+  organization String?
+  categories   String[]
+  blurb        String   @db.Text
+  isHidden     Boolean  @default(false) @map("is_hidden")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("expertise_profiles")
 }
